@@ -27,7 +27,7 @@ export default function LiveRanking({ sessionId }: LiveRankingProps) {
             .order("total_points", { ascending: false })
             .limit(5);
 
-        setScores((data as any) || []);
+        setScores((data as Score[]) || []);
     }, [sessionId]);
 
     useEffect(() => {

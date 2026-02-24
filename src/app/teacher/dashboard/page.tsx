@@ -4,12 +4,22 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Plus, BookOpen, Play, Trash2, LogOut, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+
+interface Quiz {
+    id: string;
+    title: string;
+    questions: { id: string }[];
+}
+
+interface User {
+    id: string;
+    email?: string;
+}
 
 export default function TeacherDashboard() {
-    const [quizzes, setQuizzes] = useState<any[]>([]);
+    const [quizzes, setQuizzes] = useState<Quiz[]>([]);
     const [loading, setLoading] = useState(true);
-    const [user, setUser] = useState<any>(null);
+    const [user, setUser] = useState<User | null>(null);
     const router = useRouter();
 
     useEffect(() => {
