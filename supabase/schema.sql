@@ -1,4 +1,4 @@
--- Supabase Schema for Kahoot-like Quiz Platform
+-- Supabase Schema for Kahoot-like Quiz Platform (Idempotent Version)
 
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -8,14 +8,14 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 ----------------------------------------------------------
 
 -- Teachers (extends auth.users)
-CREATE TABLE public.teachers (
+CREATE TABLE IF NOT EXISTS public.teachers (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     email TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
 -- Quizzes
-CREATE TABLE public.quizzes (
+CREATE TABLE IF NOT EXISTS public.quizzes (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     teacher_id UUID NOT NULL REFERENCES public.teachers(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
@@ -25,7 +25,7 @@ CREATE TABLE public.quizzes (
 
 -- Questions
 -- type can be: 'multiple_choice', 'true_false', 'short_answer'
-CREATE TABLE public.questions (
+CREATE TABLE IF NOT EXISTS public.questions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     quiz_id UUID NOT NULL REFERENCES public.quizzes(id) ON DELETE CASCADE,
     question_text TEXT NOT NULL,
@@ -40,7 +40,7 @@ CREATE TABLE public.questions (
 
 -- Sessions (Active game instances)
 -- status can be: 'waiting', 'active', 'finished'
-CREATE TABLE public.sessions (
+CREATE TABLE IF NOT EXISTS public.sessions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     quiz_id UUID NOT NULL REFERENCES public.quizzes(id) ON DELETE CASCADE,
     pin VARCHAR(6) UNIQUE NOT NULL,
@@ -52,7 +52,7 @@ CREATE TABLE public.sessions (
 );
 
 -- Participants (Students who join a session)
-CREATE TABLE public.participants (
+CREATE TABLE IF NOT EXISTS public.participants (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     session_id UUID NOT NULL REFERENCES public.sessions(id) ON DELETE CASCADE,
     nickname TEXT NOT NULL,
@@ -61,7 +61,7 @@ CREATE TABLE public.participants (
 );
 
 -- Answers (Student submissions)
-CREATE TABLE public.answers (
+CREATE TABLE IF NOT EXISTS public.answers (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     participant_id UUID NOT NULL REFERENCES public.participants(id) ON DELETE CASCADE,
     question_id UUID NOT NULL REFERENCES public.questions(id) ON DELETE CASCADE,
@@ -74,8 +74,7 @@ CREATE TABLE public.answers (
 );
 
 -- Scores (Aggregated scores per participant per session)
--- Can also be calculated dynamically, but we materialize it for easy rankings
-CREATE TABLE public.scores (
+CREATE TABLE IF NOT EXISTS public.scores (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     participant_id UUID NOT NULL REFERENCES public.participants(id) ON DELETE CASCADE,
     session_id UUID NOT NULL REFERENCES public.sessions(id) ON DELETE CASCADE,
@@ -88,9 +87,19 @@ CREATE TABLE public.scores (
 -- 2. REALTIME CONFIGURATION
 ----------------------------------------------------------
 -- Enable Realtime for tables that need to be broadcasted
-ALTER PUBLICATION supabase_realtime ADD TABLE sessions;
-ALTER PUBLICATION supabase_realtime ADD TABLE participants;
-ALTER PUBLICATION supabase_realtime ADD TABLE answers;
+-- Note: 'ALTER PUBLICATION' can fail if already added, we wrap in DO block to be safe
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'sessions') THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE sessions;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'participants') THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE participants;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'answers') THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE answers;
+    END IF;
+END $$;
 
 ----------------------------------------------------------
 -- 3. ROW LEVEL SECURITY (RLS)
@@ -104,21 +113,23 @@ ALTER TABLE public.participants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.answers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.scores ENABLE ROW LEVEL SECURITY;
 
--- Teachers RLS
+-- Drop existing policies before creating to avoid "already exists" errors
+DROP POLICY IF EXISTS "Teachers can view own profile" ON public.teachers;
 CREATE POLICY "Teachers can view own profile" 
     ON public.teachers FOR SELECT 
     USING (auth.uid() = id);
 
--- Quizzes RLS
+DROP POLICY IF EXISTS "Teachers can CRUD own quizzes" ON public.quizzes;
 CREATE POLICY "Teachers can CRUD own quizzes" 
     ON public.quizzes FOR ALL 
     USING (auth.uid() = teacher_id);
 
+DROP POLICY IF EXISTS "Anyone can view quizzes if they join a session (via session relation)" ON public.quizzes;
 CREATE POLICY "Anyone can view quizzes if they join a session (via session relation)"
     ON public.quizzes FOR SELECT
-    USING (true); -- Simplified for students joining by PIN, restricts can be tighter
+    USING (true);
 
--- Questions RLS
+DROP POLICY IF EXISTS "Teachers can CRUD questions for their quizzes" ON public.questions;
 CREATE POLICY "Teachers can CRUD questions for their quizzes" 
     ON public.questions FOR ALL 
     USING (
@@ -129,11 +140,12 @@ CREATE POLICY "Teachers can CRUD questions for their quizzes"
         )
     );
 
+DROP POLICY IF EXISTS "Anyone can view questions" ON public.questions;
 CREATE POLICY "Anyone can view questions"
     ON public.questions FOR SELECT
-    USING (true); -- Students need to read questions when session is active. App logic will hide correct_answer until reveal.
+    USING (true);
 
--- Sessions RLS
+DROP POLICY IF EXISTS "Teachers can CRUD own sessions" ON public.sessions;
 CREATE POLICY "Teachers can CRUD own sessions" 
     ON public.sessions FOR ALL 
     USING (
@@ -144,11 +156,12 @@ CREATE POLICY "Teachers can CRUD own sessions"
         )
     );
 
+DROP POLICY IF EXISTS "Anyone can view sessions by PIN or ID" ON public.sessions;
 CREATE POLICY "Anyone can view sessions by PIN or ID"
     ON public.sessions FOR SELECT
     USING (true);
 
--- Participants RLS
+DROP POLICY IF EXISTS "Teachers can view participants of their sessions" ON public.participants;
 CREATE POLICY "Teachers can view participants of their sessions" 
     ON public.participants FOR SELECT 
     USING (
@@ -160,15 +173,17 @@ CREATE POLICY "Teachers can view participants of their sessions"
         )
     );
 
+DROP POLICY IF EXISTS "Anyone can insert participant (join session)" ON public.participants;
 CREATE POLICY "Anyone can insert participant (join session)"
     ON public.participants FOR INSERT
     WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Participants can view other participants in same session" ON public.participants;
 CREATE POLICY "Participants can view other participants in same session"
     ON public.participants FOR SELECT
     USING (true);
 
--- Answers RLS
+DROP POLICY IF EXISTS "Teachers can view all answers for their sessions" ON public.answers;
 CREATE POLICY "Teachers can view all answers for their sessions" 
     ON public.answers FOR SELECT 
     USING (
@@ -180,19 +195,22 @@ CREATE POLICY "Teachers can view all answers for their sessions"
         )
     );
 
+DROP POLICY IF EXISTS "Anyone can insert answers" ON public.answers;
 CREATE POLICY "Anyone can insert answers"
     ON public.answers FOR INSERT
     WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Participants can view answers (for rankings)" ON public.answers;
 CREATE POLICY "Participants can view answers (for rankings)"
     ON public.answers FOR SELECT
     USING (true);
 
--- Scores RLS
+DROP POLICY IF EXISTS "Anyone can view scores" ON public.scores;
 CREATE POLICY "Anyone can view scores"
     ON public.scores FOR SELECT
     USING (true);
 
+DROP POLICY IF EXISTS "Anyone can update/insert scores" ON public.scores;
 CREATE POLICY "Anyone can update/insert scores"
     ON public.scores FOR ALL
     USING (true)
@@ -212,6 +230,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
@@ -230,6 +249,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+DROP TRIGGER IF EXISTS on_answer_inserted ON public.answers;
 CREATE TRIGGER on_answer_inserted
     AFTER INSERT ON public.answers
     FOR EACH ROW EXECUTE PROCEDURE public.update_participant_score();
