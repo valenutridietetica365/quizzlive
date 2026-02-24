@@ -16,6 +16,7 @@ interface Session {
     pin: string;
     status: string;
     quiz_id: string;
+    current_question_id?: string | null;
     quiz?: Quiz;
 }
 
@@ -62,8 +63,8 @@ export default function TeacherSession() {
             .select("*")
             .eq("session_id", id);
 
-        setSession(sessionData);
-        setQuiz(sessionData.quiz);
+        setSession(sessionData as Session);
+        setQuiz(sessionData.quiz as Quiz);
         setQuestions(questionsData || []);
         setParticipants(participantsData || []);
         setLoading(false);
@@ -103,7 +104,7 @@ export default function TeacherSession() {
     }, [id, fetchSessionData]);
 
     const startQuiz = async () => {
-        if (questions.length === 0) return;
+        if (questions.length === 0 || !session) return;
 
         const firstQuestion = questions[0];
         await supabase
@@ -117,6 +118,7 @@ export default function TeacherSession() {
     };
 
     const nextQuestion = async () => {
+        if (!session) return;
         const nextIndex = currentQuestionIndex + 1;
         if (nextIndex < questions.length) {
             const nextQuestion = questions[nextIndex];
@@ -136,7 +138,7 @@ export default function TeacherSession() {
         }
     };
 
-    if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
+    if (loading || !session || !quiz) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
 
     const joinUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/join?pin=${session.pin}`;
 
