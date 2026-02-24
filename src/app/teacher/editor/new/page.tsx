@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Plus, Trash2, Save, ArrowLeft, Loader2, Check, X } from "lucide-react";
-import { useRouter, useParams } from "next/navigation";
+import { Plus, Trash2, Save, ArrowLeft, Loader2, Check } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 type Question = {
     id?: string;
@@ -32,9 +32,9 @@ export default function QuizEditor() {
         }]);
     };
 
-    const updateQuestion = (index: number, field: keyof Question, value: any) => {
+    const updateQuestion = (index: number, field: keyof Question, value: string | number | string[]) => {
         const newQuestions = [...questions];
-        newQuestions[index] = { ...newQuestions[index], [field]: value };
+        newQuestions[index] = { ...newQuestions[index], [field]: value } as Question;
         setQuestions(newQuestions);
     };
 
@@ -138,8 +138,8 @@ export default function QuizEditor() {
                                 <div
                                     key={oIndex}
                                     className={`relative flex items-center p-1 rounded-2xl border-2 transition-all ${q.correct_answer === option && option !== ""
-                                            ? "border-green-500 bg-green-50"
-                                            : "border-slate-100 hover:border-slate-200"
+                                        ? "border-green-500 bg-green-50"
+                                        : "border-slate-100 hover:border-slate-200"
                                         }`}
                                 >
                                     <div className={`w-10 h-10 flex items-center justify-center rounded-xl font-bold text-white mr-3 ${oIndex === 0 ? "bg-red-400" : oIndex === 1 ? "bg-blue-400" : oIndex === 2 ? "bg-yellow-400" : "bg-green-400"

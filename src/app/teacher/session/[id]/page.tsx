@@ -1,56 +1,48 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useParams, useRouter } from "next/navigation";
 import { Users, Play, ChevronRight, BarChart3, Trophy, LogOut, Loader2 } from "lucide-react";
 import QRDisplay from "@/components/QRDisplay";
 
+interface Quiz {
+    id: string;
+    title: string;
+}
+
+interface Session {
+    id: string;
+    pin: string;
+    status: string;
+    quiz_id: string;
+    quiz?: Quiz;
+}
+
+interface Question {
+    id: string;
+    question_text: string;
+    options: string[];
+    sort_order: number;
+}
+
+interface Participant {
+    id: string;
+    nickname: string;
+}
+
 export default function TeacherSession() {
     const { id } = useParams();
     const router = useRouter();
-    const [session, setSession] = useState<any>(null);
-    const [quiz, setQuiz] = useState<any>(null);
-    const [questions, setQuestions] = useState<any[]>([]);
-    const [participants, setParticipants] = useState<any[]>([]);
+    const [session, setSession] = useState<Session | null>(null);
+    const [quiz, setQuiz] = useState<Quiz | null>(null);
+    const [questions, setQuestions] = useState<Question[]>([]);
+    const [participants, setParticipants] = useState<Participant[]>([]);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(-1);
     const [loading, setLoading] = useState(true);
     const [responsesCount, setResponsesCount] = useState(0);
 
-    useEffect(() => {
-        fetchSessionData();
-
-        // 1. Listen for new participants
-        const participantsChannel = supabase
-            .channel(`session_participants_${id}`)
-            .on(
-                'postgres_changes',
-                { event: 'INSERT', schema: 'public', table: 'participants', filter: `session_id=eq.${id}` },
-                (payload) => {
-                    setParticipants((prev) => [...prev, payload.new]);
-                }
-            )
-            .subscribe();
-
-        // 2. Listen for answers
-        const answersChannel = supabase
-            .channel(`session_answers_${id}`)
-            .on(
-                'postgres_changes',
-                { event: 'INSERT', schema: 'public', table: 'answers', filter: `session_id=eq.${id}` },
-                () => {
-                    setResponsesCount((prev) => prev + 1);
-                }
-            )
-            .subscribe();
-
-        return () => {
-            supabase.removeChannel(participantsChannel);
-            supabase.removeChannel(answersChannel);
-        };
-    }, [id]);
-
-    const fetchSessionData = async () => {
+    const fetchSessionData = useCallback(async () => {
         const { data: sessionData } = await supabase
             .from("sessions")
             .select("*, quiz:quizzes(*)")
@@ -75,7 +67,40 @@ export default function TeacherSession() {
         setQuestions(questionsData || []);
         setParticipants(participantsData || []);
         setLoading(false);
-    };
+    }, [id, router]);
+
+    useEffect(() => {
+        fetchSessionData();
+
+        // 1. Listen for new participants
+        const participantsChannel = supabase
+            .channel(`session_participants_${id}`)
+            .on(
+                'postgres_changes',
+                { event: 'INSERT', schema: 'public', table: 'participants', filter: `session_id=eq.${id}` },
+                (payload) => {
+                    setParticipants((prev) => [...prev, payload.new as Participant]);
+                }
+            )
+            .subscribe();
+
+        // 2. Listen for answers
+        const answersChannel = supabase
+            .channel(`session_answers_${id}`)
+            .on(
+                'postgres_changes',
+                { event: 'INSERT', schema: 'public', table: 'answers', filter: `session_id=eq.${id}` },
+                () => {
+                    setResponsesCount((prev) => prev + 1);
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(participantsChannel);
+            supabase.removeChannel(answersChannel);
+        };
+    }, [id, fetchSessionData]);
 
     const startQuiz = async () => {
         if (questions.length === 0) return;

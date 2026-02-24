@@ -1,15 +1,34 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { Trophy, Medal } from "lucide-react";
+import { Trophy } from "lucide-react";
 
 interface LiveRankingProps {
     sessionId: string;
 }
 
+interface Score {
+    id: string;
+    total_points: number;
+    participant?: {
+        nickname: string;
+    };
+}
+
 export default function LiveRanking({ sessionId }: LiveRankingProps) {
-    const [scores, setScores] = useState<any[]>([]);
+    const [scores, setScores] = useState<Score[]>([]);
+
+    const fetchScores = useCallback(async () => {
+        const { data } = await supabase
+            .from("scores")
+            .select("*, participant:participants(nickname)")
+            .eq("session_id", sessionId)
+            .order("total_points", { ascending: false })
+            .limit(5);
+
+        setScores((data as any) || []);
+    }, [sessionId]);
 
     useEffect(() => {
         fetchScores();
@@ -26,18 +45,7 @@ export default function LiveRanking({ sessionId }: LiveRankingProps) {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [sessionId]);
-
-    const fetchScores = async () => {
-        const { data } = await supabase
-            .from("scores")
-            .select("*, participant:participants(nickname)")
-            .eq("session_id", sessionId)
-            .order("total_points", { ascending: false })
-            .limit(5);
-
-        setScores(data || []);
-    };
+    }, [sessionId, fetchScores]);
 
     return (
         <div className="w-full max-w-md mx-auto space-y-4">
@@ -50,9 +58,9 @@ export default function LiveRanking({ sessionId }: LiveRankingProps) {
                 <div
                     key={score.id}
                     className={`flex items-center justify-between p-4 rounded-2xl border-b-4 transition-all animate-in slide-in-from-right duration-300 delay-${index * 100} ${index === 0 ? "bg-yellow-500/20 border-yellow-500" :
-                            index === 1 ? "bg-slate-400/20 border-slate-400" :
-                                index === 2 ? "bg-amber-700/20 border-amber-800" :
-                                    "bg-slate-800 border-slate-700"
+                        index === 1 ? "bg-slate-400/20 border-slate-400" :
+                            index === 2 ? "bg-amber-700/20 border-amber-800" :
+                                "bg-slate-800 border-slate-700"
                         }`}
                 >
                     <div className="flex items-center gap-4">
