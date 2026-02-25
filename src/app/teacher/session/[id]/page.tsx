@@ -27,7 +27,7 @@ interface Session {
 interface Question {
     id: string;
     question_text: string;
-    question_type: "multiple_choice" | "true_false";
+    question_type: "multiple_choice" | "true_false" | "fill_in_the_blank" | "matching";
     options: string[];
     image_url?: string;
     sort_order: number;
@@ -312,25 +312,45 @@ export default function TeacherSession() {
                                 </div>
                             )}
 
-                            <div className="grid sm:grid-cols-2 gap-4">
-                                {questions[currentQuestionIndex].options.map((opt, i) => (
-                                    <div
-                                        key={i}
-                                        className={`p-6 md:p-8 rounded-[2rem] border-b-[6px] transition-all flex items-center gap-5 ${questions[currentQuestionIndex].question_type === "true_false"
-                                            ? (opt === "Verdadero" ? "bg-blue-600/90 border-blue-800" : "bg-red-600/90 border-red-800")
-                                            : (i === 0 ? "bg-red-600/90 border-red-800" :
-                                                i === 1 ? "bg-blue-600/90 border-blue-800" :
-                                                    i === 2 ? "bg-amber-500 border-amber-700" :
-                                                        "bg-emerald-600/90 border-emerald-800")
-                                            }`}
-                                    >
-                                        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-xl font-black shadow-lg">
-                                            {String.fromCharCode(65 + i)}
+                            {questions[currentQuestionIndex].question_type === "multiple_choice" || questions[currentQuestionIndex].question_type === "true_false" ? (
+                                <div className="grid sm:grid-cols-2 gap-4">
+                                    {questions[currentQuestionIndex].options.map((opt, i) => (
+                                        <div
+                                            key={i}
+                                            className={`p-6 md:p-8 rounded-[2rem] border-b-[6px] transition-all flex items-center gap-5 ${questions[currentQuestionIndex].question_type === "true_false"
+                                                ? (opt === "Verdadero" ? "bg-blue-600/90 border-blue-800" : "bg-red-600/90 border-red-800")
+                                                : (i === 0 ? "bg-red-600/90 border-red-800" :
+                                                    i === 1 ? "bg-blue-600/90 border-blue-800" :
+                                                        i === 2 ? "bg-amber-500 border-amber-700" :
+                                                            "bg-emerald-600/90 border-emerald-800")
+                                                }`}
+                                        >
+                                            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-xl font-black shadow-lg">
+                                                {String.fromCharCode(65 + i)}
+                                            </div>
+                                            <span className="text-xl md:text-2xl font-black text-white">{opt}</span>
                                         </div>
-                                        <span className="text-xl md:text-2xl font-black text-white">{opt}</span>
-                                    </div>
-                                ))}
-                            </div>
+                                    ))}
+                                </div>
+                            ) : questions[currentQuestionIndex].question_type === "fill_in_the_blank" ? (
+                                <div className="bg-slate-900/50 p-10 rounded-[3rem] border-4 border-emerald-500/30 flex flex-col items-center gap-4 animate-in zoom-in">
+                                    <span className="text-xs font-black text-emerald-400 uppercase tracking-[0.4em]">RESPUESTA ESPERADA</span>
+                                    <h3 className="text-4xl md:text-6xl font-black text-white tracking-tight">{questions[currentQuestionIndex].options.length > 0 ? questions[currentQuestionIndex].options[0] : "(Sin respuesta definida)"}</h3>
+                                </div>
+                            ) : (
+                                <div className="grid sm:grid-cols-2 gap-4">
+                                    {questions[currentQuestionIndex].options.map((pair, i) => {
+                                        const [term, match] = pair.split(":");
+                                        return (
+                                            <div key={i} className="bg-purple-600/20 p-6 rounded-[2rem] border-2 border-purple-500/30 flex items-center justify-between group hover:bg-purple-600/30 transition-all">
+                                                <span className="font-black text-purple-200">{term}</span>
+                                                <div className="w-8 h-px bg-purple-500/30" />
+                                                <span className="font-black text-white">{match}</span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
 
                         {/* Sidebar Stats */}
