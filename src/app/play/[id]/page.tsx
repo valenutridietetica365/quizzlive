@@ -133,15 +133,18 @@ export default function StudentPlay() {
                 (payload) => {
                     try {
                         const newData = SessionSchema.parse(payload.new);
-                        setSession(newData);
-                        if (newData.status === "finished") {
-                            fetchTotalScore();
-                        }
-                        if (newData.current_question_id !== session?.current_question_id) {
-                            if (newData.current_question_id) {
-                                handleNewQuestion(newData.current_question_id);
+
+                        setSession(prevSession => {
+                            if (newData.current_question_id !== prevSession?.current_question_id) {
+                                if (newData.current_question_id) {
+                                    handleNewQuestion(newData.current_question_id);
+                                }
                             }
-                        }
+                            if (newData.status === "finished" && prevSession?.status !== "finished") {
+                                fetchTotalScore();
+                            }
+                            return newData;
+                        });
                     } catch (e) {
                         console.error("Error en actualización de tiempo real:", e);
                     }
@@ -152,7 +155,8 @@ export default function StudentPlay() {
         return () => {
             supabase.removeChannel(sessionChannel);
         };
-    }, [id, nickname, participantId, fetchInitialState, handleNewQuestion, router, session?.current_question_id, session?.status, totalScore, fetchingScore, fetchTotalScore]);
+        // Removed session?.current_question_id and session?.status from dependencies to stabilize subscription
+    }, [id, nickname, participantId, fetchInitialState, handleNewQuestion, router, totalScore, fetchingScore, fetchTotalScore]);
 
     const submitAnswer = async (answer: string) => {
         if (answered || isSubmitting || !currentQuestion) return;
@@ -246,9 +250,16 @@ export default function StudentPlay() {
                 </div>
             )}
 
-            {session.status === "active" && currentQuestion && (
+            {session.status === "active" && (
                 <div className="w-full max-w-2xl flex flex-col items-center">
-                    {!answered ? (
+                    {!currentQuestion ? (
+                        <div className="flex flex-col items-center gap-6 animate-pulse">
+                            <div className="w-20 h-20 bg-blue-100 rounded-3xl flex items-center justify-center text-blue-500">
+                                <Loader2 className="w-10 h-10 animate-spin" />
+                            </div>
+                            <p className="text-slate-400 font-black uppercase tracking-[0.3em] text-xs">Cargando siguiente pregunta...</p>
+                        </div>
+                    ) : !answered ? (
                         <div className="w-full space-y-8 md:space-y-10 animate-in slide-in-from-bottom-12 duration-700">
                             <div className="text-center space-y-4 px-4">
                                 <h2 className="text-2xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight">
