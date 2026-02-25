@@ -12,6 +12,9 @@ import { getTranslation } from "@/lib/i18n";
 import { Question, QuestionSchema, Session, SessionSchema } from "@/lib/schemas";
 import { StudentPlaySkeleton } from "@/components/Skeleton";
 import AudioController, { playSFX } from "@/components/AudioController";
+import CircularTimer from "@/components/CircularTimer";
+import Leaderboard from "@/components/Leaderboard";
+import FinalPodium from "@/components/FinalPodium";
 
 export default function StudentPlay() {
     const { id } = useParams();
@@ -304,22 +307,10 @@ export default function StudentPlay() {
                         </div>
                     ) : !answered ? (
                         <div className="w-full space-y-8 md:space-y-10 animate-in slide-in-from-bottom-12 duration-700">
-                            {/* Timer Bar */}
+                            {/* Circular Timer */}
                             {timeLeft !== null && (
-                                <div className="w-full space-y-1">
-                                    <div className="flex justify-between items-center px-1">
-                                        <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{t('play.time_left')}</span>
-                                        <span className={`text-xs font-black tabular-nums ${timeLeft < 5 ? 'text-red-500 animate-pulse' : 'text-slate-500'}`}>{timeLeft}s</span>
-                                    </div>
-                                    <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
-                                        <div
-                                            className="h-full rounded-full transition-all duration-1000 ease-linear"
-                                            style={{
-                                                width: `${(timeLeft / (currentQuestion.time_limit || 20)) * 100}%`,
-                                                backgroundColor: timeLeft < 5 ? '#ef4444' : timeLeft < 10 ? '#f59e0b' : '#3b82f6'
-                                            }}
-                                        />
-                                    </div>
+                                <div className="flex justify-center">
+                                    <CircularTimer timeLeft={timeLeft} timeLimit={currentQuestion.time_limit || 20} size="sm" />
                                 </div>
                             )}
                             <div className="text-center space-y-4 px-4">
@@ -470,34 +461,34 @@ export default function StudentPlay() {
                                 <div className="h-2 w-48 bg-slate-200 rounded-full overflow-hidden"><div className="h-full bg-blue-600 animate-pulse w-1/2" /></div>
                                 <p className="text-slate-400 font-black text-xs uppercase tracking-[0.3em]">{t('play.next_question_coming')}</p>
                             </div>
+                            {/* Live leaderboard after answering */}
+                            <div className="w-full bg-slate-950 rounded-[2rem] p-6">
+                                <Leaderboard sessionId={id as string} currentParticipantId={participantId ?? undefined} compact />
+                            </div>
                         </div>
                     )}
                 </div>
             )}
 
             {session.status === "finished" && (
-                <div className="max-w-md w-full text-center space-y-10 animate-in zoom-in duration-700">
-                    <div className="bg-white p-12 md:p-16 rounded-[4rem] shadow-2xl border border-slate-100 flex flex-col items-center gap-10 relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-blue-50/50 to-transparent -z-10" />
-                        <div className="relative">
-                            <Trophy className="w-32 h-32 text-amber-500 animate-float active:scale-110 transition-transform" />
-                            <div className="absolute -top-2 -right-2 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg"><Sparkles className="w-6 h-6 text-amber-400" /></div>
+                <div className="max-w-md w-full text-center space-y-6 animate-in zoom-in duration-700">
+                    {/* Animated Podium with confetti */}
+                    <div className="bg-slate-900 p-8 rounded-[3rem] border border-white/5 shadow-2xl">
+                        <FinalPodium sessionId={id as string} highlightId={participantId ?? undefined} />
+                    </div>
+
+                    {/* Personal score card */}
+                    <div className="bg-white p-10 rounded-[3rem] shadow-2xl border border-slate-100 flex flex-col items-center gap-6">
+                        <h1 className="text-4xl font-black text-slate-900 tracking-tight">{t('play.incredible')}, <span className="text-blue-600">{nickname}</span>!</h1>
+                        <p className="text-slate-500 font-medium">{t('play.finished_subtitle')}</p>
+                        <div className="bg-slate-900 p-8 rounded-[2rem] w-full">
+                            <span className="text-xs font-black text-blue-400 uppercase tracking-[0.4em] block mb-2">{t('play.total_score')}</span>
+                            {fetchingScore ? <Loader2 className="w-10 h-10 animate-spin text-white mx-auto" /> : <span className="text-6xl font-black text-white tracking-tighter tabular-nums">{(totalScore ?? 0).toLocaleString()}</span>}
                         </div>
-                        <div className="space-y-4">
-                            <h1 className="text-5xl font-black text-slate-900 tracking-tight leading-none">{t('play.incredible')}, <span className="text-blue-600 font-black">{nickname}</span>!</h1>
-                            <p className="text-lg text-slate-500 font-medium max-w-[280px] mx-auto">{t('play.finished_subtitle')}</p>
-                        </div>
-                        <div className="bg-slate-900 p-10 rounded-[3rem] w-full shadow-2xl shadow-slate-200 group relative">
-                            <div className="absolute inset-0 bg-blue-600/10 opacity-50" />
-                            <div className="relative z-10 flex flex-col items-center gap-2">
-                                <span className="text-xs font-black text-blue-400 uppercase tracking-[0.4em] mb-2">{t('play.total_score')}</span>
-                                {fetchingScore ? <Loader2 className="w-12 h-12 animate-spin text-white" /> : <span className="text-7xl font-black text-white tracking-tighter tabular-nums">{(totalScore ?? 0).toLocaleString()}</span>}
-                            </div>
-                        </div>
-                        <div className="w-full space-y-4">
-                            <button onClick={() => router.push("/")} className="btn-premium w-full !bg-blue-600 !text-white !rounded-[2rem] !py-6 !text-xl flex items-center justify-center gap-3 shadow-xl shadow-blue-100">{t('play.go_home')} <ArrowRight className="w-6 h-6" /></button>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('play.thanks')}</p>
-                        </div>
+                        <button onClick={() => router.push("/")} className="btn-premium w-full !bg-blue-600 !text-white !rounded-[2rem] !py-5 !text-xl flex items-center justify-center gap-3">
+                            {t('play.go_home')} <ArrowRight className="w-6 h-6" />
+                        </button>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('play.thanks')}</p>
                     </div>
                 </div>
             )}

@@ -14,6 +14,9 @@ import { getTranslation } from "@/lib/i18n";
 import LanguageSelector from "@/components/LanguageSelector";
 import AudioController from "@/components/AudioController";
 import SessionAnalytics from "@/components/SessionAnalytics";
+import CircularTimer from "@/components/CircularTimer";
+import Leaderboard from "@/components/Leaderboard";
+import FinalPodium from "@/components/FinalPodium";
 
 import { Quiz, QuizSchema, Question, QuestionSchema, Session, SessionSchema, Participant, ParticipantSchema } from "@/lib/schemas";
 
@@ -415,17 +418,16 @@ export default function TeacherSession() {
                                 </div>
                             </div>
 
+                            {/* Live Ranking */}
+                            <div className="bg-slate-900/80 backdrop-blur-xl p-6 rounded-[2.5rem] border border-white/5 shadow-2xl">
+                                <Leaderboard sessionId={id as string} />
+                            </div>
+
                             {/* Timer Card */}
                             {timeLeft !== null && (
-                                <div className="bg-slate-900/80 backdrop-blur-xl p-10 rounded-[2.5rem] border border-white/5 flex flex-col items-center text-center space-y-4 shadow-2xl overflow-hidden relative group">
-                                    <div className={`w-20 h-20 ${timeLeft < 5 ? 'bg-red-500/10 text-red-500 animate-pulse' : 'bg-blue-500/10 text-blue-500'} rounded-full flex items-center justify-center ring-8 ${timeLeft < 5 ? 'ring-red-500/5' : 'ring-blue-500/5'} transition-colors duration-500`}>
-                                        <Clock className="w-10 h-10" />
-                                    </div>
-                                    <div className="relative z-10">
-                                        <p className={`text-6xl font-black tabular-nums tracking-tighter transition-colors duration-500 ${timeLeft < 5 ? 'text-red-500' : 'text-white'}`}>{timeLeft}</p>
-                                        <p className="text-sm font-black text-slate-500 uppercase tracking-widest mt-1">{t('session.time_remaining')}</p>
-                                    </div>
-                                    <div className="absolute bottom-0 left-0 h-1.5 bg-blue-500 transition-all duration-1000 ease-linear" style={{ width: `${(timeLeft / (questions[currentQuestionIndex]?.time_limit || 20)) * 100}%`, backgroundColor: timeLeft < 5 ? '#ef4444' : '#3b82f6' }} />
+                                <div className="bg-slate-900/80 backdrop-blur-xl p-10 rounded-[2.5rem] border border-white/5 flex flex-col items-center text-center space-y-4 shadow-2xl">
+                                    <CircularTimer timeLeft={timeLeft} timeLimit={questions[currentQuestionIndex]?.time_limit || 20} size="lg" />
+                                    <p className="text-sm font-black text-slate-500 uppercase tracking-widest">{t('session.time_remaining')}</p>
                                 </div>
                             )}
 
@@ -441,36 +443,28 @@ export default function TeacherSession() {
                 )}
 
                 {session.status === "finished" && (
-                    <div className="max-w-2xl w-full text-center space-y-12 animate-in zoom-in duration-1000">
-                        <div className="relative">
-                            <div className="absolute inset-0 bg-blue-500/20 blur-[100px] rounded-full -z-10" />
-                            <div className="bg-slate-900/50 backdrop-blur-3xl p-16 rounded-[4rem] border border-white/5 shadow-[0_32px_128px_-16px_rgba(0,0,0,0.5)]">
-                                <Trophy className="w-32 h-32 text-amber-400 mx-auto mb-10 animate-float" />
-                                <h1 className="text-6xl font-black mb-6 tracking-tight leading-none">{t('session.mission_accomplished')} <br /> <span className="text-blue-500">{t('session.accomplished')}</span></h1>
-                                <p className="text-xl text-slate-400 font-medium max-w-sm mx-auto leading-relaxed mb-10">
-                                    {t('session.finished_desc')}
-                                </p>
-                                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                                    <button
-                                        onClick={() => setShowAnalytics(!showAnalytics)}
-                                        className={`btn-premium flex items-center justify-center gap-2 ${showAnalytics ? "!bg-slate-700" : "!bg-emerald-600 !hover:bg-emerald-700"}`}
-                                    >
-                                        <BarChart3 className="w-5 h-5" />
-                                        {t('session.view_detailed_analytics')}
-                                    </button>
-                                    <button
-                                        onClick={() => router.push("/teacher/dashboard")}
-                                        className="btn-premium !bg-blue-600 !hover:bg-blue-700 flex items-center justify-center gap-2"
-                                    >
-                                        <BarChart3 className="w-5 h-5" />
-                                        {t('session.view_results')}
-                                    </button>
-                                </div>
-                            </div>
+                    <div className="max-w-2xl w-full space-y-8 animate-in fade-in duration-1000">
+                        <FinalPodium sessionId={id as string} />
+
+                        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                            <button
+                                onClick={() => setShowAnalytics(!showAnalytics)}
+                                className={`btn-premium flex items-center justify-center gap-2 ${showAnalytics ? "!bg-slate-700" : "!bg-emerald-600"}`}
+                            >
+                                <BarChart3 className="w-5 h-5" />
+                                {t('session.view_detailed_analytics')}
+                            </button>
+                            <button
+                                onClick={() => router.push("/teacher/dashboard")}
+                                className="btn-premium !bg-blue-600 flex items-center justify-center gap-2"
+                            >
+                                <BarChart3 className="w-5 h-5" />
+                                {t('session.view_results')}
+                            </button>
                         </div>
 
                         {showAnalytics && (
-                            <div className="w-full mt-12 animate-in fade-in slide-in-from-top-4 duration-700">
+                            <div className="w-full animate-in fade-in slide-in-from-top-4 duration-700">
                                 <SessionAnalytics sessionId={id as string} />
                             </div>
                         )}
