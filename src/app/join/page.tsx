@@ -4,10 +4,13 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useQuizStore } from "@/lib/store";
-import { Rocket, Sparkles, User, Key, ArrowRight, Loader2 } from "lucide-react";
+import { Rocket, Sparkles, User, Key, ArrowRight, Loader2, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
+import { getTranslation } from "@/lib/i18n";
+import LanguageSelector from "@/components/LanguageSelector";
 
 function JoinContent() {
+    const { setParticipantInfo, language } = useQuizStore();
     const [pin, setPin] = useState("");
     const [nickname, setNickname] = useState("");
     const [loading, setLoading] = useState(false);
@@ -15,7 +18,8 @@ function JoinContent() {
     const [hasPinFromUrl, setHasPinFromUrl] = useState(false);
     const router = useRouter();
     const searchParams = useSearchParams();
-    const setParticipantInfo = useQuizStore((state) => state.setParticipantInfo);
+
+    const t = (key: string) => getTranslation(language, key);
 
     useEffect(() => {
         const pinFromUrl = searchParams.get("pin");
@@ -37,7 +41,7 @@ function JoinContent() {
                 .eq("pin", pin)
                 .single();
 
-            if (sessionError || !session) throw new Error("PIN inválido o no encontrado");
+            if (sessionError || !session) throw new Error(t('join.invalid_pin'));
             if (session.status === "finished") throw new Error("Esta sesión ya ha finalizado");
 
             const { data: participant, error: participantError } = await supabase
@@ -64,6 +68,10 @@ function JoinContent() {
 
     return (
         <div className="min-h-screen bg-white flex flex-col justify-center py-12 px-6">
+            <div className="fixed top-6 right-6 z-50">
+                <LanguageSelector />
+            </div>
+
             <div className="max-w-md w-full mx-auto space-y-12">
                 <div className="text-center space-y-6">
                     <div className="w-20 h-20 bg-slate-900 rounded-[2.5rem] flex items-center justify-center text-white shadow-2xl mx-auto rotate-3">
@@ -71,21 +79,19 @@ function JoinContent() {
                     </div>
                     <div className="space-y-2">
                         <h1 className="text-5xl font-black text-slate-900 tracking-tighter">
-                            {hasPinFromUrl ? "Casi listo" : "Únete ahora"}
+                            QuizzLive
                         </h1>
-                        <p className="text-slate-500 font-medium text-lg">
-                            {hasPinFromUrl ? "Solo elige un apodo para empezar a jugar." : "Ingresa el código y tu apodo para empezar."}
+                        <p className="text-slate-400 font-bold uppercase tracking-[0.3em] text-[10px] mt-2">
+                            {t('join.title')}
                         </p>
                     </div>
                 </div>
 
                 <div className="relative group">
-                    {/* Iridescent background glow */}
                     <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-[4rem] blur-2xl opacity-50 group-hover:opacity-100 transition-opacity duration-1000" />
 
                     <div className="relative bg-white/40 backdrop-blur-3xl p-10 rounded-[3rem] border border-white/50 shadow-[0_32px_120px_-20px_rgba(0,0,0,0.1)] overflow-hidden">
                         <div className="absolute top-0 left-0 w-32 h-32 bg-blue-100/30 rounded-br-[4rem] -ml-8 -mt-8" />
-                        <div className="absolute bottom-0 right-0 w-24 h-24 bg-purple-100/20 rounded-tl-[3rem] -mr-6 -mb-6" />
 
                         <form onSubmit={handleJoin} className="space-y-8 relative z-10">
                             <div className="space-y-6">
@@ -107,7 +113,7 @@ function JoinContent() {
                                     <div className="space-y-2">
                                         <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
                                             <Key className="w-3 h-3 text-blue-500" />
-                                            Código PIN
+                                            {t('join.pin_placeholder')}
                                         </label>
                                         <input
                                             type="text"
@@ -124,7 +130,7 @@ function JoinContent() {
                                 <div className="space-y-2">
                                     <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
                                         <User className="w-3 h-3 text-blue-500" />
-                                        Tu Apodo (Nickname)
+                                        {t('join.nickname_placeholder')}
                                     </label>
                                     <input
                                         type="text"
@@ -153,7 +159,7 @@ function JoinContent() {
                                     <Loader2 className="w-7 h-7 animate-spin" />
                                 ) : (
                                     <>
-                                        COMENZAR <ArrowRight className="w-6 h-6" />
+                                        {t('join.button')} <ArrowRight className="w-6 h-6" />
                                     </>
                                 )}
                             </button>

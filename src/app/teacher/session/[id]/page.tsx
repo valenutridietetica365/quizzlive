@@ -3,44 +3,22 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useParams, useRouter } from "next/navigation";
-import { Users, Play, ChevronRight, BarChart3, Trophy, LogOut, Loader2, Sparkles, MessageSquare } from "lucide-react";
+import { Users, Play, ChevronRight, BarChart3, Trophy, LogOut, Loader2, Sparkles, MessageSquare, QrCode } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
 import QRDisplay from "@/components/QRDisplay";
 import ShareModal from "@/components/ShareModal";
-import { QrCode } from "lucide-react";
+import { TeacherSessionSkeleton } from "@/components/Skeleton";
+import { useQuizStore } from "@/lib/store";
+import { getTranslation } from "@/lib/i18n";
+import LanguageSelector from "@/components/LanguageSelector";
 
-interface Quiz {
-    id: string;
-    title: string;
-}
-
-interface Session {
-    id: string;
-    pin: string;
-    status: string;
-    quiz_id: string;
-    current_question_id?: string | null;
-    quiz?: Quiz;
-}
-
-interface Question {
-    id: string;
-    question_text: string;
-    question_type: "multiple_choice" | "true_false" | "fill_in_the_blank" | "matching";
-    options: string[];
-    image_url?: string;
-    sort_order: number;
-}
-
-interface Participant {
-    id: string;
-    nickname: string;
-}
+import { Quiz, QuizSchema, Question, QuestionSchema, Session, SessionSchema, Participant, ParticipantSchema } from "@/lib/schemas";
 
 export default function TeacherSession() {
     const { id } = useParams();
     const router = useRouter();
+    const { language } = useQuizStore();
     const [session, setSession] = useState<Session | null>(null);
     const [quiz, setQuiz] = useState<Quiz | null>(null);
     const [questions, setQuestions] = useState<Question[]>([]);
@@ -49,6 +27,8 @@ export default function TeacherSession() {
     const [loading, setLoading] = useState(true);
     const [responsesCount, setResponsesCount] = useState(0);
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+
+    const t = (key: string) => getTranslation(language, key);
 
     const fetchSessionData = useCallback(async () => {
         try {
@@ -59,7 +39,7 @@ export default function TeacherSession() {
                 .single();
 
             if (sessionErr || !sessionData) {
-                toast.error("No se pudo cargar la sesión");
+                toast.error(t('common.error'));
                 return router.push("/teacher/dashboard");
             }
 
@@ -70,7 +50,7 @@ export default function TeacherSession() {
                 .order("sort_order", { ascending: true });
 
             if (questionsErr) {
-                toast.error("Error al cargar las preguntas");
+                toast.error(t('common.error'));
             }
 
             const { data: participantsData } = await supabase
@@ -78,19 +58,41 @@ export default function TeacherSession() {
                 .select("*")
                 .eq("session_id", id);
 
-            setSession(sessionData as Session);
-            setQuiz(sessionData.quiz as Quiz);
-            setQuestions(questionsData as Question[] || []);
-            setParticipants(participantsData || []);
-            console.log("Sesión cargada:", sessionData.id);
-            console.log("Preguntas cargadas:", (questionsData || []).length);
+            if (sessionData) {
+                try {
+                    const s = SessionSchema.parse(sessionData);
+                    setSession(s as any);
+                    setQuiz(QuizSchema.parse(sessionData.quiz));
+                } catch (e) {
+                    console.error("Error validando sesión:", e);
+                }
+            }
+
+            const validQuestions = (questionsData || []).map(q => {
+                try {
+                    return QuestionSchema.parse(q);
+                } catch (e) {
+                    return null;
+                }
+            }).filter((q): q is Question => q !== null);
+
+            const validParticipants = (participantsData || []).map(p => {
+                try {
+                    return ParticipantSchema.parse(p);
+                } catch (e) {
+                    return null;
+                }
+            }).filter((p): p is Participant => p !== null);
+
+            setQuestions(validQuestions);
+            setParticipants(validParticipants);
         } catch (err) {
             console.error(err);
-            toast.error("Error inesperado en la conexión");
+            toast.error(t('common.error'));
         } finally {
             setLoading(false);
         }
-    }, [id, router]);
+    }, [id, router, language]);
 
     useEffect(() => {
         fetchSessionData();
@@ -101,20 +103,22 @@ export default function TeacherSession() {
                 'postgres_changes',
                 { event: 'INSERT', schema: 'public', table: 'participants' },
                 (payload) => {
-                    // Filter in JS to avoid replica identity issues with 'session_id' filter
                     if (payload.new.session_id === id) {
-                        console.log("Nuevo participante detectado via Realtime:", payload.new);
-                        setParticipants((prev) => {
-                            const exists = prev.some(p => p.id === payload.new.id);
-                            if (exists) return prev;
-                            return [...prev, payload.new as Participant];
-                        });
+                        try {
+                            const p = ParticipantSchema.parse(payload.new);
+                            setParticipants((prev) => {
+                                const exists = prev.some(p_prev => p_prev.id === p.id);
+                                if (exists) return prev;
+                                return [...prev, p];
+                            });
+                        } catch (e) {
+                            console.error("Error validando nuevo participante:", e);
+                        }
                     }
                 }
             )
             .subscribe((status) => {
-                console.log("Estado suscripción participantes:", status);
-                if (status === 'CHANNEL_ERROR') toast.error("Error de conexión Realtime");
+                if (status === 'CHANNEL_ERROR') toast.error(t('common.error'));
             });
 
         const answersChannel = supabase
@@ -139,7 +143,7 @@ export default function TeacherSession() {
     const startQuiz = async () => {
         if (!session) return;
         if (questions.length === 0) {
-            toast.error("Este quiz no tiene preguntas");
+            toast.error(t('common.error'));
             return;
         }
 
@@ -159,10 +163,8 @@ export default function TeacherSession() {
             setSession({ ...session, status: "active", current_question_id: firstQuestion.id });
             setCurrentQuestionIndex(0);
             setResponsesCount(0);
-            toast.success("¡Que comience el juego!");
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : "Error desconocido";
-            toast.error("Error al iniciar el quiz: " + errorMessage);
+            toast.error(t('common.error'));
         }
     };
 
@@ -187,7 +189,9 @@ export default function TeacherSession() {
         }
     };
 
-    if (loading || !session || !quiz) return (
+    if (loading) return <TeacherSessionSkeleton />;
+
+    if (!session || !quiz) return (
         <div className="min-h-screen flex items-center justify-center bg-slate-950">
             <Loader2 className="w-10 h-10 animate-spin text-blue-500" />
         </div>
@@ -197,27 +201,29 @@ export default function TeacherSession() {
 
     return (
         <div className="min-h-screen bg-slate-950 text-white flex flex-col selection:bg-blue-500/30">
-            {/* Top Bar - More sophisticated */}
+            {/* Top Bar */}
             <div className="p-6 md:p-8 flex justify-between items-center bg-slate-900/50 backdrop-blur-2xl border-b border-white/5 sticky top-0 z-50">
                 <div className="flex items-center gap-6">
-                    <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-blue-500/10 rounded-full border border-blue-500/20">
-                        <Sparkles className="w-4 h-4 text-blue-400" />
+                    <div className="hidden lg:flex items-center gap-2 px-4 py-2 bg-blue-500/10 rounded-full border border-blue-500/20">
                         <span className="text-xs font-black text-blue-400 uppercase tracking-widest">{quiz.title}</span>
                     </div>
                     <div className="flex items-center gap-3">
                         <Users className="w-5 h-5 text-slate-500" />
-                        <span className="text-lg font-black text-white">{participants.length} <span className="text-slate-500 font-bold ml-1">ALUMNOS</span></span>
+                        <span className="text-lg font-black text-white">{participants.length} <span className="text-slate-500 font-bold ml-1">{t('session.participants')}</span></span>
                         <button
                             onClick={fetchSessionData}
                             className="p-2 hover:bg-slate-800 rounded-lg text-slate-500 hover:text-white transition-all"
-                            title="Refrescar participantes"
+                            title={t('session.refresh_participants')}
                         >
                             <Loader2 className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                         </button>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 md:gap-4">
+                    <div className="hidden sm:block">
+                        <LanguageSelector />
+                    </div>
                     <div className="flex items-center gap-2 bg-slate-800/50 px-5 py-2.5 rounded-2xl border border-white/5">
                         <span className="text-xs font-black text-slate-400 uppercase tracking-widest">PIN</span>
                         <span className="text-xl font-black text-blue-400 font-mono tracking-widest">{session.pin}</span>
@@ -226,7 +232,7 @@ export default function TeacherSession() {
                     <button
                         onClick={() => setIsShareModalOpen(true)}
                         className="p-3 bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white rounded-2xl transition-all border border-blue-500/20 active:scale-95 group"
-                        title="Compartir sesión"
+                        title={t('session.share_session')}
                     >
                         <QrCode className="w-5 h-5 group-hover:scale-110 transition-transform" />
                     </button>
@@ -234,7 +240,7 @@ export default function TeacherSession() {
                     <button
                         onClick={() => router.push("/teacher/dashboard")}
                         className="p-3 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white rounded-2xl transition-all border border-red-500/20 active:scale-95 group"
-                        title="Abandonar sesión"
+                        title={t('session.leave_session')}
                     >
                         <LogOut className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
                     </button>
@@ -247,17 +253,17 @@ export default function TeacherSession() {
                         <div className="space-y-10 text-center md:text-left">
                             <div className="space-y-4">
                                 <h1 className="text-6xl md:text-8xl font-black tracking-tighter leading-none">
-                                    ¡Es hora de <br />
-                                    <span className="text-blue-500">jugar!</span>
+                                    {t('session.it_is_time')} <br />
+                                    <span className="text-blue-500">{t('session.to_play')}</span>
                                 </h1>
                                 <p className="text-xl text-slate-400 font-medium max-w-md">
-                                    Comparte el código con tus alumnos o escanea el QR para entrar al instante.
+                                    {t('session.share_desc')}
                                 </p>
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4">
                                 <div className="bg-slate-900/50 p-6 rounded-[2rem] border border-white/5 text-center">
-                                    <p className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Código de Acceso</p>
+                                    <p className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-4">{t('session.access_code')}</p>
                                     <h2 className="text-5xl font-black text-white tracking-[0.2em] font-mono">{session.pin}</h2>
                                 </div>
                                 <button
@@ -266,7 +272,7 @@ export default function TeacherSession() {
                                     className="btn-premium !bg-blue-600 !hover:bg-blue-700 !shadow-blue-900/40 text-2xl flex items-center justify-center gap-3 disabled:opacity-30 disabled:grayscale transition-all"
                                 >
                                     <Play className="w-8 h-8 fill-white" />
-                                    EMPEZAR
+                                    {t('session.start_action')}
                                 </button>
                             </div>
                         </div>
@@ -275,7 +281,7 @@ export default function TeacherSession() {
                             <div className="p-8 bg-white rounded-[3rem] shadow-2xl rotate-2 hover:rotate-0 transition-transform duration-500 group">
                                 <QRDisplay value={joinUrl} />
                                 <div className="mt-8 text-center text-slate-900">
-                                    <p className="font-black text-sm uppercase tracking-widest opacity-30 group-hover:opacity-100 transition-opacity">Únete ahora</p>
+                                    <p className="font-black text-sm uppercase tracking-widest opacity-30 group-hover:opacity-100 transition-opacity">{t('session.join_now')}</p>
                                 </div>
                             </div>
                         </div>
@@ -284,11 +290,10 @@ export default function TeacherSession() {
 
                 {session.status === "active" && currentQuestionIndex !== -1 && (
                     <div className="w-full grid lg:grid-cols-3 gap-8 animate-in slide-in-from-bottom-12 duration-700">
-                        {/* Question Content */}
                         <div className="lg:col-span-2 space-y-10">
                             <div className="flex items-center gap-4">
                                 <span className="px-4 py-2 bg-blue-500/10 rounded-xl text-blue-400 font-black text-xs uppercase tracking-[0.2em]">
-                                    Pregunta {currentQuestionIndex + 1} / {questions.length}
+                                    {t('session.question_of')} {currentQuestionIndex + 1} / {questions.length}
                                 </span>
                                 <div className="h-1 flex-1 bg-slate-900 rounded-full overflow-hidden">
                                     <div className="h-full bg-blue-600 transition-all duration-1000" style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }} />
@@ -318,7 +323,7 @@ export default function TeacherSession() {
                                         <div
                                             key={i}
                                             className={`p-6 md:p-8 rounded-[2rem] border-b-[6px] transition-all flex items-center gap-5 ${questions[currentQuestionIndex].question_type === "true_false"
-                                                ? (opt === "Verdadero" ? "bg-blue-600/90 border-blue-800" : "bg-red-600/90 border-red-800")
+                                                ? (opt === "Verdadero" || opt === "True" ? "bg-blue-600/90 border-blue-800" : "bg-red-600/90 border-red-800")
                                                 : (i === 0 ? "bg-red-600/90 border-red-800" :
                                                     i === 1 ? "bg-blue-600/90 border-blue-800" :
                                                         i === 2 ? "bg-amber-500 border-amber-700" :
@@ -334,8 +339,8 @@ export default function TeacherSession() {
                                 </div>
                             ) : questions[currentQuestionIndex].question_type === "fill_in_the_blank" ? (
                                 <div className="bg-slate-900/50 p-10 rounded-[3rem] border-4 border-emerald-500/30 flex flex-col items-center gap-4 animate-in zoom-in">
-                                    <span className="text-xs font-black text-emerald-400 uppercase tracking-[0.4em]">RESPUESTA ESPERADA</span>
-                                    <h3 className="text-4xl md:text-6xl font-black text-white tracking-tight">{questions[currentQuestionIndex].options.length > 0 ? questions[currentQuestionIndex].options[0] : "(Sin respuesta definida)"}</h3>
+                                    <span className="text-xs font-black text-emerald-400 uppercase tracking-[0.4em]">{t('session.expected_answer')}</span>
+                                    <h3 className="text-4xl md:text-6xl font-black text-white tracking-tight">{questions[currentQuestionIndex].options.length > 0 ? questions[currentQuestionIndex].options[0] : "---"}</h3>
                                 </div>
                             ) : (
                                 <div className="grid sm:grid-cols-2 gap-4">
@@ -353,7 +358,6 @@ export default function TeacherSession() {
                             )}
                         </div>
 
-                        {/* Sidebar Stats */}
                         <div className="space-y-6">
                             <div className="bg-slate-900/80 backdrop-blur-xl p-10 rounded-[2.5rem] border border-white/5 flex flex-col items-center text-center space-y-4 shadow-2xl">
                                 <div className="w-20 h-20 bg-blue-500/10 rounded-full flex items-center justify-center text-blue-500 ring-8 ring-blue-500/5">
@@ -361,7 +365,7 @@ export default function TeacherSession() {
                                 </div>
                                 <div>
                                     <p className="text-6xl font-black text-white tabular-nums tracking-tighter">{responsesCount}</p>
-                                    <p className="text-sm font-black text-slate-500 uppercase tracking-widest mt-1">Respuestas</p>
+                                    <p className="text-sm font-black text-slate-500 uppercase tracking-widest mt-1">{t('session.responses')}</p>
                                 </div>
                                 <div className="pt-4 flex gap-1">
                                     {[...Array(5)].map((_, i) => (
@@ -374,7 +378,7 @@ export default function TeacherSession() {
                                 onClick={nextQuestion}
                                 className="w-full btn-premium !bg-white !text-slate-950 !shadow-white/5 flex items-center justify-center gap-3 group"
                             >
-                                <span className="text-xl">SIGUIENTE</span>
+                                <span className="text-xl font-black">{t('session.next_action')}</span>
                                 <ChevronRight className="w-7 h-7 group-hover:translate-x-1 transition-transform" />
                             </button>
                         </div>
@@ -387,9 +391,9 @@ export default function TeacherSession() {
                             <div className="absolute inset-0 bg-blue-500/20 blur-[100px] rounded-full -z-10" />
                             <div className="bg-slate-900/50 backdrop-blur-3xl p-16 rounded-[4rem] border border-white/5 shadow-[0_32px_128px_-16px_rgba(0,0,0,0.5)]">
                                 <Trophy className="w-32 h-32 text-amber-400 mx-auto mb-10 animate-float" />
-                                <h1 className="text-6xl font-black mb-6 tracking-tight leading-none">¡Misión <br /> <span className="text-blue-500">Cumplida!</span></h1>
+                                <h1 className="text-6xl font-black mb-6 tracking-tight leading-none">{t('session.mission_accomplished')} <br /> <span className="text-blue-500">{t('session.accomplished')}</span></h1>
                                 <p className="text-xl text-slate-400 font-medium max-w-sm mx-auto leading-relaxed mb-10">
-                                    Has completado el quiz satisfactoriamente. Todos los datos han sido guardados en el historial.
+                                    {t('session.finished_desc')}
                                 </p>
                                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                                     <button
@@ -397,13 +401,13 @@ export default function TeacherSession() {
                                         className="btn-premium !bg-blue-600 !hover:bg-blue-700 flex items-center justify-center gap-2"
                                     >
                                         <BarChart3 className="w-5 h-5" />
-                                        VER RESULTADOS
+                                        {t('session.view_results')}
                                     </button>
                                     <button
                                         onClick={() => router.push("/teacher/dashboard")}
                                         className="btn-premium !bg-slate-800 flex items-center justify-center gap-2"
                                     >
-                                        VOLVER
+                                        {t('session.go_back')}
                                     </button>
                                 </div>
                             </div>
@@ -412,10 +416,9 @@ export default function TeacherSession() {
                 )}
             </main>
 
-            {/* Bottom Participants ticker - More discrete */}
             <div className="p-5 bg-black/40 backdrop-blur-lg flex gap-4 overflow-hidden border-t border-white/5 whitespace-nowrap">
                 {participants.length === 0 ? (
-                    <p className="text-slate-700 font-bold uppercase tracking-[0.3em] font-mono text-xs mx-auto animate-pulse">Esperando participantes...</p>
+                    <p className="text-slate-700 font-bold uppercase tracking-[0.3em] font-mono text-xs mx-auto animate-pulse">{t('session.waiting_participants')}</p>
                 ) : (
                     <div className="flex gap-6 animate-marquee">
                         {participants.map((p) => (

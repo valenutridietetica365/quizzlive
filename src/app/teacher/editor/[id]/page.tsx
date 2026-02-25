@@ -6,27 +6,31 @@ import { toast } from "sonner";
 import { Plus, Trash2, Save, ArrowLeft, Loader2, Check, ToggleLeft, ListChecks, Image as ImageIcon, Share2, Type } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
-
-type Question = {
-    id?: string;
-    question_text: string;
-    question_type: "multiple_choice" | "true_false" | "fill_in_the_blank" | "matching";
-    options: string[];
-    correct_answer: string;
-    image_url?: string;
-    time_limit: number;
-};
+import { Question, QuestionSchema } from "@/lib/schemas";
+import { useQuizStore } from "@/lib/store";
+import { getTranslation } from "@/lib/i18n";
 
 export default function QuizEditor() {
     const { id } = useParams();
     const isNew = id === "new";
+    const { language } = useQuizStore();
     const [title, setTitle] = useState("");
     const [questions, setQuestions] = useState<Question[]>([
-        { question_text: "", question_type: "multiple_choice", options: ["", "", "", ""], correct_answer: "", time_limit: 20 }
+        { question_text: "", question_type: "multiple_choice", options: ["", "", "", ""], correct_answer: "", time_limit: 20, points: 1000 }
     ]);
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(!isNew);
     const router = useRouter();
+
+    const t = (key: string, params?: Record<string, any>) => {
+        let text = getTranslation(language, key);
+        if (params) {
+            Object.entries(params).forEach(([k, v]) => {
+                text = text.replace(`{${k}}`, v.toString());
+            });
+        }
+        return text;
+    };
 
     const fetchQuizData = useCallback(async () => {
         if (isNew) return;
@@ -43,16 +47,16 @@ export default function QuizEditor() {
         }
 
         setTitle(quiz.title);
-        const sortedQuestions = (quiz.questions as unknown as (Question & { sort_order: number })[]).sort((a, b) => a.sort_order - b.sort_order);
-        setQuestions(sortedQuestions.map(q => ({
-            id: q.id,
-            question_text: q.question_text,
-            question_type: q.question_type as Question["question_type"],
-            options: q.options,
-            correct_answer: q.correct_answer,
-            image_url: q.image_url || "",
-            time_limit: q.time_limit
-        })));
+        const validQuestions = quiz.questions.map((q: any) => {
+            try {
+                return QuestionSchema.parse(q);
+            } catch (e) {
+                console.warn("Pregunta inválida filtrada:", q, e);
+                return null;
+            }
+        }).filter((q): q is Question => q !== null);
+
+        setQuestions(validQuestions);
         setFetching(false);
     }, [id, isNew, router]);
 
@@ -67,7 +71,8 @@ export default function QuizEditor() {
             options: ["", "", "", ""],
             correct_answer: "",
             image_url: "",
-            time_limit: 20
+            time_limit: 20,
+            points: 1000
         }]);
     };
 
@@ -76,13 +81,13 @@ export default function QuizEditor() {
 
         if (field === "question_type") {
             if (value === "true_false") {
-                newQuestions[index].options = ["Verdadero", "Falso"];
+                newQuestions[index].options = [t('editor.true_text'), t('editor.false_text')];
                 newQuestions[index].correct_answer = "";
             } else if (value === "fill_in_the_blank") {
                 newQuestions[index].options = [];
                 newQuestions[index].correct_answer = "";
             } else if (value === "matching") {
-                newQuestions[index].options = ["Término 1:Pareja 1", "Término 2:Pareja 2"];
+                newQuestions[index].options = [`${t('editor.term_placeholder')} 1:${t('editor.match_placeholder')} 1`];
                 newQuestions[index].correct_answer = "MATCHING_MODE";
             } else {
                 newQuestions[index].options = ["", "", "", ""];
@@ -108,7 +113,7 @@ export default function QuizEditor() {
 
     const handleSave = async () => {
         if (!title.trim()) {
-            toast.error("El cuestionario necesita un título");
+            toast.error(t('editor.error_title'));
             return;
         }
 
@@ -126,11 +131,11 @@ export default function QuizEditor() {
         if (invalidQuestionIndex !== -1) {
             const q = questions[invalidQuestionIndex];
             if (!q.question_text.trim()) {
-                toast.error(`La pregunta ${invalidQuestionIndex + 1} no tiene texto`);
+                toast.error(t('editor.error_no_text', { num: invalidQuestionIndex + 1 }));
             } else if (!q.correct_answer) {
-                toast.error(`La pregunta ${invalidQuestionIndex + 1} no tiene una respuesta correcta marcada`);
+                toast.error(t('editor.error_no_correct', { num: invalidQuestionIndex + 1 }));
             } else {
-                toast.error(`La respuesta correcta de la pregunta ${invalidQuestionIndex + 1} no coincide con ninguna opción`);
+                toast.error(t('editor.error_mismatch', { num: invalidQuestionIndex + 1 }));
             }
             return;
         }
@@ -138,7 +143,7 @@ export default function QuizEditor() {
         setLoading(true);
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
-            toast.error("Debes iniciar sesión para guardar");
+            toast.error(t('editor.login_required'));
             setLoading(false);
             return;
         }
@@ -153,7 +158,7 @@ export default function QuizEditor() {
                     .select()
                     .single();
 
-                if (quizError || !newQuiz) throw new Error("Error al crear quiz");
+                if (quizError || !newQuiz) throw new Error(t('common.error'));
                 quizId = newQuiz.id;
             } else {
                 const { error: quizError } = await supabase
@@ -161,10 +166,10 @@ export default function QuizEditor() {
                     .update({ title })
                     .eq("id", id);
 
-                if (quizError) throw new Error("Error al actualizar quiz: " + quizError.message);
+                if (quizError) throw new Error(t('common.error'));
 
                 const { error: deleteError } = await supabase.from("questions").delete().eq("quiz_id", id);
-                if (deleteError) throw new Error("No se pudieron limpiar las preguntas anteriores");
+                if (deleteError) throw new Error(t('common.error'));
             }
 
             const questionsToInsert = questions.map((q, index) => ({
@@ -179,13 +184,13 @@ export default function QuizEditor() {
             }));
 
             const { error: questionsError } = await supabase.from("questions").insert(questionsToInsert);
-            if (questionsError) throw new Error("Error al guardar preguntas: " + questionsError.message);
+            if (questionsError) throw new Error(t('common.error'));
 
-            toast.success("¡Quiz guardado con éxito!");
+            toast.success(t('editor.save_success'));
             router.push("/teacher/dashboard");
         } catch (error) {
             const err = error as Error;
-            toast.error(err.message || "Error desconocido");
+            toast.error(err.message || t('common.error'));
         } finally {
             setLoading(false);
         }
@@ -198,7 +203,7 @@ export default function QuizEditor() {
     );
 
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col selection:bg-blue-100">
+        <div className="min-h-screen bg-slate-50 flex flex-col selection:bg-blue-100 italic-none">
             <nav className="bg-white/80 backdrop-blur-2xl border-b border-slate-100 px-6 py-4 flex justify-between items-center sticky top-0 z-50">
                 <div className="flex items-center gap-6">
                     <button onClick={() => router.back()} className="p-3 hover:bg-slate-50 rounded-2xl text-slate-400 hover:text-slate-900 transition-all active:scale-90">
@@ -206,10 +211,10 @@ export default function QuizEditor() {
                     </button>
                     <div className="h-10 w-px bg-slate-100 hidden md:block" />
                     <div className="flex flex-col">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Editor de Cuestionario</span>
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('editor.title')}</span>
                         <input
                             type="text"
-                            placeholder="Título del Quiz..."
+                            placeholder={t('editor.quiz_title_placeholder')}
                             className="text-2xl font-black text-slate-900 border-none focus:ring-0 outline-none w-64 md:w-[30rem] bg-transparent placeholder:text-slate-200"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
@@ -219,7 +224,7 @@ export default function QuizEditor() {
 
                 <button onClick={handleSave} disabled={loading} className={`btn-premium !py-3.5 !px-8 flex items-center gap-2 transition-all ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}>
                     {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                    <span className="hidden sm:inline">{isNew ? "PUBLICAR QUIZ" : "GUARDAR CAMBIOS"}</span>
+                    <span className="hidden sm:inline">{isNew ? t('editor.publish_button') : t('editor.save_button')}</span>
                 </button>
             </nav>
 
@@ -236,25 +241,25 @@ export default function QuizEditor() {
                                         onClick={() => updateQuestion(qIndex, "question_type", "multiple_choice")}
                                         className={`px-4 py-2 rounded-xl text-[10px] font-black transition-all flex items-center gap-2 whitespace-nowrap ${q.question_type === "multiple_choice" ? "bg-white shadow-md text-blue-600" : "text-slate-400"}`}
                                     >
-                                        <ListChecks className="w-4 h-4" /> OPCIONES
+                                        <ListChecks className="w-4 h-4" /> {t('editor.options_tab')}
                                     </button>
                                     <button
                                         onClick={() => updateQuestion(qIndex, "question_type", "true_false")}
                                         className={`px-4 py-2 rounded-xl text-[10px] font-black transition-all flex items-center gap-2 whitespace-nowrap ${q.question_type === "true_false" ? "bg-white shadow-md text-orange-600" : "text-slate-400"}`}
                                     >
-                                        <ToggleLeft className="w-4 h-4" /> V/F
+                                        <ToggleLeft className="w-4 h-4" /> {t('editor.tf_tab')}
                                     </button>
                                     <button
                                         onClick={() => updateQuestion(qIndex, "question_type", "fill_in_the_blank")}
                                         className={`px-4 py-2 rounded-xl text-[10px] font-black transition-all flex items-center gap-2 whitespace-nowrap ${q.question_type === "fill_in_the_blank" ? "bg-white shadow-md text-emerald-600" : "text-slate-400"}`}
                                     >
-                                        <Type className="w-4 h-4" /> ORACIÓN
+                                        <Type className="w-4 h-4" /> {t('editor.sentence_tab')}
                                     </button>
                                     <button
                                         onClick={() => updateQuestion(qIndex, "question_type", "matching")}
                                         className={`px-4 py-2 rounded-xl text-[10px] font-black transition-all flex items-center gap-2 whitespace-nowrap ${q.question_type === "matching" ? "bg-white shadow-md text-purple-600" : "text-slate-400"}`}
                                     >
-                                        <Share2 className="w-4 h-4" /> PAREAR
+                                        <Share2 className="w-4 h-4" /> {t('editor.matching_tab')}
                                     </button>
                                 </div>
                             </div>
@@ -262,9 +267,9 @@ export default function QuizEditor() {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-300 uppercase tracking-widest ml-1">Pregunta</label>
+                            <label className="text-[10px] font-black text-slate-300 uppercase tracking-widest ml-1">{t('editor.question_label')}</label>
                             <textarea
-                                placeholder="Escribe aquí..."
+                                placeholder={t('editor.question_placeholder')}
                                 className="w-full text-2xl md:text-4xl font-black text-slate-900 border-none focus:ring-0 outline-none resize-none placeholder:text-slate-100 leading-tight"
                                 rows={2}
                                 value={q.question_text}
@@ -277,7 +282,7 @@ export default function QuizEditor() {
                                 <ImageIcon className="w-6 h-6 text-slate-400" />
                                 <input
                                     type="text"
-                                    placeholder="URL Imagen (Opcional)"
+                                    placeholder={t('editor.image_url_placeholder')}
                                     className="flex-1 bg-transparent border-none focus:ring-0 outline-none font-bold text-slate-700"
                                     value={q.image_url}
                                     onChange={(e) => updateQuestion(qIndex, "image_url", e.target.value)}
@@ -298,7 +303,7 @@ export default function QuizEditor() {
                                         <div key={oIndex} className={`flex items-center p-2 rounded-2xl border-4 ${q.correct_answer === option && option !== "" ? "border-emerald-500 bg-emerald-50" : "border-slate-50 bg-white"}`}>
                                             <input
                                                 type="text"
-                                                placeholder={`Opción ${oIndex + 1}`}
+                                                placeholder={`${t('editor.options_tab').toLowerCase()} ${oIndex + 1}`}
                                                 className="flex-1 bg-transparent border-none focus:ring-0 font-bold"
                                                 value={option}
                                                 onChange={(e) => updateOption(qIndex, oIndex, e.target.value)}
@@ -313,7 +318,7 @@ export default function QuizEditor() {
 
                             {q.question_type === "true_false" && (
                                 <div className="grid grid-cols-2 gap-4">
-                                    {["Verdadero", "Falso"].map(val => (
+                                    {[t('editor.true_text'), t('editor.false_text')].map(val => (
                                         <button key={val} onClick={() => updateQuestion(qIndex, "correct_answer", val)} className={`py-8 rounded-3xl border-4 font-black text-xl ${q.correct_answer === val ? "border-emerald-500 bg-emerald-50 text-emerald-600" : "border-slate-50 text-slate-300"}`}>
                                             {val}
                                         </button>
@@ -325,7 +330,7 @@ export default function QuizEditor() {
                                 <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
                                     <input
                                         type="text"
-                                        placeholder="Respuesta correcta..."
+                                        placeholder={t('editor.correct_answer_placeholder')}
                                         className="w-full bg-white p-4 rounded-xl border-none font-black text-xl"
                                         value={q.correct_answer}
                                         onChange={(e) => updateQuestion(qIndex, "correct_answer", e.target.value)}
@@ -336,17 +341,17 @@ export default function QuizEditor() {
                             {q.question_type === "matching" && (
                                 <div className="space-y-3">
                                     {q.options.map((pair, pIndex) => {
-                                        const [term, match] = pair.split(":");
+                                        const [term, match] = pair.includes(":") ? pair.split(":") : [pair, ""];
                                         return (
                                             <div key={pIndex} className="flex gap-2">
                                                 <div className="flex-1 flex gap-2 bg-slate-50 p-3 rounded-xl border">
-                                                    <input type="text" placeholder="Término" className="flex-1 bg-transparent border-none text-sm font-bold" value={term} onChange={(e) => {
+                                                    <input type="text" placeholder={t('editor.term_placeholder')} className="flex-1 bg-transparent border-none text-sm font-bold" value={term} onChange={(e) => {
                                                         const opts = [...q.options];
                                                         opts[pIndex] = `${e.target.value}:${match}`;
                                                         updateQuestion(qIndex, "options", opts);
                                                     }} />
                                                     <div className="w-px bg-slate-200" />
-                                                    <input type="text" placeholder="Pareja" className="flex-1 bg-transparent border-none text-sm font-bold" value={match} onChange={(e) => {
+                                                    <input type="text" placeholder={t('editor.match_placeholder')} className="flex-1 bg-transparent border-none text-sm font-bold" value={match} onChange={(e) => {
                                                         const opts = [...q.options];
                                                         opts[pIndex] = `${term}:${e.target.value}`;
                                                         updateQuestion(qIndex, "options", opts);
@@ -356,14 +361,14 @@ export default function QuizEditor() {
                                             </div>
                                         );
                                     })}
-                                    <button onClick={() => updateQuestion(qIndex, "options", [...q.options, ":"])} className="w-full py-2 border-2 border-dashed rounded-xl text-slate-300 text-xs font-black">+ AÑADIR PAR</button>
+                                    <button onClick={() => updateQuestion(qIndex, "options", [...q.options, ":"])} className="w-full py-2 border-2 border-dashed rounded-xl text-slate-300 text-xs font-black">+ {t('editor.add_pair')}</button>
                                 </div>
                             )}
                         </div>
 
                         <div className="flex items-center justify-between pt-6 border-t">
                             <div className="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-xl text-[10px] font-black uppercase text-slate-400">
-                                TIEMPO LÍMITE
+                                {t('editor.time_limit')}
                                 <select className="bg-transparent border-none p-0 text-slate-900" value={q.time_limit} onChange={(e) => updateQuestion(qIndex, "time_limit", parseInt(e.target.value))}>
                                     <option value={10}>10s</option>
                                     <option value={20}>20s</option>
@@ -371,19 +376,19 @@ export default function QuizEditor() {
                                     <option value={60}>60s</option>
                                 </select>
                             </div>
-                            <span className="text-[10px] font-black text-slate-200 uppercase tracking-widest flex items-center gap-1"><Check className="w-3 h-3" /> Auto guardado</span>
+                            <span className="text-[10px] font-black text-slate-200 uppercase tracking-widest flex items-center gap-1"><Check className="w-3 h-3" /> {t('editor.auto_save')}</span>
                         </div>
                     </div>
                 ))}
 
                 <button onClick={handleAddQuestion} className="w-full py-12 border-4 border-dashed rounded-[3rem] text-slate-200 hover:text-blue-600 hover:border-blue-100 transition-all flex flex-col items-center gap-4 font-black text-xl">
-                    <Plus className="w-8 h-8" /> AÑADIR PREGUNTA
+                    <Plus className="w-8 h-8" /> {t('editor.add_question')}
                 </button>
 
                 <div className="flex justify-center pt-8 pb-10">
                     <button onClick={handleSave} disabled={loading} className="btn-premium !py-5 !px-12 text-xl flex items-center gap-3 shadow-xl shadow-blue-100">
                         {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : <Check className="w-6 h-6" />}
-                        {isNew ? "PUBLICAR QUIZ" : "GUARDAR CAMBIOS"}
+                        {isNew ? t('editor.publish_button') : t('editor.save_button')}
                     </button>
                 </div>
             </main>

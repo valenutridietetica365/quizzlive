@@ -6,8 +6,12 @@ import { toast } from "sonner";
 import { Mail, Lock, AlertCircle, Eye, EyeOff, UserPlus, LogIn } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useQuizStore } from "@/lib/store";
+import { getTranslation } from "@/lib/i18n";
+import LanguageSelector from "@/components/LanguageSelector";
 
 export default function TeacherLogin() {
+    const { language } = useQuizStore();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
@@ -15,6 +19,8 @@ export default function TeacherLogin() {
     const [error, setError] = useState<string | null>(null);
     const [mode, setMode] = useState<"login" | "signup">("login");
     const router = useRouter();
+
+    const t = (key: string) => getTranslation(language, key);
 
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -38,18 +44,22 @@ export default function TeacherLogin() {
                     }
                 });
                 if (error) throw error;
-                toast.success("¡Registro exitoso! Ya puedes iniciar sesión.");
+                toast.success(t('auth.signup_success'));
                 setMode("login");
             }
         } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : "Ocurrió un error inesperado");
+            setError(err instanceof Error ? err.message : t('auth.unexpected_error'));
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 selection:bg-blue-100 italic-none">
+            <div className="absolute top-8 right-8">
+                <LanguageSelector />
+            </div>
+
             <div className="sm:mx-auto sm:w-full sm:max-w-md space-y-4">
                 <div className="flex justify-center">
                     <div className="w-16 h-16 bg-slate-900 rounded-3xl flex items-center justify-center text-white shadow-xl">
@@ -58,12 +68,12 @@ export default function TeacherLogin() {
                 </div>
                 <div>
                     <h2 className="text-center text-3xl font-black text-slate-900 tracking-tight">
-                        {mode === "login" ? "Acceso Profesores" : "Crear Cuenta"}
+                        {mode === "login" ? t('auth.login_title') : t('auth.signup_title')}
                     </h2>
                     <p className="mt-2 text-center text-sm text-slate-500 font-medium">
                         {mode === "login"
-                            ? "Gestiona tus quizzes de forma segura."
-                            : "Únete a la plataforma para crear tus propios quizzes."}
+                            ? t('auth.login_subtitle')
+                            : t('auth.signup_subtitle')}
                     </p>
                 </div>
             </div>
@@ -73,7 +83,7 @@ export default function TeacherLogin() {
                     <form className="space-y-6" onSubmit={handleAuth}>
                         <div>
                             <label htmlFor="email" className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
-                                Correo Electrónico
+                                {t('auth.email_label')}
                             </label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -86,14 +96,14 @@ export default function TeacherLogin() {
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     className="block w-full pl-12 pr-4 py-4 bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 rounded-2xl text-slate-900 font-bold placeholder:text-slate-300 transition-all outline-none"
-                                    placeholder="ejemplo@correo.com"
+                                    placeholder={t('auth.email_placeholder')}
                                 />
                             </div>
                         </div>
 
                         <div>
                             <label htmlFor="password" className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
-                                Contraseña
+                                {t('auth.password_label')}
                             </label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -131,7 +141,7 @@ export default function TeacherLogin() {
                                 disabled={loading}
                                 className="group w-full flex justify-center py-4 px-4 border border-transparent rounded-2xl shadow-lg text-lg font-black text-white bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 transition-all active:scale-[0.98] disabled:opacity-50"
                             >
-                                {loading ? 'Procesando...' : (mode === "login" ? 'ENTRAR' : 'CREAR CUENTA')}
+                                {loading ? t('auth.processing') : (mode === "login" ? t('auth.login_button') : t('auth.signup_button'))}
                             </button>
                         </div>
                     </form>
@@ -142,11 +152,11 @@ export default function TeacherLogin() {
                             className="text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors"
                         >
                             {mode === "login"
-                                ? "¿No tienes cuenta? Regístrate aquí"
-                                : "¿Ya tienes cuenta? Inicia sesión"}
+                                ? t('auth.no_account')
+                                : t('auth.has_account')}
                         </button>
                         <Link href="/" className="text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors">
-                            Volver al inicio
+                            {t('auth.back_to_home')}
                         </Link>
                     </div>
                 </div>

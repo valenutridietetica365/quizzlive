@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { ArrowLeft, Trophy, Users, BarChart3, Loader2, Calendar, Target } from "lucide-react";
+import { useQuizStore } from "@/lib/store";
+import { getTranslation } from "@/lib/i18n";
+import LanguageSelector from "@/components/LanguageSelector";
 
 interface ReportData {
     id: string;
@@ -22,8 +25,11 @@ interface ReportData {
 export default function SessionReport() {
     const { id } = useParams();
     const router = useRouter();
+    const { language } = useQuizStore();
     const [report, setReport] = useState<ReportData | null>(null);
     const [loading, setLoading] = useState(true);
+
+    const t = (key: string) => getTranslation(language, key);
 
     useEffect(() => {
         const fetchReport = async () => {
@@ -50,7 +56,7 @@ export default function SessionReport() {
     }, [id]);
 
     if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
-    if (!report) return <div className="min-h-screen flex items-center justify-center">Informe no encontrado</div>;
+    if (!report) return <div className="min-h-screen flex items-center justify-center font-black text-slate-400 uppercase tracking-[0.2em]">{t('reports.not_found')}</div>;
 
     // Process scores for the leaderboard
     const results = report.participants
@@ -65,67 +71,80 @@ export default function SessionReport() {
         : 0;
 
     return (
-        <div className="min-h-screen bg-slate-50">
-            <nav className="bg-white border-b border-slate-200 px-6 py-4 flex items-center gap-4 sticky top-0 z-10">
-                <button onClick={() => router.back()} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 transition-all">
-                    <ArrowLeft className="w-5 h-5" />
-                </button>
-                <div className="flex flex-col">
-                    <h1 className="font-black text-slate-900 text-lg leading-tight">Informe de Sesión</h1>
-                    <span className="text-xs text-slate-400 font-bold uppercase tracking-widest">{report.quiz.title}</span>
+        <div className="min-h-screen bg-slate-50 selection:bg-blue-100 italic-none">
+            <nav className="bg-white/80 backdrop-blur-2xl border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
+                <div className="flex items-center gap-4">
+                    <button onClick={() => router.back()} className="p-3 hover:bg-slate-50 rounded-2xl text-slate-400 hover:text-slate-900 transition-all active:scale-95">
+                        <ArrowLeft className="w-6 h-6" />
+                    </button>
+                    <div className="h-8 w-px bg-slate-100 hidden sm:block" />
+                    <div className="flex flex-col">
+                        <h1 className="font-black text-slate-900 text-lg leading-tight uppercase tracking-tighter">{t('reports.title')}</h1>
+                        <span className="text-[10px] text-blue-500 font-black uppercase tracking-widest">{report.quiz.title}</span>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-4">
+                    <LanguageSelector />
                 </div>
             </nav>
 
-            <main className="max-w-4xl mx-auto p-6 space-y-8">
+            <main className="max-w-4xl mx-auto p-6 md:p-12 space-y-12">
                 {/* Stats Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                    <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 space-y-2">
-                        <Users className="w-8 h-8 text-blue-500" />
-                        <h3 className="text-3xl font-black text-slate-900">{results.length}</h3>
-                        <p className="text-slate-400 font-bold text-xs uppercase tracking-wider">Participantes</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
+                    <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-100 space-y-3 hover:shadow-xl hover:shadow-blue-200/20 transition-all group">
+                        <Users className="w-10 h-10 text-blue-500 group-hover:scale-110 transition-transform" />
+                        <div>
+                            <h3 className="text-4xl font-black text-slate-900">{results.length}</h3>
+                            <p className="text-slate-400 font-black text-[10px] uppercase tracking-[0.2em]">{t('common.students')}</p>
+                        </div>
                     </div>
-                    <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 space-y-2">
-                        <Target className="w-8 h-8 text-purple-500" />
-                        <h3 className="text-3xl font-black text-slate-900">{avgScore}</h3>
-                        <p className="text-slate-400 font-bold text-xs uppercase tracking-wider">Puntaje Promedio</p>
+                    <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-100 space-y-3 hover:shadow-xl hover:shadow-purple-200/20 transition-all group">
+                        <Target className="w-10 h-10 text-purple-500 group-hover:scale-110 transition-transform" />
+                        <div>
+                            <h3 className="text-4xl font-black text-slate-900">{avgScore.toLocaleString()}</h3>
+                            <p className="text-slate-400 font-black text-[10px] uppercase tracking-[0.2em]">{t('reports.avg_score')}</p>
+                        </div>
                     </div>
-                    <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 space-y-2">
-                        <Calendar className="w-8 h-8 text-orange-500" />
-                        <h3 className="text-xl font-black text-slate-900">
-                            {new Date(report.finished_at).toLocaleDateString()}
-                        </h3>
-                        <p className="text-slate-400 font-bold text-xs uppercase tracking-wider">Fecha Finalizado</p>
+                    <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-100 space-y-3 hover:shadow-xl hover:shadow-orange-200/20 transition-all group">
+                        <Calendar className="w-10 h-10 text-orange-500 group-hover:scale-110 transition-transform" />
+                        <div>
+                            <h3 className="text-2xl font-black text-slate-900">
+                                {new Date(report.finished_at).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US')}
+                            </h3>
+                            <p className="text-slate-400 font-black text-[10px] uppercase tracking-[0.2em]">{t('reports.finished_date')}</p>
+                        </div>
                     </div>
                 </div>
 
                 {/* Leaderboard */}
-                <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
-                    <div className="px-10 py-8 border-b border-slate-50 flex items-center justify-between">
-                        <h2 className="text-2xl font-black text-slate-900 flex items-center gap-3">
-                            <Trophy className="w-7 h-7 text-yellow-500" />
-                            Podio de Alumnos
+                <div className="bg-white rounded-[3.5rem] shadow-sm border border-slate-100 overflow-hidden relative">
+                    <div className="px-12 py-10 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
+                        <h2 className="text-3xl font-black text-slate-900 flex items-center gap-4">
+                            <Trophy className="w-10 h-10 text-yellow-500" />
+                            {t('reports.podium_title')}
                         </h2>
                     </div>
 
                     <div className="divide-y divide-slate-50">
                         {results.length === 0 ? (
-                            <div className="p-20 text-center text-slate-400 font-medium">Nadie participó en esta sesión</div>
+                            <div className="p-32 text-center text-slate-300 font-black uppercase tracking-widest text-sm">{t('reports.no_participants')}</div>
                         ) : (
                             results.map((res, i) => (
-                                <div key={i} className="px-10 py-6 flex items-center justify-between group hover:bg-slate-50 transition-colors">
-                                    <div className="flex items-center gap-6">
-                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg ${i === 0 ? "bg-yellow-100 text-yellow-600" :
-                                            i === 1 ? "bg-slate-100 text-slate-500" :
-                                                i === 2 ? "bg-orange-100 text-orange-600" :
-                                                    "bg-white text-slate-300"
-                                            }`}>
+                                <div key={i} className="px-12 py-8 flex items-center justify-between group hover:bg-slate-50 transition-all">
+                                    <div className="flex items-center gap-8">
+                                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-black text-2xl shadow-sm ${i === 0 ? "bg-yellow-100 text-yellow-600 rotate-2 group-hover:rotate-0" :
+                                            i === 1 ? "bg-slate-100 text-slate-500 -rotate-2 group-hover:rotate-0" :
+                                                i === 2 ? "bg-orange-100 text-orange-600 rotate-1 group-hover:rotate-0" :
+                                                    "bg-white border text-slate-200"
+                                            } transition-transform`}>
                                             {i + 1}
                                         </div>
-                                        <span className="text-xl font-bold text-slate-900">{res.nickname}</span>
+                                        <span className="text-2xl font-black text-slate-900 tracking-tight">{res.nickname}</span>
                                     </div>
                                     <div className="text-right">
-                                        <div className="text-2xl font-black text-slate-900">{res.score.toLocaleString()}</div>
-                                        <div className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Puntos Totales</div>
+                                        <div className="text-4xl font-black text-slate-900 tabular-nums">{res.score.toLocaleString()}</div>
+                                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t('reports.total_points')}</div>
                                     </div>
                                 </div>
                             ))
@@ -133,16 +152,26 @@ export default function SessionReport() {
                     </div>
                 </div>
 
-                <div className="text-center pt-8">
+                <div className="text-center pt-8 pb-12">
                     <button
                         onClick={() => window.print()}
-                        className="text-slate-400 font-bold hover:text-slate-600 transition-colors flex items-center gap-2 mx-auto"
+                        className="btn-premium !bg-slate-900 !text-white flex items-center gap-3 mx-auto !py-4 !px-8 text-sm"
                     >
-                        <BarChart3 className="w-4 h-4" />
-                        Imprimir Resultados
+                        <BarChart3 className="w-5 h-5 text-blue-400" />
+                        {t('reports.print_button')}
                     </button>
                 </div>
             </main>
+
+            <style jsx global>{`
+                @media print {
+                    nav, button, .btn-premium { display: none !important; }
+                    main { padding: 0 !important; max-width: 100% !important; }
+                    .bg-slate-50 { background: white !important; }
+                    .shadow-sm, .shadow-xl { shadow: none !important; border: 1px solid #eee !important; }
+                    .rounded-[3.5rem], .rounded-[2.5rem] { border-radius: 1rem !important; }
+                }
+            `}</style>
         </div>
     );
 }

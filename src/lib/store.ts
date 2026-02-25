@@ -1,4 +1,6 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
+import { Language } from './i18n'
 
 export type QuestionData = {
     id: string
@@ -35,7 +37,7 @@ interface QuizState {
     // Participants & Leaderboard
     participants: ParticipantData[]
     setParticipants: (participants: ParticipantData[]) => void
-    addParticipant: (participant: ParticipantData) => void
+    addParticipant: (participant) => void
     updateParticipantScore: (participantId: string, score: number) => void
 
     // User state (for Student)
@@ -43,44 +45,61 @@ interface QuizState {
     nickname: string | null
     setParticipantInfo: (id: string, nickname: string) => void
 
+    // i18n
+    language: Language
+    setLanguage: (lang: Language) => void
+
     // Reset
     resetStore: () => void
 }
 
-export const useQuizStore = create<QuizState>((set) => ({
-    sessionId: null,
-    sessionPin: null,
-    sessionStatus: 'waiting',
-    setSession: (id, pin, status) => set({ sessionId: id, sessionPin: pin, sessionStatus: status }),
-    setSessionStatus: (status) => set({ sessionStatus: status }),
+export const useQuizStore = create<QuizState>()(
+    persist(
+        (set, get) => ({
+            sessionId: null,
+            sessionPin: null,
+            sessionStatus: 'waiting',
+            setSession: (id, pin, status) => set({ sessionId: id, sessionPin: pin, sessionStatus: status }),
+            setSessionStatus: (status) => set({ sessionStatus: status }),
 
-    currentQuestion: null,
-    setCurrentQuestion: (question) => set({ currentQuestion: question }),
+            currentQuestion: null,
+            setCurrentQuestion: (question) => set({ currentQuestion: question }),
 
-    participants: [],
-    setParticipants: (participants) => set({ participants }),
-    addParticipant: (participant) => set((state) => {
-        // Prevent duplicates in state
-        if (state.participants.some(p => p.id === participant.id)) return state
-        return { participants: [...state.participants, participant] }
-    }),
-    updateParticipantScore: (participantId, score) => set((state) => ({
-        participants: state.participants.map(p =>
-            p.id === participantId ? { ...p, score } : p
-        ).sort((a, b) => b.score - a.score) // Keep sorted
-    })),
+            participants: [],
+            setParticipants: (participants) => set({ participants }),
+            addParticipant: (participant) => set((state) => {
+                // Prevent duplicates in state
+                if (state.participants.some(p => p.id === participant.id)) return state
+                return { participants: [...state.participants, participant] }
+            }),
+            updateParticipantScore: (participantId, score) => set((state) => ({
+                participants: state.participants.map(p =>
+                    p.id === participantId ? { ...p, score } : p
+                ).sort((a, b) => b.score - a.score) // Keep sorted
+            })),
 
-    participantId: null,
-    nickname: null,
-    setParticipantInfo: (id, nickname) => set({ participantId: id, nickname }),
+            participantId: null,
+            nickname: null,
+            setParticipantInfo: (id, nickname) => set({ participantId: id, nickname }),
 
-    resetStore: () => set({
-        sessionId: null,
-        sessionPin: null,
-        sessionStatus: 'waiting',
-        currentQuestion: null,
-        participants: [],
-        participantId: null,
-        nickname: null
-    })
-}))
+            language: 'es',
+            setLanguage: (lang) => set({ language: lang }),
+
+            resetStore: () => {
+                const current = get();
+                set({
+                    sessionId: null,
+                    sessionPin: null,
+                    sessionStatus: 'waiting',
+                    currentQuestion: null,
+                    participants: [],
+                    participantId: current.participantId,
+                    nickname: current.nickname
+                })
+            }
+        }),
+        {
+            name: 'quizzlive-storage-v2', // Incrementing version to avoid conflicts
+        }
+    )
+)
