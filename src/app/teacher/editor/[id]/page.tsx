@@ -90,7 +90,14 @@ export default function QuizEditor() {
 
     const updateOption = (qIndex: number, oIndex: number, value: string) => {
         const newQuestions = [...questions];
+        const oldOptionValue = newQuestions[qIndex].options[oIndex];
         newQuestions[qIndex].options[oIndex] = value;
+
+        // Sync correct_answer if the changed option was the correct one
+        if (newQuestions[qIndex].correct_answer === oldOptionValue) {
+            newQuestions[qIndex].correct_answer = value;
+        }
+
         setQuestions(newQuestions);
     };
 
@@ -101,9 +108,22 @@ export default function QuizEditor() {
             return;
         }
 
-        const invalidQuestionIndex = questions.findIndex(q => !q.question_text.trim() || !q.correct_answer);
+        const invalidQuestionIndex = questions.findIndex(q => {
+            const hasText = q.question_text.trim().length > 0;
+            const hasCorrectAnswer = q.correct_answer.trim().length > 0;
+            const isCorrectInOptions = q.options.includes(q.correct_answer);
+            return !hasText || !hasCorrectAnswer || !isCorrectInOptions;
+        });
+
         if (invalidQuestionIndex !== -1) {
-            toast.error(`La pregunta ${invalidQuestionIndex + 1} está incompleta (falta texto o marcar respuesta correcta)`);
+            const q = questions[invalidQuestionIndex];
+            if (!q.question_text.trim()) {
+                toast.error(`La pregunta ${invalidQuestionIndex + 1} no tiene texto`);
+            } else if (!q.correct_answer) {
+                toast.error(`La pregunta ${invalidQuestionIndex + 1} no tiene una respuesta correcta marcada`);
+            } else {
+                toast.error(`La respuesta correcta de la pregunta ${invalidQuestionIndex + 1} no coincide con ninguna opción`);
+            }
             return;
         }
 
@@ -133,8 +153,13 @@ export default function QuizEditor() {
                     .update({ title })
                     .eq("id", id);
 
-                if (quizError) throw new Error("Error al actualizar quiz");
-                await supabase.from("questions").delete().eq("quiz_id", id);
+                if (quizError) throw new Error("Error al actualizar quiz: " + quizError.message);
+
+                const { error: deleteError } = await supabase.from("questions").delete().eq("quiz_id", id);
+                if (deleteError) {
+                    console.error("Error deleting old questions:", deleteError);
+                    throw new Error("No se pudieron limpiar las preguntas anteriores");
+                }
             }
 
             const questionsToInsert = questions.map((q, index) => ({
@@ -152,7 +177,10 @@ export default function QuizEditor() {
                 .from("questions")
                 .insert(questionsToInsert);
 
-            if (questionsError) throw new Error("Error al guardar preguntas");
+            if (questionsError) {
+                console.error("Supabase error saving questions:", questionsError);
+                throw new Error("Error al guardar preguntas: " + questionsError.message);
+            }
 
             toast.success("¡Quiz guardado con éxito!");
             router.push("/teacher/dashboard");
