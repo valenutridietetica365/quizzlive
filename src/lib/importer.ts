@@ -22,40 +22,64 @@ export const parseQuizFile = async (file: File): Promise<ImportResult> => {
                     return;
                 }
 
-                // Header mapping (Expected: Pregunta, Tipo, Opciones, Correcta, Tiempo, Puntos)
-                // First row is headers
+                const headers = (json[0] as unknown[]).map(h => String(h || "").toLowerCase());
+
+                // Helper to find column index by keywords
+                const findCol = (keywords: string[], defaultIdx: number) => {
+                    const idx = headers.findIndex(h => keywords.some(k => h.includes(k)));
+                    return idx === -1 ? defaultIdx : idx;
+                };
+
+                const colQuestion = findCol(["pregunta", "question", "text"], 0);
+                const colType = findCol(["tipo", "type"], 1);
+                const colOptionsStart = findCol(["opcion", "option", "alternativa"], 2);
+                const colCorrect = findCol(["correct", "respuesta", "solucion"], 3);
+                const colTime = findCol(["tiempo", "time", "seg"], 4);
+                const colPoints = findCol(["puntos", "point", "score"], 5);
+
                 const rows = json.slice(1);
                 const questions: Question[] = [];
                 const errors: string[] = [];
 
                 rows.forEach((row, index) => {
-                    if (!row[0]) return; // Skip empty rows
+                    if (!row[colQuestion]) return;
 
                     try {
-                        const question_text = String(row[0] || "").trim();
-                        const raw_type = String(row[1] || "multiple_choice").trim().toLowerCase();
+                        const question_text = String(row[colQuestion] || "").trim();
+                        const raw_type = String(row[colType] || "multiple_choice").trim().toLowerCase();
 
-                        // Map human readable/common types to schema types
                         let question_type: Question['question_type'] = "multiple_choice";
                         if (raw_type.includes("v") || raw_type.includes("f") || raw_type === "true_false") question_type = "true_false";
                         else if (raw_type.includes("oracion") || raw_type.includes("blank") || raw_type === "fill_in_the_blank") question_type = "fill_in_the_blank";
                         else if (raw_type.includes("parear") || raw_type.includes("matching")) question_type = "matching";
 
-                        const raw_options = String(row[2] || "");
                         let options: string[] = [];
 
-                        if (question_type === "multiple_choice") {
-                            options = raw_options.split(/[;|,]/).map(o => o.trim()).filter(o => o !== "");
-                            if (options.length < 2) errors.push(`Transline ${index + 2}: Opciones insuficientes para selección múltiple.`);
+                        if (question_type === "multiple_choice" || question_type === "matching") {
+                            // Check if options are in a single delimited column or multiple columns
+                            const firstOptionVal = String(row[colOptionsStart] || "");
+                            if (firstOptionVal.includes(";") || firstOptionVal.includes("|")) {
+                                options = firstOptionVal.split(/[;|]/).map(o => o.trim()).filter(o => o !== "");
+                            } else {
+                                // Collect from multiple columns until we hit a known "named" column or run out of alternatives
+                                // We'll look at the next 4-6 columns starting from colOptionsStart
+                                for (let i = colOptionsStart; i < colOptionsStart + 6; i++) {
+                                    if (i === colCorrect || i === colTime || i === colPoints) break;
+                                    const val = String(row[i] || "").trim();
+                                    if (val) options.push(val);
+                                }
+                            }
+
+                            if (options.length < 2 && question_type === "multiple_choice") {
+                                errors.push(`Fila ${index + 2}: Opciones insuficientes para selección múltiple.`);
+                            }
                         } else if (question_type === "true_false") {
-                            options = ["Verdadero", "Falso"]; // Defaulting to Spanish for now, will be handled by UI
-                        } else if (question_type === "matching") {
-                            options = raw_options.split(/[;|,]/).map(o => o.trim()).filter(o => o !== "");
+                            options = ["Verdadero", "Falso"];
                         }
 
-                        const correct_answer = String(row[3] || "").trim();
-                        const time_limit = parseInt(String(row[4])) || 20;
-                        const points = parseInt(String(row[5])) || 1000;
+                        const correct_answer = String(row[colCorrect] || "").trim();
+                        const time_limit = parseInt(String(row[colTime])) || 20;
+                        const points = parseInt(String(row[colPoints])) || 1000;
 
                         questions.push({
                             question_text,
@@ -82,14 +106,15 @@ export const parseQuizFile = async (file: File): Promise<ImportResult> => {
 };
 
 export const downloadTemplate = () => {
-    const ws = XLSX.utils.aoa_to_sheet([
-        ["Pregunta", "Tipo (opciones/vf/oracion/parear)", "Opciones (separadas por ;)", "Correcta", "Tiempo (seg)", "Puntos"],
-        ["¿Cuál es la capital de Francia?", "opciones", "París;Londres;Madrid;Berlín", "París", 20, 1000],
-        ["El agua hierve a 100 grados Celsius.", "vf", "", "Verdadero", 10, 500],
-        ["La capital de Japón es _______.", "oracion", "", "Tokio", 20, 1000],
-        ["Une los países con sus capitales", "parear", "España:Madrid;Italia:Roma;Francia:París", "MATCHING_MODE", 30, 1500]
-    ]);
+    const data = [
+        ["Pregunta", "Tipo", "Opción 1", "Opción 2", "Opción 3", "Opción 4", "Correcta", "Tiempo", "Puntos"],
+        ["¿Cuál es el planeta más grande?", "opciones", "Marte", "Júpiter", "Saturno", "Tierra", "Júpiter", 20, 1000],
+        ["¿2+2 es 4?", "vf", "Verdadero", "Falso", "", "", "Verdadero", 10, 500],
+        ["La ______ es vital para la vida.", "oracion", "", "", "", "", "agua", 20, 1000],
+        ["España:Madrid;Italia:Roma", "parear", "", "", "", "", "MATCHING_MODE", 30, 1500]
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(data);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Template");
-    XLSX.writeFile(wb, "QuizzLive_Template.xlsx");
+    XLSX.utils.book_append_sheet(wb, ws, "QuizzLive Template");
+    XLSX.writeFile(wb, "Plantilla_QuizzLive.xlsx");
 };

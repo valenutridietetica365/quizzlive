@@ -120,7 +120,7 @@ export default function ImportModal({ isOpen, onClose, onImport }: ImportModalPr
 
                 <div className="bg-slate-50 p-6 flex items-center gap-4 text-xs font-bold text-slate-400 border-t border-slate-100">
                     <FileText className="w-4 h-4" />
-                    El archivo debe incluir: Pregunta, Tipo, Opciones, Correcta, Tiempo, Puntos.
+                    El archivo debe incluir: Pregunta, Tipo, Opciones (una o varias columnas), Correcta, Tiempo, Puntos.
                 </div>
             </div>
         </div>
