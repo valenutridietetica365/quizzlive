@@ -47,7 +47,7 @@ export default function QuizEditor() {
         setQuestions(sortedQuestions.map(q => ({
             id: q.id,
             question_text: q.question_text,
-            question_type: q.question_type as any,
+            question_type: q.question_type as Question["question_type"],
             options: q.options,
             correct_answer: q.correct_answer,
             image_url: q.image_url || "",
@@ -71,7 +71,7 @@ export default function QuizEditor() {
         }]);
     };
 
-    const updateQuestion = (index: number, field: keyof Question, value: any) => {
+    const updateQuestion = (index: number, field: keyof Question, value: string | number | string[]) => {
         const newQuestions = [...questions];
 
         if (field === "question_type") {
@@ -183,8 +183,9 @@ export default function QuizEditor() {
 
             toast.success("¡Quiz guardado con éxito!");
             router.push("/teacher/dashboard");
-        } catch (error: any) {
-            toast.error(error.message || "Error desconocido");
+        } catch (error) {
+            const err = error as Error;
+            toast.error(err.message || "Error desconocido");
         } finally {
             setLoading(false);
         }

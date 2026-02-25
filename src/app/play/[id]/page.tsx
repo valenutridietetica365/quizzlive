@@ -165,7 +165,7 @@ export default function StudentPlay() {
             const normalizedCorrect = currentQuestion.correct_answer.trim().toLowerCase();
             correct = normalizedAnswer === normalizedCorrect;
         } else if (currentQuestion.question_type === "matching") {
-            const expectedPairs = currentQuestion.options.reduce((acc: any, opt) => {
+            const expectedPairs = currentQuestion.options.reduce((acc: Record<string, string>, opt) => {
                 const [t, m] = opt.split(":");
                 acc[t] = m;
                 return acc;
