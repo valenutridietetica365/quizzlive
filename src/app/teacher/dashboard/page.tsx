@@ -45,7 +45,8 @@ export default function TeacherDashboard() {
     const [confirmModal, setConfirmModal] = useState<{
         open: boolean;
         quizId: string | null;
-    }>({ open: false, quizId: null });
+        historyId: string | null;
+    }>({ open: false, quizId: null, historyId: null });
 
     const router = useRouter();
 
@@ -123,6 +124,16 @@ export default function TeacherDashboard() {
         }
     };
 
+    const deleteHistory = async (id: string) => {
+        const { error } = await supabase.from("sessions").delete().eq("id", id);
+        if (!error) {
+            setHistory(history.filter(h => h.id !== id));
+            toast.success("Informe eliminado con éxito");
+        } else {
+            toast.error("No se pudo eliminar el informe");
+        }
+    };
+
     const renderContent = () => {
         if (loading) {
             return (
@@ -190,7 +201,7 @@ export default function TeacherDashboard() {
                                         <Pencil className="w-5 h-5" />
                                     </button>
                                     <button
-                                        onClick={() => setConfirmModal({ open: true, quizId: quiz.id })}
+                                        onClick={() => setConfirmModal({ open: true, quizId: quiz.id, historyId: null })}
                                         className="p-4 bg-slate-50 rounded-2xl text-slate-400 hover:text-red-500 hover:bg-white hover:shadow-lg transition-all"
                                         title={t('common.delete')}
                                     >
@@ -257,6 +268,13 @@ export default function TeacherDashboard() {
                                             >
                                                 {t('dashboard.report_button')}
                                                 <ChevronRight className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => setConfirmModal({ open: true, quizId: null, historyId: session.id })}
+                                                className="p-3 bg-slate-50 rounded-xl text-slate-400 hover:text-red-500 hover:bg-white transition-all shadow-sm group-hover:shadow-md"
+                                                title={t('common.delete')}
+                                            >
+                                                <Trash2 className="w-5 h-5" />
                                             </button>
                                         </td>
                                     </tr>
@@ -350,7 +368,7 @@ export default function TeacherDashboard() {
 
             <ConfirmModal
                 isOpen={confirmModal.open}
-                onClose={() => setConfirmModal({ open: false, quizId: null })}
+                onClose={() => setConfirmModal({ open: false, quizId: null, historyId: null })}
                 onConfirm={() => confirmModal.quizId && deleteQuiz(confirmModal.quizId)}
                 title={t('dashboard.delete_confirm')}
                 message={t('dashboard.delete_confirm_desc')}

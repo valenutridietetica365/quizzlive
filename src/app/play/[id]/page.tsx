@@ -29,6 +29,7 @@ export default function StudentPlay() {
     const [questionStartTime, setQuestionStartTime] = useState<number>(0);
     const [pointsEarned, setPointsEarned] = useState<number>(0);
     const [currentStreak, setCurrentStreak] = useState<number>(0);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // States for new question types
     const [fillAnswer, setFillAnswer] = useState("");
@@ -154,7 +155,8 @@ export default function StudentPlay() {
     }, [id, nickname, participantId, fetchInitialState, handleNewQuestion, router, session?.current_question_id, session?.status, totalScore, fetchingScore, fetchTotalScore]);
 
     const submitAnswer = async (answer: string) => {
-        if (answered || !currentQuestion) return;
+        if (answered || isSubmitting || !currentQuestion) return;
+        setIsSubmitting(true);
         setAnswered(true);
         setSelectedOption(answer);
 
@@ -214,6 +216,8 @@ export default function StudentPlay() {
         } catch (e) {
             console.error("Error al enviar respuesta:", e);
             toast.error("Error de conexión al enviar tu respuesta");
+            setIsSubmitting(false);
+            setAnswered(false); // Rollback optimistic UI if it failed
         }
     };
 
@@ -264,8 +268,9 @@ export default function StudentPlay() {
                                     {currentQuestion.options.map((opt, i) => (
                                         <button
                                             key={i}
+                                            disabled={isSubmitting || answered}
                                             onClick={() => submitAnswer(opt)}
-                                            className={`group p-8 rounded-[2rem] text-left transition-all active:scale-95 shadow-lg border-b-[8px] flex flex-col justify-between h-48 sm:h-auto overflow-hidden relative ${selectedOption === opt ? "scale-105 brightness-110 z-10 ring-4 ring-white shadow-2xl" : ""
+                                            className={`group p-8 rounded-[2rem] text-left transition-all active:scale-95 shadow-lg border-b-[8px] flex flex-col justify-between h-48 sm:h-auto overflow-hidden relative ${(isSubmitting || answered) && selectedOption !== opt ? "opacity-50 grayscale" : ""} ${selectedOption === opt ? "scale-105 brightness-110 z-10 ring-4 ring-white shadow-2xl" : ""
                                                 } ${currentQuestion.question_type === "true_false"
                                                     ? (opt === "Verdadero" || opt === "True" ? "bg-blue-600 border-blue-800 shadow-blue-200" : "bg-red-600 border-red-800 shadow-red-200")
                                                     : (i === 0 ? "bg-red-600 border-red-800 shadow-red-200" :
@@ -290,14 +295,15 @@ export default function StudentPlay() {
                                             placeholder="..."
                                             className="w-full bg-transparent border-none focus:ring-0 text-3xl font-black text-slate-800 placeholder:text-slate-200 text-center"
                                             value={fillAnswer}
+                                            disabled={isSubmitting || answered}
                                             onChange={(e) => setFillAnswer(e.target.value)}
-                                            onKeyDown={(e) => e.key === 'Enter' && fillAnswer.trim() && submitAnswer(fillAnswer)}
+                                            onKeyDown={(e) => e.key === 'Enter' && fillAnswer.trim() && !isSubmitting && submitAnswer(fillAnswer)}
                                             autoFocus
                                         />
                                     </div>
                                     <button
-                                        onClick={() => fillAnswer.trim() && submitAnswer(fillAnswer)}
-                                        disabled={!fillAnswer.trim()}
+                                        onClick={() => fillAnswer.trim() && !isSubmitting && submitAnswer(fillAnswer)}
+                                        disabled={!fillAnswer.trim() || isSubmitting || answered}
                                         className="btn-premium w-full !rounded-[2rem] !py-6 !text-2xl flex items-center justify-center gap-4 active:scale-95 disabled:opacity-50 shadow-2xl shadow-blue-100"
                                     >
                                         {t('play.submit_answer')} <ArrowRight className="w-8 h-8" />
