@@ -1,8 +1,6 @@
-"use client";
-
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { Plus, BookOpen, Play, Trash2, LogOut, Loader2 } from "lucide-react";
+import { Plus, BookOpen, Play, Trash2, LogOut, Loader2, History, Presentation, Calendar, Users, Trophy } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface Quiz {
@@ -11,16 +9,51 @@ interface Quiz {
     questions: { id: string }[];
 }
 
+interface FinishedSession {
+    id: string;
+    pin: string;
+    created_at: string;
+    finished_at: string;
+    quiz: { title: string };
+    _count?: { participants: number };
+}
+
 interface User {
     id: string;
     email?: string;
 }
 
 export default function TeacherDashboard() {
+    const [activeTab, setActiveTab] = useState<"quizzes" | "history">("quizzes");
     const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+    const [history, setHistory] = useState<FinishedSession[]>([]);
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState<User | null>(null);
     const router = useRouter();
+
+    const fetchQuizzes = useCallback(async (userId: string) => {
+        const { data, error } = await supabase
+            .from("quizzes")
+            .select("*, questions(id)")
+            .eq("teacher_id", userId)
+            .order("created_at", { ascending: false });
+
+        if (!error) setQuizzes(data || []);
+    }, []);
+
+    const fetchHistory = useCallback(async (userId: string) => {
+        const { data, error } = await supabase
+            .from("sessions")
+            .select(`
+                id, pin, created_at, finished_at,
+                quiz:quizzes!inner(title, teacher_id)
+            `)
+            .eq("quiz.teacher_id", userId)
+            .eq("status", "finished")
+            .order("finished_at", { ascending: false });
+
+        if (!error) setHistory(data as any || []);
+    }, []);
 
     useEffect(() => {
         const checkUser = async () => {
@@ -30,22 +63,15 @@ export default function TeacherDashboard() {
                 return;
             }
             setUser(user);
-            fetchQuizzes(user.id);
+            await Promise.all([
+                fetchQuizzes(user.id),
+                fetchHistory(user.id)
+            ]);
+            setLoading(false);
         };
 
         checkUser();
-    }, [router]);
-
-    const fetchQuizzes = async (userId: string) => {
-        const { data, error } = await supabase
-            .from("quizzes")
-            .select("*, questions(id)")
-            .eq("teacher_id", userId)
-            .order("created_at", { ascending: false });
-
-        if (!error) setQuizzes(data || []);
-        setLoading(false);
-    };
+    }, [router, fetchQuizzes, fetchHistory]);
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
@@ -102,62 +128,145 @@ export default function TeacherDashboard() {
             </nav>
 
             <main className="max-w-6xl mx-auto p-6 space-y-8">
-                <div className="flex justify-between items-center">
-                    <h1 className="text-3xl font-bold text-slate-900">Mis Quizzes</h1>
-                    <button
-                        onClick={() => router.push("/teacher/editor/new")}
-                        className="flex items-center gap-2 bg-slate-900 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-slate-800 transition-all shadow-md"
-                    >
-                        <Plus className="w-5 h-5" />
-                        Crear Quiz
-                    </button>
+                {/* Tabs & Actions */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div className="flex bg-white p-1 rounded-2xl shadow-sm border border-slate-100">
+                        <button
+                            onClick={() => setActiveTab("quizzes")}
+                            className={`px-6 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 ${activeTab === "quizzes" ? "bg-slate-900 text-white" : "text-slate-500 hover:text-slate-900"
+                                }`}
+                        >
+                            <BookOpen className="w-4 h-4" />
+                            Mis Quizzes
+                        </button>
+                        <button
+                            onClick={() => setActiveTab("history")}
+                            className={`px-6 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 ${activeTab === "history" ? "bg-slate-900 text-white" : "text-slate-500 hover:text-slate-900"
+                                }`}
+                        >
+                            <History className="w-4 h-4" />
+                            Historial
+                        </button>
+                    </div>
+
+                    {activeTab === "quizzes" && (
+                        <button
+                            onClick={() => router.push("/teacher/editor/new")}
+                            className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-2xl font-black shadow-lg hover:bg-blue-700 transition-all active:scale-95"
+                        >
+                            <Plus className="w-5 h-5" />
+                            NUEVO QUIZ
+                        </button>
+                    )}
                 </div>
 
-                {quizzes.length === 0 ? (
-                    <div className="bg-white rounded-2xl border-2 border-dashed border-slate-200 p-12 text-center space-y-4">
-                        <div className="bg-slate-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto text-slate-300">
-                            <BookOpen className="w-8 h-8" />
-                        </div>
-                        <div className="space-y-2">
-                            <h3 className="text-lg font-semibold text-slate-900">No tienes quizzes aún</h3>
-                            <p className="text-slate-500">Comienza creando tu primer cuestionario para tus alumnos.</p>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {quizzes.map((quiz) => (
-                            <div key={quiz.id} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow flex flex-col justify-between space-y-4">
-                                <div className="space-y-2">
-                                    <h3 className="font-bold text-xl text-slate-900 line-clamp-2">{quiz.title}</h3>
-                                    <p className="text-slate-500 text-sm">{quiz.questions.length} preguntas</p>
-                                </div>
-
-                                <div className="flex items-center gap-3 pt-4 border-t border-slate-50">
-                                    <button
-                                        onClick={() => startSession(quiz.id)}
-                                        className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white font-bold py-2.5 rounded-xl hover:bg-blue-700 transition-colors"
-                                    >
-                                        <Play className="w-4 h-4" />
-                                        Presentar
-                                    </button>
-                                    <button
-                                        className="p-2.5 hover:bg-slate-50 rounded-xl text-slate-400 hover:text-red-500 transition-all"
-                                        onClick={() => deleteQuiz(quiz.id)}
-                                    >
-                                        <Trash2 className="w-5 h-5" />
-                                    </button>
-                                </div>
+                {activeTab === "quizzes" ? (
+                    quizzes.length === 0 ? (
+                        <div className="bg-white rounded-3xl border-2 border-dashed border-slate-200 p-20 text-center space-y-4">
+                            <div className="bg-slate-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto text-slate-300">
+                                <BookOpen className="w-10 h-10" />
                             </div>
-                        ))}
-                    </div>
+                            <div className="space-y-2">
+                                <h3 className="text-xl font-black text-slate-900">No tienes quizzes aún</h3>
+                                <p className="text-slate-500 font-medium max-w-xs mx-auto">Comienza creando tu primer cuestionario para tus alumnos.</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {quizzes.map((quiz) => (
+                                <div key={quiz.id} className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 hover:shadow-xl transition-all flex flex-col justify-between space-y-6 group">
+                                    <div className="space-y-3">
+                                        <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                            <BookOpen className="w-6 h-6" />
+                                        </div>
+                                        <h3 className="font-black text-2xl text-slate-900 leading-tight">{quiz.title}</h3>
+                                        <div className="flex items-center gap-2 text-slate-500 font-bold text-sm">
+                                            <div className="w-2 h-2 rounded-full bg-slate-300" />
+                                            {quiz.questions.length} PREGUNTAS
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 pt-6 border-t border-slate-50">
+                                        <button
+                                            onClick={() => startSession(quiz.id)}
+                                            className="flex-1 flex items-center justify-center gap-2 bg-slate-900 text-white font-black py-4 rounded-2xl hover:bg-slate-800 transition-all active:scale-95 shadow-md"
+                                        >
+                                            <Play className="w-5 h-5" />
+                                            PRESENTAR
+                                        </button>
+                                        <button
+                                            className="p-4 bg-slate-50 rounded-2xl text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
+                                            onClick={() => deleteQuiz(quiz.id)}
+                                        >
+                                            <Trash2 className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )
+                ) : (
+                    history.length === 0 ? (
+                        <div className="bg-white rounded-3xl border-2 border-dashed border-slate-200 p-20 text-center space-y-4">
+                            <div className="bg-slate-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto text-slate-300">
+                                <History className="w-10 h-10" />
+                            </div>
+                            <div className="space-y-2">
+                                <h3 className="text-xl font-black text-slate-900">Historial vacío</h3>
+                                <p className="text-slate-500 font-medium max-w-xs mx-auto">Las sesiones que finalices aparecerán aquí con sus resultados.</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="bg-white rounded-[2rem] overflow-hidden border border-slate-100 shadow-sm">
+                            <table className="w-full text-left">
+                                <thead className="bg-slate-50 border-b border-slate-100 text-slate-400 font-black text-xs uppercase tracking-widest">
+                                    <tr>
+                                        <th className="px-8 py-5">Cuestionario</th>
+                                        <th className="px-8 py-5">Fecha</th>
+                                        <th className="px-8 py-5 text-center">PIN</th>
+                                        <th className="px-8 py-5 text-right">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50 font-bold text-slate-600">
+                                    {history.map((session) => (
+                                        <tr key={session.id} className="hover:bg-slate-50/50 transition-colors group">
+                                            <td className="px-8 py-6">
+                                                <div className="font-black text-slate-900">{session.quiz.title}</div>
+                                            </td>
+                                            <td className="px-8 py-6 text-sm">
+                                                <div className="flex items-center gap-2 text-slate-400">
+                                                    <Calendar className="w-4 h-4" />
+                                                    {new Date(session.finished_at).toLocaleDateString()}
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-6 text-center">
+                                                <span className="bg-slate-100 px-3 py-1 rounded-lg text-slate-500 font-mono tracking-tighter">
+                                                    {session.pin}
+                                                </span>
+                                            </td>
+                                            <td className="px-8 py-6 text-right">
+                                                <button
+                                                    onClick={() => router.push(`/teacher/reports/${session.id}`)}
+                                                    className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700"
+                                                >
+                                                    Ver Informe
+                                                    <ArrowRight className="w-4 h-4" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )
                 )}
             </main>
         </div>
     );
 }
 
-// Temporary Presentation icon since I missed it in imports
-function Presentation({ className }: { className?: string }) {
+// Add ArrowRight for the table action
+function ArrowRight({ className }: { className?: string }) {
     return (
         <svg
             className={className}
@@ -169,7 +278,7 @@ function Presentation({ className }: { className?: string }) {
             strokeLinecap="round"
             strokeLinejoin="round"
         >
-            <path d="M2 3h20" /><path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3" /><path d="m7 21 5-5 5 5" />
+            <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
         </svg>
     );
 }
