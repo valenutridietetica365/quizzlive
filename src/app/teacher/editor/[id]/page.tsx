@@ -9,6 +9,7 @@ import Image from "next/image";
 import { Question, QuestionSchema } from "@/lib/schemas";
 import { useQuizStore } from "@/lib/store";
 import { getTranslation } from "@/lib/i18n";
+import ImportModal from "@/components/ImportModal";
 
 export default function QuizEditor() {
     const { id } = useParams();
@@ -20,6 +21,7 @@ export default function QuizEditor() {
     ]);
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(!isNew);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const router = useRouter();
 
     const t = useCallback((key: string, params?: Record<string, string | number>) => {
@@ -74,6 +76,12 @@ export default function QuizEditor() {
             time_limit: 20,
             points: 1000
         }]);
+    };
+
+    const handleImportQuestions = (imported: Question[]) => {
+        // Remove the first empty question if it's there
+        const filteredExisting = questions.filter(q => q.question_text.trim() !== "" || q.options.some(o => o.trim() !== ""));
+        setQuestions([...filteredExisting, ...imported]);
     };
 
     const updateQuestion = (index: number, field: keyof Question, value: string | number | string[]) => {
@@ -222,10 +230,20 @@ export default function QuizEditor() {
                     </div>
                 </div>
 
-                <button onClick={handleSave} disabled={loading} className={`btn-premium !py-3.5 !px-8 flex items-center gap-2 transition-all ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                    <span className="hidden sm:inline">{isNew ? t('editor.publish_button') : t('editor.save_button')}</span>
-                </button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => setIsImportModalOpen(true)}
+                        className="hidden sm:flex items-center gap-2 px-6 py-3 bg-blue-50 text-blue-600 rounded-[1.2rem] font-black text-xs hover:bg-blue-100 transition-all active:scale-95"
+                    >
+                        <Plus className="w-4 h-4" />
+                        {t('editor.import_button')}
+                    </button>
+
+                    <button onClick={handleSave} disabled={loading} className={`btn-premium !py-3.5 !px-8 flex items-center gap-2 transition-all ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                        <span className="hidden sm:inline">{isNew ? t('editor.publish_button') : t('editor.save_button')}</span>
+                    </button>
+                </div>
             </nav>
 
             <main className="max-w-4xl mx-auto w-full p-6 md:p-12 space-y-12">
@@ -392,6 +410,12 @@ export default function QuizEditor() {
                     </button>
                 </div>
             </main>
+
+            <ImportModal
+                isOpen={isImportModalOpen}
+                onClose={() => setIsImportModalOpen(false)}
+                onImport={handleImportQuestions}
+            />
         </div>
     );
 }

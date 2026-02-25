@@ -162,7 +162,14 @@ export const translations = {
             error_no_correct: "La pregunta {num} no tiene una respuesta correcta marcada",
             error_mismatch: "La respuesta correcta de la pregunta {num} no coincide con ninguna opción",
             save_success: "¡Quiz guardado con éxito!",
-            login_required: "Debes iniciar sesión para guardar"
+            login_required: "Debes iniciar sesión para guardar",
+            import_button: "IMPORTAR",
+            import_title: "Importación Inteligente",
+            import_desc: "Sube un archivo Excel o CSV para añadir preguntas masivamente.",
+            import_select_file: "Seleccionar Archivo",
+            import_template: "Descargar Plantilla",
+            import_success: "¡{count} preguntas importadas con éxito!",
+            import_error: "Hubo errores al procesar el archivo"
         },
         reports: {
             title: "Informe de Sesión",
@@ -356,7 +363,14 @@ export const translations = {
             error_no_correct: "Question {num} has no correct answer marked",
             error_mismatch: "The correct answer for question {num} does not match any option",
             save_success: "Quiz saved successfully!",
-            login_required: "You must log in to save"
+            login_required: "You must log in to save",
+            import_button: "IMPORT",
+            import_title: "Smart Import",
+            import_desc: "Upload an Excel or CSV file to add questions in bulk.",
+            import_select_file: "Select File",
+            import_template: "Download Template",
+            import_success: "{count} questions imported successfully!",
+            import_error: "There were errors processing the file"
         },
         reports: {
             title: "Session Report",
