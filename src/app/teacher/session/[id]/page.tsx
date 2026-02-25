@@ -158,19 +158,20 @@ export default function TeacherSession() {
 
         try {
             const firstQuestion = questions[0];
+            const now = new Date().toISOString();
             const { error: updateError } = await supabase
                 .from("sessions")
                 .update({
                     status: "active",
                     current_question_id: firstQuestion.id,
-                    started_at: new Date().toISOString(),
-                    current_question_started_at: new Date().toISOString()
+                    started_at: now,
+                    current_question_started_at: now
                 })
                 .eq("id", id);
 
             if (updateError) throw updateError;
 
-            setSession({ ...session, status: "active", current_question_id: firstQuestion.id });
+            setSession({ ...session, status: "active", current_question_id: firstQuestion.id, current_question_started_at: now });
             setCurrentQuestionIndex(0);
             setResponsesCount(0);
         } catch (error) {
@@ -184,15 +185,17 @@ export default function TeacherSession() {
         if (!session) return;
         const nextIndex = currentQuestionIndex + 1;
         if (nextIndex < questions.length) {
-            const nextQuestion = questions[nextIndex];
+            const nextQ = questions[nextIndex];
+            const now = new Date().toISOString();
             await supabase
                 .from("sessions")
                 .update({
-                    current_question_id: nextQuestion.id,
-                    current_question_started_at: new Date().toISOString()
+                    current_question_id: nextQ.id,
+                    current_question_started_at: now
                 })
                 .eq("id", id);
 
+            setSession(prev => prev ? { ...prev, current_question_id: nextQ.id, current_question_started_at: now } : prev);
             setCurrentQuestionIndex(nextIndex);
             setResponsesCount(0);
         } else {
