@@ -26,6 +26,14 @@ interface FinishedSession {
     _count?: { participants: number };
 }
 
+interface LiveSession {
+    id: string;
+    pin: string;
+    status: "waiting" | "active";
+    quiz: { title: string };
+    created_at: string;
+}
+
 interface User {
     id: string;
     email?: string;
@@ -36,6 +44,7 @@ export default function TeacherDashboard() {
     const [activeTab, setActiveTab] = useState<"quizzes" | "history">("quizzes");
     const [quizzes, setQuizzes] = useState<Quiz[]>([]);
     const [history, setHistory] = useState<FinishedSession[]>([]);
+    const [liveSessions, setLiveSessions] = useState<LiveSession[]>([]);
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState<User | null>(null);
 
@@ -74,6 +83,20 @@ export default function TeacherDashboard() {
         if (!error) setHistory(data as unknown as FinishedSession[] || []);
     }, []);
 
+    const fetchLiveSessions = useCallback(async (userId: string) => {
+        const { data, error } = await supabase
+            .from("sessions")
+            .select(`
+                id, pin, status, created_at,
+                quiz:quizzes!inner(title, teacher_id)
+            `)
+            .eq("quiz.teacher_id", userId)
+            .in("status", ["waiting", "active"])
+            .order("created_at", { ascending: false });
+
+        if (!error) setLiveSessions(data as unknown as LiveSession[] || []);
+    }, []);
+
     useEffect(() => {
         const checkUser = async () => {
             const { data: { user } } = await supabase.auth.getUser();
@@ -84,7 +107,8 @@ export default function TeacherDashboard() {
             setUser(user);
             await Promise.all([
                 fetchQuizzes(user.id),
-                fetchHistory(user.id)
+                fetchHistory(user.id),
+                fetchLiveSessions(user.id)
             ]);
             setLoading(false);
         };
@@ -99,7 +123,23 @@ export default function TeacherDashboard() {
 
     const startSession = async (quizId: string) => {
         try {
-            const pin = Math.floor(100000 + Math.random() * 900000).toString();
+            let pin = "";
+            let unique = false;
+            let attempts = 0;
+
+            // PIN Collision check (max 3 attempts for Zero Cost reliability)
+            while (!unique && attempts < 3) {
+                pin = Math.floor(100000 + Math.random() * 900000).toString();
+                const { data: existing } = await supabase
+                    .from("sessions")
+                    .select("id")
+                    .eq("pin", pin)
+                    .in("status", ["waiting", "active"])
+                    .maybeSingle();
+                if (!existing) unique = true;
+                attempts++;
+            }
+
             const { data, error } = await supabase
                 .from("sessions")
                 .insert({
@@ -171,52 +211,93 @@ export default function TeacherDashboard() {
                     </button>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
-                    {quizzes.map((quiz) => (
-                        <div key={quiz.id} className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-50 transition-all hover:shadow-2xl hover:shadow-slate-200/50 flex flex-col justify-between space-y-8 relative group overflow-hidden">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50/50 rounded-bl-[4rem] -mr-8 -mt-8 -z-0 transition-all group-hover:scale-110" />
+                <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                    {/* Live Sessions Recovery Section */}
+                    {liveSessions.length > 0 && (
+                        <div className="space-y-6">
+                            <div className="flex items-center gap-3">
+                                <span className="relative flex h-3 w-3">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                                </span>
+                                <h2 className="text-xl font-black text-slate-900 uppercase tracking-widest">{t('dashboard.live_sessions') || "Sesiones en Vivo"}</h2>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {liveSessions.map((session) => (
+                                    <div
+                                        key={session.id}
+                                        onClick={() => router.push(`/teacher/session/${session.id}`)}
+                                        className="bg-slate-900 text-white p-6 rounded-[2rem] border-b-4 border-blue-600 hover:scale-[1.02] transition-all cursor-pointer group flex flex-col justify-between h-48"
+                                    >
+                                        <div className="flex justify-between items-start">
+                                            <div className="space-y-1">
+                                                <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest">{session.status === 'active' ? 'En Juego' : 'Esperando'}</p>
+                                                <h3 className="text-xl font-black truncate max-w-[180px]">{session.quiz.title}</h3>
+                                            </div>
+                                            <div className="bg-white/10 px-3 py-1.5 rounded-xl font-mono font-black text-lg tracking-wider">
+                                                {session.pin}
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                                            <span className="text-xs font-bold text-slate-400">{new Date(session.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                            <button className="bg-blue-600 p-2 rounded-xl group-hover:px-4 transition-all flex items-center gap-2">
+                                                <ChevronRight className="w-5 h-5" />
+                                                <span className="hidden group-hover:inline text-[10px] font-black uppercase">Reanudar</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
-                            <div className="space-y-4 relative z-10">
-                                <div className="w-14 h-14 bg-white shadow-lg rounded-2xl flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500">
-                                    <BookOpen className="w-7 h-7" />
+                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
+                        {quizzes.map((quiz) => (
+                            <div key={quiz.id} className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-50 transition-all hover:shadow-2xl hover:shadow-slate-200/50 flex flex-col justify-between space-y-8 relative group overflow-hidden">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50/50 rounded-bl-[4rem] -mr-8 -mt-8 -z-0 transition-all group-hover:scale-110" />
+
+                                <div className="space-y-4 relative z-10">
+                                    <div className="w-14 h-14 bg-white shadow-lg rounded-2xl flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500">
+                                        <BookOpen className="w-7 h-7" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-black text-2xl text-slate-900 leading-tight group-hover:text-blue-600 transition-colors">{quiz.title}</h3>
+                                        <div className="flex items-center gap-2 mt-2">
+                                            <span className="bg-slate-100 px-3 py-1 rounded-full text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                                {quiz.questions.length} {t('common.questions')}
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 className="font-black text-2xl text-slate-900 leading-tight group-hover:text-blue-600 transition-colors">{quiz.title}</h3>
-                                    <div className="flex items-center gap-2 mt-2">
-                                        <span className="bg-slate-100 px-3 py-1 rounded-full text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                            {quiz.questions.length} {t('common.questions')}
-                                        </span>
+
+                                <div className="flex items-center gap-3 pt-6 border-t border-slate-50 relative z-10">
+                                    <button
+                                        onClick={() => startSession(quiz.id)}
+                                        className="flex-1 flex items-center justify-center gap-2 bg-slate-900 text-white font-black py-4 rounded-2xl hover:bg-blue-600 transition-all active:scale-95 shadow-xl shadow-slate-200"
+                                    >
+                                        <Play className="w-5 h-5 fill-white" />
+                                        {t('dashboard.present')}
+                                    </button>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => router.push(`/teacher/editor/${quiz.id}`)}
+                                            className="p-4 bg-slate-50 rounded-2xl text-slate-400 hover:text-blue-600 hover:bg-white hover:shadow-lg transition-all"
+                                            title={t('dashboard.edit')}
+                                        >
+                                            <Pencil className="w-5 h-5" />
+                                        </button>
+                                        <button
+                                            onClick={() => setConfirmModal({ open: true, quizId: quiz.id, historyId: null })}
+                                            className="p-4 bg-slate-50 rounded-2xl text-slate-400 hover:text-red-500 hover:bg-white hover:shadow-lg transition-all"
+                                            title={t('common.delete')}
+                                        >
+                                            <Trash2 className="w-5 h-5" />
+                                        </button>
                                     </div>
                                 </div>
                             </div>
-
-                            <div className="flex items-center gap-3 pt-6 border-t border-slate-50 relative z-10">
-                                <button
-                                    onClick={() => startSession(quiz.id)}
-                                    className="flex-1 flex items-center justify-center gap-2 bg-slate-900 text-white font-black py-4 rounded-2xl hover:bg-blue-600 transition-all active:scale-95 shadow-xl shadow-slate-200"
-                                >
-                                    <Play className="w-5 h-5 fill-white" />
-                                    {t('dashboard.present')}
-                                </button>
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => router.push(`/teacher/editor/${quiz.id}`)}
-                                        className="p-4 bg-slate-50 rounded-2xl text-slate-400 hover:text-blue-600 hover:bg-white hover:shadow-lg transition-all"
-                                        title={t('dashboard.edit')}
-                                    >
-                                        <Pencil className="w-5 h-5" />
-                                    </button>
-                                    <button
-                                        onClick={() => setConfirmModal({ open: true, quizId: quiz.id, historyId: null })}
-                                        className="p-4 bg-slate-50 rounded-2xl text-slate-400 hover:text-red-500 hover:bg-white hover:shadow-lg transition-all"
-                                        title={t('common.delete')}
-                                    >
-                                        <Trash2 className="w-5 h-5" />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                 </div>
             );
         } else {

@@ -13,7 +13,7 @@ export const QuestionSchema = z.object({
     question_text: z.string().min(1, "La pregunta no puede estar vacía"),
     question_type: QuestionTypeSchema,
     options: z.array(z.string()),
-    correct_answer: z.string().min(1, "Debe haber una respuesta correcta"),
+    correct_answer: z.string().min(1, "Debe haber una respuesta correcta").nullish(),
     image_url: z.string().url().or(z.literal("")).nullable().optional(),
     time_limit: z.number().min(5).max(300).default(20),
     points: z.number().min(0).default(1000),

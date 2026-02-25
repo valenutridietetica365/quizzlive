@@ -47,15 +47,21 @@ export default function StudentPlay() {
 
 
     const handleNewQuestion = useCallback(async (questionId: string) => {
-        const { data: questionData } = await supabase
+        const { data, error } = await supabase
             .from("questions")
-            .select("*")
+            .select("id, quiz_id, question_text, question_type, options, image_url, time_limit, points, sort_order")
             .eq("id", questionId)
             .single();
 
-        if (questionData) {
+        if (error) {
+            console.error("No question data found for ID:", questionId, error);
+            toast.error("Error: No se pudo encontrar la pregunta");
+            return;
+        }
+
+        if (data) {
             try {
-                const q = QuestionSchema.parse(questionData);
+                const q = QuestionSchema.parse(data);
                 setCurrentQuestion(q);
                 setAnswered(false);
                 setIsCorrect(null);
@@ -65,7 +71,7 @@ export default function StudentPlay() {
                 setFillAnswer("");
                 setMatchingPairs({});
                 setSelectedTerm(null);
-                setIsSubmitting(false); // Crucial fix: allow interaction in the new question
+                setIsSubmitting(false);
                 setTimesUp(false);
                 setTimeLeft(null);
 
@@ -77,9 +83,6 @@ export default function StudentPlay() {
                 console.error("Error validando pregunta:", e);
                 toast.error("Error al cargar los datos de la pregunta");
             }
-        } else {
-            console.error("No question data found for ID:", questionId);
-            toast.error("Error: No se pudo encontrar la pregunta");
         }
     }, []);
 
@@ -218,44 +221,6 @@ export default function StudentPlay() {
         setAnswered(true);
         setSelectedOption(answer);
 
-        let correct = false;
-
-        if (currentQuestion.question_type === "fill_in_the_blank") {
-            const normalizedAnswer = answer.trim().toLowerCase();
-            const normalizedCorrect = currentQuestion.correct_answer.trim().toLowerCase();
-            correct = normalizedAnswer === normalizedCorrect;
-        } else if (currentQuestion.question_type === "matching") {
-            const expectedPairs = currentQuestion.options.reduce((acc: Record<string, string>, opt) => {
-                const [t, m] = opt.split(":");
-                acc[t] = m;
-                return acc;
-            }, {});
-
-            const studentPairCount = Object.keys(matchingPairs).length;
-            const targetPairCount = currentQuestion.options.length;
-
-            if (studentPairCount === targetPairCount) {
-                correct = Object.entries(matchingPairs).every(([t, m]) => expectedPairs[t] === m);
-            }
-        } else {
-            correct = answer === currentQuestion.correct_answer;
-        }
-
-        setIsCorrect(correct);
-        playSFX(correct ? "correct" : "wrong");
-        if (correct && currentStreak >= 2) playSFX("streak");
-
-        let points = 0;
-        if (correct) {
-            const timeTaken = (Date.now() - questionStartTime) / 1000;
-            const timeLimit = currentQuestion.time_limit || 20;
-            const percentage = Math.min(timeTaken / timeLimit, 1);
-            points = Math.round(currentQuestion.points * (1 - (percentage / 2)));
-        }
-
-        setPointsEarned(points);
-        setCurrentStreak(prev => correct ? prev + 1 : 0);
-
         try {
             const { data, error } = await supabase.rpc('submit_answer', {
                 p_session_id: id,
@@ -270,8 +235,11 @@ export default function StudentPlay() {
                 setPointsEarned(data.points_earned);
                 setIsCorrect(data.is_correct);
                 setCurrentStreak(data.current_streak || 0);
+
+                playSFX(data.is_correct ? "correct" : "wrong");
+                if (data.is_correct && (data.current_streak || 0) >= 2) playSFX("streak");
             }
-            setIsSubmitting(false); // Clean up state after successful sync
+            setIsSubmitting(false);
         } catch (e) {
             console.error("Error al enviar respuesta:", e);
             toast.error("Error de conexión al enviar tu respuesta");

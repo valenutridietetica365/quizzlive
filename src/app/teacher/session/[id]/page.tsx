@@ -99,7 +99,16 @@ export default function TeacherSession() {
 
             if (sessionData.current_question_id) {
                 const index = validQuestions.findIndex(q => q.id === sessionData.current_question_id);
-                if (index !== -1) setCurrentQuestionIndex(index);
+                if (index !== -1) {
+                    setCurrentQuestionIndex(index);
+                    // Fetch initial responses count for current question
+                    const { count } = await supabase
+                        .from("answers")
+                        .select("*", { count: 'exact', head: true })
+                        .eq("session_id", id)
+                        .eq("question_id", sessionData.current_question_id);
+                    setResponsesCount(count || 0);
+                }
             }
         } catch {
             toast.error(t('common.error'));

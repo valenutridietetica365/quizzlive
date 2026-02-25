@@ -127,12 +127,12 @@ export default function QuizEditor() {
 
         const invalidQuestionIndex = questions.findIndex(q => {
             const hasText = q.question_text.trim().length > 0;
-            const hasCorrectAnswer = q.correct_answer.trim().length > 0;
+            const hasCorrectAnswer = (q.correct_answer?.trim() || "").length > 0;
 
             if (q.question_type === "fill_in_the_blank") return !hasText || !hasCorrectAnswer;
             if (q.question_type === "matching") return !hasText || q.options.length === 0;
 
-            const isCorrectInOptions = q.options.includes(q.correct_answer);
+            const isCorrectInOptions = q.options.includes(q.correct_answer || "");
             return !hasText || !hasCorrectAnswer || !isCorrectInOptions;
         });
 
@@ -159,16 +159,22 @@ export default function QuizEditor() {
         try {
             let quizId = id as string;
 
-            if (isNew) {
-                const { data: newQuiz, error: quizError } = await supabase
-                    .from("quizzes")
-                    .insert({ title, teacher_id: user.id })
-                    .select()
-                    .single();
+            if (!isNew) {
+                // Check for active sessions before allowing save
+                const { data: activeSessions, error: sessionCheckError } = await supabase
+                    .from("sessions")
+                    .select("id")
+                    .eq("quiz_id", id)
+                    .in("status", ["waiting", "active"]);
 
-                if (quizError || !newQuiz) throw new Error(t('common.error'));
-                quizId = newQuiz.id;
-            } else {
+                if (sessionCheckError) throw new Error(t('common.error'));
+
+                if (activeSessions && activeSessions.length > 0) {
+                    toast.error("No se puede editar un cuestionario mientras hay una sesión activa o en espera.");
+                    setLoading(false);
+                    return;
+                }
+
                 const { error: quizError } = await supabase
                     .from("quizzes")
                     .update({ title })
@@ -178,6 +184,15 @@ export default function QuizEditor() {
 
                 const { error: deleteError } = await supabase.from("questions").delete().eq("quiz_id", id);
                 if (deleteError) throw new Error(t('common.error'));
+            } else {
+                const { data: newQuiz, error: quizError } = await supabase
+                    .from("quizzes")
+                    .insert({ title, teacher_id: user.id })
+                    .select()
+                    .single();
+
+                if (quizError || !newQuiz) throw new Error(t('common.error'));
+                quizId = newQuiz.id;
             }
 
             const questionsToInsert = questions.map((q, index) => ({
@@ -359,7 +374,7 @@ export default function QuizEditor() {
                                         type="text"
                                         placeholder={t('editor.correct_answer_placeholder')}
                                         className="w-full bg-white p-4 rounded-xl border-none font-black text-xl"
-                                        value={q.correct_answer}
+                                        value={q.correct_answer || ""}
                                         onChange={(e) => updateQuestion(qIndex, "correct_answer", e.target.value)}
                                     />
                                 </div>
