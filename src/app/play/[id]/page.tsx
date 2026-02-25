@@ -19,6 +19,7 @@ interface Question {
     question_type: "multiple_choice" | "true_false";
     options: string[];
     correct_answer: string;
+    image_url?: string;
     points: number;
 }
 
@@ -32,6 +33,15 @@ export default function StudentPlay() {
     const [answered, setAnswered] = useState(false);
     const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
     const [loading, setLoading] = useState(true);
+
+    const playSound = (type: "correct" | "wrong") => {
+        const audio = new Audio(
+            type === "correct"
+                ? "https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"
+                : "https://assets.mixkit.co/active_storage/sfx/2001/2001-preview.mp3"
+        );
+        audio.play().catch(() => { });
+    };
 
     const handleNewQuestion = useCallback(async (questionId: string) => {
         const { data: questionData } = await supabase
@@ -96,6 +106,7 @@ export default function StudentPlay() {
 
         const correct = answer === currentQuestion.correct_answer;
         setIsCorrect(correct);
+        playSound(correct ? "correct" : "wrong");
 
         const points = correct ? currentQuestion.points : 0;
 
