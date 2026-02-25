@@ -16,6 +16,7 @@ interface Session {
 interface Question {
     id: string;
     question_text: string;
+    question_type: "multiple_choice" | "true_false";
     options: string[];
     correct_answer: string;
     points: number;
@@ -143,22 +144,26 @@ export default function StudentPlay() {
                                 {currentQuestion.question_text}
                             </h2>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className={`grid gap-4 ${currentQuestion.question_type === "true_false" ? "grid-cols-2" : "grid-cols-1 sm:grid-cols-2"}`}>
                                 {currentQuestion.options.map((opt, i) => (
                                     <button
                                         key={i}
                                         onClick={() => submitAnswer(opt)}
-                                        className={`group p-8 rounded-[2rem] text-left transition-all active:scale-95 shadow-sm hover:shadow-xl border-b-8 ${i === 0 ? "bg-red-500 border-red-700" :
-                                                i === 1 ? "bg-blue-500 border-blue-700" :
-                                                    i === 2 ? "bg-yellow-500 border-yellow-700" :
-                                                        "bg-green-500 border-green-700"
+                                        className={`group p-8 rounded-[2rem] text-left transition-all active:scale-95 shadow-sm hover:shadow-xl border-b-8 ${currentQuestion.question_type === "true_false"
+                                                ? (opt === "Verdadero" ? "bg-blue-500 border-blue-700" : "bg-red-500 border-red-700")
+                                                : (i === 0 ? "bg-red-500 border-red-700" :
+                                                    i === 1 ? "bg-blue-500 border-blue-700" :
+                                                        i === 2 ? "bg-yellow-500 border-yellow-700" :
+                                                            "bg-green-500 border-green-700")
                                             }`}
                                     >
                                         <div className="flex items-center gap-4">
-                                            <div className="bg-white/20 w-10 h-10 rounded-xl flex items-center justify-center font-black text-white text-lg">
-                                                {String.fromCharCode(65 + i)}
-                                            </div>
-                                            <span className="text-xl font-black text-white">{opt}</span>
+                                            {currentQuestion.question_type !== "true_false" && (
+                                                <div className="bg-white/20 w-10 h-10 rounded-xl flex items-center justify-center font-black text-white text-lg">
+                                                    {String.fromCharCode(65 + i)}
+                                                </div>
+                                            )}
+                                            <span className="text-xl font-black text-white w-full text-center">{opt}</span>
                                         </div>
                                     </button>
                                 ))}
