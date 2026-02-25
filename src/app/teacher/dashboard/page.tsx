@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { Plus, BookOpen, Play, Trash2, LogOut, Loader2, History, Presentation, Calendar, Users, Trophy } from "lucide-react";
+import { Plus, BookOpen, Play, Trash2, LogOut, Loader2, History, Presentation, Calendar, Users, Trophy, Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface Quiz {
@@ -195,12 +195,19 @@ export default function TeacherDashboard() {
                                             PRESENTAR
                                         </button>
                                         <button
+                                            onClick={() => router.push(`/teacher/editor/${quiz.id}`)}
+                                            className="p-4 bg-slate-50 rounded-2xl text-slate-400 hover:text-blue-500 hover:bg-blue-50 transition-all"
+                                        >
+                                            <Pencil className="w-5 h-5" />
+                                        </button>
+                                        <button
                                             className="p-4 bg-slate-50 rounded-2xl text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
                                             onClick={() => deleteQuiz(quiz.id)}
                                         >
                                             <Trash2 className="w-5 h-5" />
                                         </button>
                                     </div>
+
                                 </div>
                             ))}
                         </div>
