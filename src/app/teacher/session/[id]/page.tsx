@@ -53,7 +53,8 @@ export default function TeacherSession() {
                 .order("sort_order", { ascending: true });
 
             if (questionsErr) {
-                toast.error(t('common.error'));
+                console.error("Error fetching questions:", questionsErr);
+                toast.error("Error al cargar las preguntas");
             }
 
             const { data: participantsData } = await supabase
@@ -145,7 +146,7 @@ export default function TeacherSession() {
     const startQuiz = async () => {
         if (!session) return;
         if (questions.length === 0) {
-            toast.error(t('common.error'));
+            toast.error("El cuestionario no tiene preguntas guardadas.");
             return;
         }
 
@@ -168,7 +169,8 @@ export default function TeacherSession() {
             setResponsesCount(0);
         } catch (error) {
             console.error("Error starting quiz:", error);
-            toast.error(t('dashboard.error_launching'));
+            const err = error as any;
+            toast.error(`Error al iniciar: ${err.message || t('dashboard.error_launching')}`);
         }
     };
 
