@@ -5,6 +5,8 @@ import { supabase } from "@/lib/supabase";
 import { Plus, BookOpen, Play, Trash2, LogOut, History, Calendar, Pencil, LayoutDashboard, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { QuizCardSkeleton } from "@/components/Skeleton";
+import ConfirmModal from "@/components/ConfirmModal";
+import { toast } from "sonner";
 
 interface Quiz {
     id: string;
@@ -32,6 +34,10 @@ export default function TeacherDashboard() {
     const [history, setHistory] = useState<FinishedSession[]>([]);
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState<User | null>(null);
+    const [confirmModal, setConfirmModal] = useState<{
+        open: boolean;
+        quizId: string | null;
+    }>({ open: false, quizId: null });
     const router = useRouter();
 
     const fetchQuizzes = useCallback(async (userId: string) => {
@@ -99,9 +105,13 @@ export default function TeacherDashboard() {
     };
 
     const deleteQuiz = async (id: string) => {
-        if (!confirm("¿Estás seguro de que quieres eliminar este quiz?")) return;
         const { error } = await supabase.from("quizzes").delete().eq("id", id);
-        if (!error) setQuizzes(quizzes.filter(q => q.id !== id));
+        if (!error) {
+            setQuizzes(quizzes.filter(q => q.id !== id));
+            toast.success("Cuestionario eliminado con éxito");
+        } else {
+            toast.error("No se pudo eliminar el cuestionario");
+        }
     };
 
     // Simplified skeleton loading instead of full-page spinner
@@ -173,7 +183,7 @@ export default function TeacherDashboard() {
                                         <Pencil className="w-5 h-5" />
                                     </button>
                                     <button
-                                        onClick={() => deleteQuiz(quiz.id)}
+                                        onClick={() => setConfirmModal({ open: true, quizId: quiz.id })}
                                         className="p-4 bg-slate-50 rounded-2xl text-slate-400 hover:text-red-500 hover:bg-white hover:shadow-lg transition-all"
                                         title="Eliminar"
                                     >
@@ -328,6 +338,16 @@ export default function TeacherDashboard() {
 
                 {renderContent()}
             </main>
+
+            <ConfirmModal
+                isOpen={confirmModal.open}
+                onClose={() => setConfirmModal({ open: false, quizId: null })}
+                onConfirm={() => confirmModal.quizId && deleteQuiz(confirmModal.quizId)}
+                title="¿Eliminar cuestionario?"
+                message="Esta acción no se puede deshacer. Se eliminarán todas las preguntas y el historial asociado."
+                confirmText="Eliminar"
+                isDanger
+            />
         </div>
     );
 }

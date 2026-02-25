@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useParams, useRouter } from "next/navigation";
 import { Users, Play, ChevronRight, BarChart3, Trophy, LogOut, Loader2, Sparkles, MessageSquare } from "lucide-react";
+import { toast } from "sonner";
 import Image from "next/image";
 import QRDisplay from "@/components/QRDisplay";
 import ShareModal from "@/components/ShareModal";
@@ -50,30 +51,45 @@ export default function TeacherSession() {
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
     const fetchSessionData = useCallback(async () => {
-        const { data: sessionData } = await supabase
-            .from("sessions")
-            .select("*, quiz:quizzes(*)")
-            .eq("id", id)
-            .single();
+        try {
+            const { data: sessionData, error: sessionErr } = await supabase
+                .from("sessions")
+                .select("*, quiz:quizzes(*)")
+                .eq("id", id)
+                .single();
 
-        if (!sessionData) return router.push("/teacher/dashboard");
+            if (sessionErr || !sessionData) {
+                toast.error("No se pudo cargar la sesión");
+                return router.push("/teacher/dashboard");
+            }
 
-        const { data: questionsData } = await supabase
-            .from("questions")
-            .select("*")
-            .eq("quiz_id", sessionData.quiz_id)
-            .order("sort_order", { ascending: true });
+            const { data: questionsData, error: questionsErr } = await supabase
+                .from("questions")
+                .select("*")
+                .eq("quiz_id", sessionData.quiz_id)
+                .order("sort_order", { ascending: true });
 
-        const { data: participantsData } = await supabase
-            .from("participants")
-            .select("*")
-            .eq("session_id", id);
+            if (questionsErr) {
+                toast.error("Error al cargar las preguntas");
+            }
 
-        setSession(sessionData as Session);
-        setQuiz(sessionData.quiz as Quiz);
-        setQuestions(questionsData as Question[] || []);
-        setParticipants(participantsData || []);
-        setLoading(false);
+            const { data: participantsData } = await supabase
+                .from("participants")
+                .select("*")
+                .eq("session_id", id);
+
+            setSession(sessionData as Session);
+            setQuiz(sessionData.quiz as Quiz);
+            setQuestions(questionsData as Question[] || []);
+            setParticipants(participantsData || []);
+            console.log("Sesión cargada:", sessionData.id);
+            console.log("Preguntas cargadas:", (questionsData || []).length);
+        } catch (err) {
+            console.error(err);
+            toast.error("Error inesperado en la conexión");
+        } finally {
+            setLoading(false);
+        }
     }, [id, router]);
 
     useEffect(() => {
@@ -83,20 +99,33 @@ export default function TeacherSession() {
             .channel(`session_participants_${id}`)
             .on(
                 'postgres_changes',
-                { event: 'INSERT', schema: 'public', table: 'participants', filter: `session_id=eq.${id}` },
+                { event: 'INSERT', schema: 'public', table: 'participants' },
                 (payload) => {
-                    setParticipants((prev) => [...prev, payload.new as Participant]);
+                    // Filter in JS to avoid replica identity issues with 'session_id' filter
+                    if (payload.new.session_id === id) {
+                        console.log("Nuevo participante detectado via Realtime:", payload.new);
+                        setParticipants((prev) => {
+                            const exists = prev.some(p => p.id === payload.new.id);
+                            if (exists) return prev;
+                            return [...prev, payload.new as Participant];
+                        });
+                    }
                 }
             )
-            .subscribe();
+            .subscribe((status) => {
+                console.log("Estado suscripción participantes:", status);
+                if (status === 'CHANNEL_ERROR') toast.error("Error de conexión Realtime");
+            });
 
         const answersChannel = supabase
             .channel(`session_answers_${id}`)
             .on(
                 'postgres_changes',
-                { event: 'INSERT', schema: 'public', table: 'answers', filter: `session_id=eq.${id}` },
-                () => {
-                    setResponsesCount((prev) => prev + 1);
+                { event: 'INSERT', schema: 'public', table: 'answers' },
+                (payload) => {
+                    if (payload.new.session_id === id) {
+                        setResponsesCount((prev) => prev + 1);
+                    }
                 }
             )
             .subscribe();
@@ -108,17 +137,32 @@ export default function TeacherSession() {
     }, [id, fetchSessionData]);
 
     const startQuiz = async () => {
-        if (questions.length === 0 || !session) return;
+        if (!session) return;
+        if (questions.length === 0) {
+            toast.error("Este quiz no tiene preguntas");
+            return;
+        }
 
-        const firstQuestion = questions[0];
-        await supabase
-            .from("sessions")
-            .update({ status: "active", current_question_id: firstQuestion.id, started_at: new Date().toISOString() })
-            .eq("id", id);
+        try {
+            const firstQuestion = questions[0];
+            const { error: updateError } = await supabase
+                .from("sessions")
+                .update({
+                    status: "active",
+                    current_question_id: firstQuestion.id,
+                    started_at: new Date().toISOString()
+                })
+                .eq("id", id);
 
-        setSession({ ...session, status: "active", current_question_id: firstQuestion.id });
-        setCurrentQuestionIndex(0);
-        setResponsesCount(0);
+            if (updateError) throw updateError;
+
+            setSession({ ...session, status: "active", current_question_id: firstQuestion.id });
+            setCurrentQuestionIndex(0);
+            setResponsesCount(0);
+            toast.success("¡Que comience el juego!");
+        } catch (err: any) {
+            toast.error("Error al iniciar el quiz: " + err.message);
+        }
     };
 
     const nextQuestion = async () => {
@@ -162,6 +206,13 @@ export default function TeacherSession() {
                     <div className="flex items-center gap-3">
                         <Users className="w-5 h-5 text-slate-500" />
                         <span className="text-lg font-black text-white">{participants.length} <span className="text-slate-500 font-bold ml-1">ALUMNOS</span></span>
+                        <button
+                            onClick={fetchSessionData}
+                            className="p-2 hover:bg-slate-800 rounded-lg text-slate-500 hover:text-white transition-all"
+                            title="Refrescar participantes"
+                        >
+                            <Loader2 className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                        </button>
                     </div>
                 </div>
 

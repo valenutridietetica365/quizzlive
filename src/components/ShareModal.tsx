@@ -65,7 +65,7 @@ export default function ShareModal({ isOpen, onClose, pin, joinUrl }: ShareModal
 
                 <div className="p-8 bg-slate-50 text-center">
                     <p className="text-xs text-slate-400 font-bold max-w-xs mx-auto">
-                        Los alumnos pueden entrar en <span className="text-blue-600 font-black">join.quizzlive.com</span> e introducir el código manual o el QR.
+                        Los alumnos pueden unirse escaneando el código QR superior o introduciendo el PIN manualmente en la página de acceso.
                     </p>
                 </div>
             </div>

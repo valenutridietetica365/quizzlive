@@ -34,6 +34,7 @@ export default function StudentPlay() {
     const [answered, setAnswered] = useState(false);
     const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
     const [loading, setLoading] = useState(true);
+    const [selectedOption, setSelectedOption] = useState<string | null>(null);
 
     const playSound = (type: "correct" | "wrong") => {
         const audio = new Audio(
@@ -102,6 +103,7 @@ export default function StudentPlay() {
 
     const submitAnswer = async (answer: string) => {
         if (answered || !currentQuestion) return;
+        setSelectedOption(answer);
         setAnswered(true);
 
         const correct = answer === currentQuestion.correct_answer;
@@ -184,18 +186,20 @@ export default function StudentPlay() {
                                     <button
                                         key={i}
                                         onClick={() => submitAnswer(opt)}
-                                        className={`group p-8 rounded-[2rem] text-left transition-all active:scale-95 shadow-lg border-b-[8px] flex flex-col justify-between h-48 sm:h-auto ${currentQuestion.question_type === "true_false"
-                                            ? (opt === "Verdadero" ? "bg-blue-600 border-blue-800 shadow-blue-200" : "bg-red-600 border-red-800 shadow-red-200")
-                                            : (i === 0 ? "bg-red-600 border-red-800 shadow-red-200" :
-                                                i === 1 ? "bg-blue-600 border-blue-800 shadow-blue-200" :
-                                                    i === 2 ? "bg-amber-500 border-amber-700 shadow-amber-100" :
-                                                        "bg-emerald-600 border-emerald-800 shadow-emerald-100")
+                                        className={`group p-8 rounded-[2rem] text-left transition-all active:scale-95 shadow-lg border-b-[8px] flex flex-col justify-between h-48 sm:h-auto overflow-hidden relative ${selectedOption === opt ? "scale-105 brightness-110 z-10 ring-4 ring-white shadow-2xl" : ""
+                                            } ${currentQuestion.question_type === "true_false"
+                                                ? (opt === "Verdadero" ? "bg-blue-600 border-blue-800 shadow-blue-200" : "bg-red-600 border-red-800 shadow-red-200")
+                                                : (i === 0 ? "bg-red-600 border-red-800 shadow-red-200" :
+                                                    i === 1 ? "bg-blue-600 border-blue-800 shadow-blue-200" :
+                                                        i === 2 ? "bg-amber-500 border-amber-700 shadow-amber-100" :
+                                                            "bg-emerald-600 border-emerald-800 shadow-emerald-100")
                                             }`}
                                     >
-                                        <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center font-black text-white text-xl">
+                                        <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center font-black text-white text-xl relative z-10">
                                             {String.fromCharCode(65 + i)}
                                         </div>
-                                        <span className="text-2xl font-black text-white mt-4">{opt}</span>
+                                        <span className="text-2xl font-black text-white mt-4 relative z-10">{opt}</span>
                                     </button>
                                 ))}
                             </div>

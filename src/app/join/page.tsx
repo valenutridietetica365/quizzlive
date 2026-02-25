@@ -12,13 +12,17 @@ function JoinContent() {
     const [nickname, setNickname] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [hasPinFromUrl, setHasPinFromUrl] = useState(false);
     const router = useRouter();
     const searchParams = useSearchParams();
     const setParticipantInfo = useQuizStore((state) => state.setParticipantInfo);
 
     useEffect(() => {
         const pinFromUrl = searchParams.get("pin");
-        if (pinFromUrl) setPin(pinFromUrl);
+        if (pinFromUrl) {
+            setPin(pinFromUrl);
+            setHasPinFromUrl(true);
+        }
     }, [searchParams]);
 
     const handleJoin = async (e: React.FormEvent) => {
@@ -66,68 +70,95 @@ function JoinContent() {
                         <Rocket className="w-10 h-10 animate-float" />
                     </div>
                     <div className="space-y-2">
-                        <h1 className="text-5xl font-black text-slate-900 tracking-tighter">Únete ahora</h1>
-                        <p className="text-slate-500 font-medium text-lg">Ingresa el código y tu apodo para empezar.</p>
+                        <h1 className="text-5xl font-black text-slate-900 tracking-tighter">
+                            {hasPinFromUrl ? "Casi listo" : "Únete ahora"}
+                        </h1>
+                        <p className="text-slate-500 font-medium text-lg">
+                            {hasPinFromUrl ? "Solo elige un apodo para empezar a jugar." : "Ingresa el código y tu apodo para empezar."}
+                        </p>
                     </div>
                 </div>
 
-                <div className="bg-slate-50 p-10 rounded-[3rem] border border-slate-100 shadow-[0_24px_80px_-15px_rgba(0,0,0,0.05)] relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-32 h-32 bg-blue-100/30 rounded-br-[4rem] -ml-8 -mt-8" />
+                <div className="relative group">
+                    {/* Iridescent background glow */}
+                    <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-[4rem] blur-2xl opacity-50 group-hover:opacity-100 transition-opacity duration-1000" />
 
-                    <form onSubmit={handleJoin} className="space-y-8 relative z-10">
-                        <div className="space-y-6">
-                            <div className="space-y-2">
-                                <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                                    <Key className="w-3 h-3 text-blue-500" />
-                                    Código PIN
-                                </label>
-                                <input
-                                    type="text"
-                                    placeholder="000000"
-                                    value={pin}
-                                    onChange={(e) => setPin(e.target.value.toUpperCase())}
-                                    className="input-premium !bg-white !text-3xl !py-6 !font-mono !tracking-[0.5em] text-center !shadow-inner"
-                                    maxLength={6}
-                                    required
-                                />
+                    <div className="relative bg-white/40 backdrop-blur-3xl p-10 rounded-[3rem] border border-white/50 shadow-[0_32px_120px_-20px_rgba(0,0,0,0.1)] overflow-hidden">
+                        <div className="absolute top-0 left-0 w-32 h-32 bg-blue-100/30 rounded-br-[4rem] -ml-8 -mt-8" />
+                        <div className="absolute bottom-0 right-0 w-24 h-24 bg-purple-100/20 rounded-tl-[3rem] -mr-6 -mb-6" />
+
+                        <form onSubmit={handleJoin} className="space-y-8 relative z-10">
+                            <div className="space-y-6">
+                                {hasPinFromUrl ? (
+                                    <div className="bg-slate-900 text-white p-7 rounded-[2rem] flex items-center justify-between shadow-2xl relative overflow-hidden group/pin">
+                                        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-transparent opacity-0 group-hover/pin:opacity-100 transition-opacity" />
+                                        <div className="flex items-center gap-4 relative z-10">
+                                            <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+                                                <Key className="w-5 h-5 text-white" />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Sesión Activa</span>
+                                                <span className="text-sm font-bold text-blue-400">Listo para entrar</span>
+                                            </div>
+                                        </div>
+                                        <span className="text-4xl font-black font-mono tracking-widest relative z-10">{pin}</span>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                                            <Key className="w-3 h-3 text-blue-500" />
+                                            Código PIN
+                                        </label>
+                                        <input
+                                            type="text"
+                                            placeholder="000000"
+                                            value={pin}
+                                            onChange={(e) => setPin(e.target.value.toUpperCase())}
+                                            className="input-premium !bg-white/60 !text-3xl !py-6 !font-mono !tracking-[0.5em] text-center !shadow-inner"
+                                            maxLength={6}
+                                            required
+                                        />
+                                    </div>
+                                )}
+
+                                <div className="space-y-2">
+                                    <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                                        <User className="w-3 h-3 text-blue-500" />
+                                        Tu Apodo (Nickname)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        placeholder="Ej: ProfeGenial"
+                                        value={nickname}
+                                        onChange={(e) => setNickname(e.target.value)}
+                                        className="input-premium !bg-white/80"
+                                        required
+                                        autoFocus={hasPinFromUrl}
+                                    />
+                                </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                                    <User className="w-3 h-3 text-blue-500" />
-                                    Tu Apodo (Nickname)
-                                </label>
-                                <input
-                                    type="text"
-                                    placeholder="Ej: ProfeGenial"
-                                    value={nickname}
-                                    onChange={(e) => setNickname(e.target.value)}
-                                    className="input-premium !bg-white"
-                                    required
-                                />
-                            </div>
-                        </div>
-
-                        {error && (
-                            <div className="bg-red-50 text-red-600 p-4 rounded-2xl text-xs font-black border border-red-100 animate-in slide-in-from-top-2">
-                                {error}
-                            </div>
-                        )}
-
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="btn-premium w-full !bg-blue-600 !hover:bg-blue-700 !shadow-blue-100 flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50 transition-all font-black text-xl !py-5"
-                        >
-                            {loading ? (
-                                <Loader2 className="w-7 h-7 animate-spin" />
-                            ) : (
-                                <>
-                                    ¡VAMOS! <ArrowRight className="w-6 h-6" />
-                                </>
+                            {error && (
+                                <div className="bg-red-50 text-red-600 p-4 rounded-2xl text-xs font-black border border-red-100 animate-in slide-in-from-top-2">
+                                    {error}
+                                </div>
                             )}
-                        </button>
-                    </form>
+
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="btn-premium w-full !bg-slate-900 !text-white !shadow-slate-200 flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50 transition-all font-black text-xl !py-6 !rounded-[2rem]"
+                            >
+                                {loading ? (
+                                    <Loader2 className="w-7 h-7 animate-spin" />
+                                ) : (
+                                    <>
+                                        COMENZAR <ArrowRight className="w-6 h-6" />
+                                    </>
+                                )}
+                            </button>
+                        </form>
+                    </div>
                 </div>
 
                 <div className="flex justify-center flex-wrap gap-4">
