@@ -3,17 +3,19 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { Mail, Lock, AlertCircle, Eye, EyeOff, UserPlus, LogIn } from "lucide-react";
+import { Mail, Lock, AlertCircle, Eye, EyeOff, UserPlus, LogIn, KeyRound } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuizStore } from "@/lib/store";
 import { getTranslation } from "@/lib/i18n";
 import LanguageSelector from "@/components/LanguageSelector";
+import { signUpTeacher } from "@/lib/actions";
 
 export default function TeacherLogin() {
     const { language } = useQuizStore();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [invitationCode, setInvitationCode] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -36,16 +38,23 @@ export default function TeacherLogin() {
                 if (error) throw error;
                 router.push("/teacher/dashboard");
             } else {
-                const { error } = await supabase.auth.signUp({
-                    email,
-                    password,
-                    options: {
-                        emailRedirectTo: `${window.location.origin}/teacher/dashboard`,
+                const formData = new FormData();
+                formData.append('email', email);
+                formData.append('password', password);
+                formData.append('invitationCode', invitationCode);
+
+                const result = await signUpTeacher(formData);
+
+                if (result.error) {
+                    if (result.error === "invitation_code_invalid") {
+                        throw new Error(t('auth.error_invalid_invitation'));
                     }
-                });
-                if (error) throw error;
+                    throw new Error(result.error);
+                }
+
                 toast.success(t('auth.signup_success'));
                 setMode("login");
+                setInvitationCode("");
             }
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : t('auth.unexpected_error'));
@@ -128,6 +137,28 @@ export default function TeacherLogin() {
                             </div>
                         </div>
 
+                        {mode === "signup" && (
+                            <div className="animate-in fade-in slide-in-from-top-4 duration-500">
+                                <label htmlFor="invitationCode" className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                                    {t('auth.invitation_code_label')}
+                                </label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                        <KeyRound className="h-5 w-5 text-slate-300" aria-hidden="true" />
+                                    </div>
+                                    <input
+                                        id="invitationCode"
+                                        type="password"
+                                        required
+                                        value={invitationCode}
+                                        onChange={(e) => setInvitationCode(e.target.value)}
+                                        className="block w-full pl-12 pr-4 py-4 bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 rounded-2xl text-slate-900 font-bold placeholder:text-slate-300 transition-all outline-none"
+                                        placeholder={t('auth.invitation_code_placeholder')}
+                                    />
+                                </div>
+                            </div>
+                        )}
+
                         {error && (
                             <div className="rounded-2xl bg-red-50 p-4 border border-red-100 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
                                 <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" aria-hidden="true" />
@@ -148,7 +179,10 @@ export default function TeacherLogin() {
 
                     <div className="mt-8 flex flex-col gap-4">
                         <button
-                            onClick={() => setMode(mode === "login" ? "signup" : "login")}
+                            onClick={() => {
+                                setMode(mode === "login" ? "signup" : "login");
+                                setError(null);
+                            }}
                             className="text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors"
                         >
                             {mode === "login"

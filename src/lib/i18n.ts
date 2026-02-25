@@ -189,7 +189,10 @@ export const translations = {
             has_account: "¿Ya tienes cuenta? Inicia sesión",
             back_to_home: "Volver al inicio",
             signup_success: "¡Registro exitoso! Ya puedes iniciar sesión.",
-            unexpected_error: "Ocurrió un error inesperado"
+            unexpected_error: "Ocurrió un error inesperado",
+            invitation_code_label: "Código de Invitación",
+            invitation_code_placeholder: "Ingresa el código secreto",
+            error_invalid_invitation: "El código de invitación no es válido"
         }
     },
     en: {
@@ -380,7 +383,10 @@ export const translations = {
             has_account: "Already have an account? Log in",
             back_to_home: "Back to home",
             signup_success: "Sign up successful! You can now log in.",
-            unexpected_error: "An unexpected error occurred"
+            unexpected_error: "An unexpected error occurred",
+            invitation_code_label: "Invitation Code",
+            invitation_code_placeholder: "Enter secret code",
+            error_invalid_invitation: "The invitation code is invalid"
         }
     }
 };
