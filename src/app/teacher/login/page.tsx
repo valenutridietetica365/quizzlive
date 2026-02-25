@@ -2,117 +2,149 @@
 
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Mail, CheckCircle2, AlertCircle } from "lucide-react";
+import { Mail, Lock, AlertCircle, Eye, EyeOff, UserPlus, LogIn } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function TeacherLogin() {
     const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [success, setSuccess] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [mode, setMode] = useState<"login" | "signup">("login");
+    const router = useRouter();
 
-    const handleLogin = async (e: React.FormEvent) => {
+    const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
-        setSuccess(false);
 
-        const { error } = await supabase.auth.signInWithOtp({
-            email,
-            options: {
-                emailRedirectTo: `${window.location.origin}/auth/callback`,
-            },
-        });
-
-        if (error) {
-            setError(error.message);
-        } else {
-            setSuccess(true);
+        try {
+            if (mode === "login") {
+                const { error } = await supabase.auth.signInWithPassword({
+                    email,
+                    password,
+                });
+                if (error) throw error;
+                router.push("/teacher/dashboard");
+            } else {
+                const { error } = await supabase.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        emailRedirectTo: `${window.location.origin}/teacher/dashboard`,
+                    }
+                });
+                if (error) throw error;
+                alert("¡Registro exitoso! Ya puedes iniciar sesión.");
+                setMode("login");
+            }
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "Ocurrió un error inesperado");
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-            <div className="sm:mx-auto sm:w-full sm:max-w-md">
-                <h2 className="mt-6 text-center text-3xl font-extrabold text-slate-900">
-                    Acceso Profesores
-                </h2>
-                <p className="mt-2 text-center text-sm text-slate-600">
-                    Accede a tus quizzes mediante tu correo.
-                </p>
+            <div className="sm:mx-auto sm:w-full sm:max-w-md space-y-4">
+                <div className="flex justify-center">
+                    <div className="w-16 h-16 bg-slate-900 rounded-3xl flex items-center justify-center text-white shadow-xl">
+                        {mode === "login" ? <LogIn className="w-8 h-8" /> : <UserPlus className="w-8 h-8" />}
+                    </div>
+                </div>
+                <div>
+                    <h2 className="text-center text-3xl font-black text-slate-900 tracking-tight">
+                        {mode === "login" ? "Acceso Profesores" : "Crear Cuenta"}
+                    </h2>
+                    <p className="mt-2 text-center text-sm text-slate-500 font-medium">
+                        {mode === "login"
+                            ? "Gestiona tus quizzes de forma segura."
+                            : "Únete a la plataforma para crear tus propios quizzes."}
+                    </p>
+                </div>
             </div>
 
-            <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-                <div className="bg-white py-8 px-4 shadow sm:rounded-2xl sm:px-10 border border-slate-100">
-                    {success ? (
-                        <div className="rounded-xl bg-green-50 p-4 border border-green-200">
-                            <div className="flex">
-                                <div className="flex-shrink-0">
-                                    <CheckCircle2 className="h-5 w-5 text-green-400" aria-hidden="true" />
+            <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md px-4 sm:px-0">
+                <div className="bg-white py-10 px-6 shadow-xl shadow-slate-200/50 sm:rounded-[2.5rem] sm:px-12 border border-slate-100">
+                    <form className="space-y-6" onSubmit={handleAuth}>
+                        <div>
+                            <label htmlFor="email" className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                                Correo Electrónico
+                            </label>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <Mail className="h-5 w-5 text-slate-300" aria-hidden="true" />
                                 </div>
-                                <div className="ml-3">
-                                    <h3 className="text-sm font-medium text-green-800">Email enviado</h3>
-                                    <div className="mt-2 text-sm text-green-700">
-                                        <p>
-                                            Revisa tu bandeja de entrada en <strong>{email}</strong> y haz clic en el enlace mágico para acceder.
-                                        </p>
-                                    </div>
-                                </div>
+                                <input
+                                    id="email"
+                                    type="email"
+                                    required
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="block w-full pl-12 pr-4 py-4 bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 rounded-2xl text-slate-900 font-bold placeholder:text-slate-300 transition-all outline-none"
+                                    placeholder="ejemplo@correo.com"
+                                />
                             </div>
                         </div>
-                    ) : (
-                        <form className="space-y-6" onSubmit={handleLogin}>
-                            <div>
-                                <label htmlFor="email" className="block text-sm font-medium text-slate-700">
-                                    Correo institucional
-                                </label>
-                                <div className="mt-1 relative rounded-md shadow-sm">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <Mail className="h-5 w-5 text-slate-400" aria-hidden="true" />
-                                    </div>
-                                    <input
-                                        id="email"
-                                        name="email"
-                                        type="email"
-                                        autoComplete="email"
-                                        required
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-slate-300 rounded-xl py-3 border outline-none"
-                                        placeholder="tucorreo@universidad.edu"
-                                    />
-                                </div>
-                            </div>
 
-                            {error && (
-                                <div className="rounded-md bg-red-50 p-4 border border-red-200">
-                                    <div className="flex">
-                                        <AlertCircle className="h-5 w-5 text-red-400" aria-hidden="true" />
-                                        <div className="ml-3">
-                                            <h3 className="text-sm font-medium text-red-800">Error al enviar</h3>
-                                            <div className="mt-2 text-sm text-red-700">
-                                                <p>{error}</p>
-                                            </div>
-                                        </div>
-                                    </div>
+                        <div>
+                            <label htmlFor="password" className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                                Contraseña
+                            </label>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <Lock className="h-5 w-5 text-slate-300" aria-hidden="true" />
                                 </div>
-                            )}
-
-                            <div>
+                                <input
+                                    id="password"
+                                    type={showPassword ? "text" : "password"}
+                                    required
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="block w-full pl-12 pr-12 py-4 bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 rounded-2xl text-slate-900 font-bold placeholder:text-slate-300 transition-all outline-none"
+                                    placeholder="••••••••"
+                                />
                                 <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-300 hover:text-slate-500"
                                 >
-                                    {loading ? 'Enviando enlace...' : 'Enviar enlace mágico'}
+                                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                                 </button>
                             </div>
-                        </form>
-                    )}
+                        </div>
 
-                    <div className="mt-6 text-center">
-                        <Link href="/" className="font-medium text-blue-600 hover:text-blue-500 text-sm">
+                        {error && (
+                            <div className="rounded-2xl bg-red-50 p-4 border border-red-100 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
+                                <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" aria-hidden="true" />
+                                <p className="text-sm font-bold text-red-800 leading-tight">{error}</p>
+                            </div>
+                        )}
+
+                        <div>
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="group w-full flex justify-center py-4 px-4 border border-transparent rounded-2xl shadow-lg text-lg font-black text-white bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 transition-all active:scale-[0.98] disabled:opacity-50"
+                            >
+                                {loading ? 'Procesando...' : (mode === "login" ? 'ENTRAR' : 'CREAR CUENTA')}
+                            </button>
+                        </div>
+                    </form>
+
+                    <div className="mt-8 flex flex-col gap-4">
+                        <button
+                            onClick={() => setMode(mode === "login" ? "signup" : "login")}
+                            className="text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors"
+                        >
+                            {mode === "login"
+                                ? "¿No tienes cuenta? Regístrate aquí"
+                                : "¿Ya tienes cuenta? Inicia sesión"}
+                        </button>
+                        <Link href="/" className="text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors">
                             Volver al inicio
                         </Link>
                     </div>
