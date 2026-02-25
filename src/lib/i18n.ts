@@ -81,7 +81,8 @@ export const translations = {
             verify_pairs: "VERIFICAR PAREJAS",
             reset_pairs: "Reiniciar parejas",
             concepts: "Conceptos",
-            pairs: "Parejas"
+            pairs: "Parejas",
+            time_left: "Tiempo restante"
         },
         analytics: {
             avg_success: "Promedio de Acierto",
@@ -115,7 +116,8 @@ export const translations = {
             responses: "Respuestas",
             refresh_participants: "Refrescar participantes",
             share_session: "Compartir sesión",
-            leave_session: "Abandonar sesión"
+            leave_session: "Abandonar sesión",
+            time_remaining: "Tiempo restante"
         },
         landing: {
             features: "Características",
@@ -283,7 +285,8 @@ export const translations = {
             verify_pairs: "VERIFY PAIRS",
             reset_pairs: "Reset pairs",
             concepts: "Concepts",
-            pairs: "Pairs"
+            pairs: "Pairs",
+            time_left: "Time left"
         },
         analytics: {
             avg_success: "Avg. Success",
@@ -317,7 +320,8 @@ export const translations = {
             responses: "Responses",
             refresh_participants: "Refresh participants",
             share_session: "Share session",
-            leave_session: "Leave session"
+            leave_session: "Leave session",
+            time_remaining: "Time remaining"
         },
         landing: {
             features: "Features",

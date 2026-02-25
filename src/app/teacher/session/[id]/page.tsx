@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useParams, useRouter } from "next/navigation";
-import { Users, Play, ChevronRight, BarChart3, Trophy, LogOut, Loader2, MessageSquare, QrCode } from "lucide-react";
+import { Users, Play, ChevronRight, BarChart3, Trophy, LogOut, Loader2, MessageSquare, QrCode, Clock } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
 import QRDisplay from "@/components/QRDisplay";
@@ -30,6 +30,7 @@ export default function TeacherSession() {
     const [responsesCount, setResponsesCount] = useState(0);
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
     const [showAnalytics, setShowAnalytics] = useState(false);
+    const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
     const t = useCallback((key: string) => getTranslation(language, key), [language]);
 
@@ -90,6 +91,11 @@ export default function TeacherSession() {
 
             setQuestions(validQuestions);
             setParticipants(validParticipants);
+
+            if (sessionData.current_question_id) {
+                const index = validQuestions.findIndex(q => q.id === sessionData.current_question_id);
+                if (index !== -1) setCurrentQuestionIndex(index);
+            }
         } catch {
             toast.error(t('common.error'));
         } finally {
@@ -197,6 +203,29 @@ export default function TeacherSession() {
             setSession({ ...session, status: "finished" });
         }
     };
+
+    useEffect(() => {
+        if (session?.status !== "active" || currentQuestionIndex === -1 || !questions[currentQuestionIndex]) {
+            setTimeLeft(null);
+            return;
+        }
+
+        const timer = setInterval(() => {
+            const startedAt = session.current_question_started_at ? new Date(session.current_question_started_at).getTime() : Date.now();
+            const timeLimit = questions[currentQuestionIndex].time_limit || 20;
+            const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+            const remaining = Math.max(0, timeLimit - elapsed);
+
+            setTimeLeft(remaining);
+
+            if (remaining <= 0) {
+                clearInterval(timer);
+                nextQuestion();
+            }
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [session?.status, session?.current_question_started_at, currentQuestionIndex, questions, nextQuestion]);
 
     if (loading) return <TeacherSessionSkeleton />;
 
@@ -382,6 +411,20 @@ export default function TeacherSession() {
                                     ))}
                                 </div>
                             </div>
+
+                            {/* Timer Card */}
+                            {timeLeft !== null && (
+                                <div className="bg-slate-900/80 backdrop-blur-xl p-10 rounded-[2.5rem] border border-white/5 flex flex-col items-center text-center space-y-4 shadow-2xl overflow-hidden relative group">
+                                    <div className={`w-20 h-20 ${timeLeft < 5 ? 'bg-red-500/10 text-red-500 animate-pulse' : 'bg-blue-500/10 text-blue-500'} rounded-full flex items-center justify-center ring-8 ${timeLeft < 5 ? 'ring-red-500/5' : 'ring-blue-500/5'} transition-colors duration-500`}>
+                                        <Clock className="w-10 h-10" />
+                                    </div>
+                                    <div className="relative z-10">
+                                        <p className={`text-6xl font-black tabular-nums tracking-tighter transition-colors duration-500 ${timeLeft < 5 ? 'text-red-500' : 'text-white'}`}>{timeLeft}</p>
+                                        <p className="text-sm font-black text-slate-500 uppercase tracking-widest mt-1">{t('session.time_remaining')}</p>
+                                    </div>
+                                    <div className="absolute bottom-0 left-0 h-1.5 bg-blue-500 transition-all duration-1000 ease-linear" style={{ width: `${(timeLeft / (questions[currentQuestionIndex]?.time_limit || 20)) * 100}%`, backgroundColor: timeLeft < 5 ? '#ef4444' : '#3b82f6' }} />
+                                </div>
+                            )}
 
                             <button
                                 onClick={nextQuestion}

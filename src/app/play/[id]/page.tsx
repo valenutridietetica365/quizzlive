@@ -30,6 +30,8 @@ export default function StudentPlay() {
     const [pointsEarned, setPointsEarned] = useState<number>(0);
     const [currentStreak, setCurrentStreak] = useState<number>(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [timeLeft, setTimeLeft] = useState<number | null>(null);
+    const [timesUp, setTimesUp] = useState(false);
 
     // States for new question types
     const [fillAnswer, setFillAnswer] = useState("");
@@ -60,6 +62,8 @@ export default function StudentPlay() {
                 setMatchingPairs({});
                 setSelectedTerm(null);
                 setIsSubmitting(false); // Crucial fix: allow interaction in the new question
+                setTimesUp(false);
+                setTimeLeft(null);
 
                 if (q.question_type === "matching") {
                     const matches = q.options.map(opt => opt.split(":")[1]);
@@ -161,6 +165,32 @@ export default function StudentPlay() {
         };
         // Removed session?.current_question_id and session?.status from dependencies to stabilize subscription
     }, [id, nickname, participantId, fetchInitialState, handleNewQuestion, router, totalScore, fetchingScore, fetchTotalScore]);
+
+    // Countdown timer synchronized with session's current_question_started_at
+    useEffect(() => {
+        if (!currentQuestion || answered || timesUp || session?.status !== "active") {
+            return;
+        }
+
+        const timer = setInterval(() => {
+            const startedAt = session?.current_question_started_at
+                ? new Date(session.current_question_started_at).getTime()
+                : Date.now();
+            const timeLimit = currentQuestion.time_limit || 20;
+            const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+            const remaining = Math.max(0, timeLimit - elapsed);
+
+            setTimeLeft(remaining);
+
+            if (remaining <= 0) {
+                clearInterval(timer);
+                setTimesUp(true);
+                setAnswered(true); // prevent submission
+            }
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [currentQuestion, answered, timesUp, session?.status, session?.current_question_started_at]);
 
     const submitAnswer = async (answer: string) => {
         if (answered || isSubmitting || !currentQuestion) return;
@@ -264,8 +294,34 @@ export default function StudentPlay() {
                             </div>
                             <p className="text-slate-400 font-black uppercase tracking-[0.3em] text-xs">Cargando siguiente pregunta...</p>
                         </div>
+                    ) : timesUp ? (
+                        <div className="w-full text-center space-y-6 animate-in zoom-in duration-700">
+                            <div className="p-12 rounded-[4rem] bg-slate-800 border-b-[12px] border-slate-900 flex flex-col items-center gap-4 shadow-xl">
+                                <Clock className="w-20 h-20 text-amber-400 animate-pulse" />
+                                <h1 className="text-4xl font-black text-white">{t('play.time_up')}</h1>
+                                <p className="text-slate-400 font-bold">{t('play.next_question_coming')}</p>
+                            </div>
+                        </div>
                     ) : !answered ? (
                         <div className="w-full space-y-8 md:space-y-10 animate-in slide-in-from-bottom-12 duration-700">
+                            {/* Timer Bar */}
+                            {timeLeft !== null && (
+                                <div className="w-full space-y-1">
+                                    <div className="flex justify-between items-center px-1">
+                                        <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{t('play.time_left')}</span>
+                                        <span className={`text-xs font-black tabular-nums ${timeLeft < 5 ? 'text-red-500 animate-pulse' : 'text-slate-500'}`}>{timeLeft}s</span>
+                                    </div>
+                                    <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full rounded-full transition-all duration-1000 ease-linear"
+                                            style={{
+                                                width: `${(timeLeft / (currentQuestion.time_limit || 20)) * 100}%`,
+                                                backgroundColor: timeLeft < 5 ? '#ef4444' : timeLeft < 10 ? '#f59e0b' : '#3b82f6'
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            )}
                             <div className="text-center space-y-4 px-4">
                                 <h2 className="text-2xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight">
                                     {currentQuestion.question_text}
