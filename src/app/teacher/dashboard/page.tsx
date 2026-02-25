@@ -114,7 +114,7 @@ export default function TeacherDashboard() {
         };
 
         checkUser();
-    }, [router, fetchQuizzes, fetchHistory]);
+    }, [router, fetchQuizzes, fetchHistory, fetchLiveSessions]);
 
     const handleLogout = async () => {
         await supabase.auth.signOut();

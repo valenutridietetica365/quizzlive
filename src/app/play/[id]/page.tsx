@@ -30,7 +30,7 @@ export default function StudentPlay() {
     const [selectedOption, setSelectedOption] = useState<string | null>(null);
     const [totalScore, setTotalScore] = useState<number | null>(null);
     const [fetchingScore, setFetchingScore] = useState(false);
-    const [questionStartTime, setQuestionStartTime] = useState<number>(0);
+
     const [pointsEarned, setPointsEarned] = useState<number>(0);
     const [currentStreak, setCurrentStreak] = useState<number>(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -66,7 +66,7 @@ export default function StudentPlay() {
                 setAnswered(false);
                 setIsCorrect(null);
                 setPointsEarned(0);
-                setQuestionStartTime(Date.now());
+
                 setSelectedOption(null);
                 setFillAnswer("");
                 setMatchingPairs({});
