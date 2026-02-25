@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { Plus, BookOpen, Play, Trash2, LogOut, Loader2, History, Calendar, Pencil, LayoutDashboard, ChevronRight } from "lucide-react";
+import { Plus, BookOpen, Play, Trash2, LogOut, History, Calendar, Pencil, LayoutDashboard, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { QuizCardSkeleton } from "@/components/Skeleton";
 

@@ -50,7 +50,9 @@ function JoinContent() {
             setParticipantInfo(participant.id, nickname);
             router.push(`/play/${session.id}`);
         } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : "Error desconocido");
+            const msg = err instanceof Error ? err.message : "Error desconocido";
+            setError(msg);
+            toast.error(msg);
         } finally {
             setLoading(false);
         }

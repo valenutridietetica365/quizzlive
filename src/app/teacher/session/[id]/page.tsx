@@ -6,6 +6,8 @@ import { useParams, useRouter } from "next/navigation";
 import { Users, Play, ChevronRight, BarChart3, Trophy, LogOut, Loader2, Sparkles, MessageSquare } from "lucide-react";
 import Image from "next/image";
 import QRDisplay from "@/components/QRDisplay";
+import ShareModal from "@/components/ShareModal";
+import { QrCode } from "lucide-react";
 
 interface Quiz {
     id: string;
@@ -45,6 +47,7 @@ export default function TeacherSession() {
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(-1);
     const [loading, setLoading] = useState(true);
     const [responsesCount, setResponsesCount] = useState(0);
+    const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
     const fetchSessionData = useCallback(async () => {
         const { data: sessionData } = await supabase
@@ -167,6 +170,15 @@ export default function TeacherSession() {
                         <span className="text-xs font-black text-slate-400 uppercase tracking-widest">PIN</span>
                         <span className="text-xl font-black text-blue-400 font-mono tracking-widest">{session.pin}</span>
                     </div>
+
+                    <button
+                        onClick={() => setIsShareModalOpen(true)}
+                        className="p-3 bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white rounded-2xl transition-all border border-blue-500/20 active:scale-95 group"
+                        title="Compartir sesión"
+                    >
+                        <QrCode className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                    </button>
+
                     <button
                         onClick={() => router.push("/teacher/dashboard")}
                         className="p-3 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white rounded-2xl transition-all border border-red-500/20 active:scale-95 group"
@@ -253,11 +265,11 @@ export default function TeacherSession() {
                                     <div
                                         key={i}
                                         className={`p-6 md:p-8 rounded-[2rem] border-b-[6px] transition-all flex items-center gap-5 ${questions[currentQuestionIndex].question_type === "true_false"
-                                                ? (opt === "Verdadero" ? "bg-blue-600/90 border-blue-800" : "bg-red-600/90 border-red-800")
-                                                : (i === 0 ? "bg-red-600/90 border-red-800" :
-                                                    i === 1 ? "bg-blue-600/90 border-blue-800" :
-                                                        i === 2 ? "bg-amber-500 border-amber-700" :
-                                                            "bg-emerald-600/90 border-emerald-800")
+                                            ? (opt === "Verdadero" ? "bg-blue-600/90 border-blue-800" : "bg-red-600/90 border-red-800")
+                                            : (i === 0 ? "bg-red-600/90 border-red-800" :
+                                                i === 1 ? "bg-blue-600/90 border-blue-800" :
+                                                    i === 2 ? "bg-amber-500 border-amber-700" :
+                                                        "bg-emerald-600/90 border-emerald-800")
                                             }`}
                                     >
                                         <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-xl font-black shadow-lg">
@@ -343,6 +355,13 @@ export default function TeacherSession() {
                     </div>
                 )}
             </div>
+
+            <ShareModal
+                isOpen={isShareModalOpen}
+                onClose={() => setIsShareModalOpen(false)}
+                pin={session.pin}
+                joinUrl={joinUrl}
+            />
         </div>
     );
 }

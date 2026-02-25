@@ -6,7 +6,6 @@ import { supabase } from "@/lib/supabase";
 import { useQuizStore } from "@/lib/store";
 import { Loader2, CheckCircle2, Clock, Trophy, Frown, Sparkles } from "lucide-react";
 import Image from "next/image";
-import { toast } from "sonner";
 
 interface Session {
     id: string;

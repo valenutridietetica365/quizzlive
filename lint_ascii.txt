@@ -1,0 +1,46 @@
+node.exe : 
+En l?nea: 1 Car?cter: 1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo 
+...
++ ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: (:String) [],    
+ RemoteException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+./src/app/teacher/dashb
+oard/page.tsx
+5:48  Error: 'Loader2' 
+is defined but never 
+used.  @typescript-esli
+nt/no-unused-vars
+
+./src/app/teacher/sessi
+on/[id]/page.tsx
+10:18  Error: 'Share2' 
+is defined but never 
+used.  @typescript-esli
+nt/no-unused-vars
+
+./src/components/ShareM
+odal.tsx
+3:34  Error: 'QrCode' 
+is defined but never 
+used.  @typescript-esli
+nt/no-unused-vars
+
+info  - Need to 
+disable some ESLint 
+rules? Learn more 
+here: https://nextjs.or
+g/docs/basic-features/e
+slint#disabling-rules
