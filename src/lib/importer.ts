@@ -42,42 +42,73 @@ export const parseQuizFile = async (file: File): Promise<ImportResult> => {
                 const errors: string[] = [];
 
                 rows.forEach((row, index) => {
-                    if (!row[colQuestion]) return;
+                    const question_text = String(row[colQuestion] || "").trim();
+                    if (!question_text) return;
 
                     try {
-                        const question_text = String(row[colQuestion] || "").trim();
-                        const raw_type = String(row[colType] || "multiple_choice").trim().toLowerCase();
-
-                        let question_type: Question['question_type'] = "multiple_choice";
-                        if (raw_type.includes("v") || raw_type.includes("f") || raw_type === "true_false") question_type = "true_false";
-                        else if (raw_type.includes("oracion") || raw_type.includes("blank") || raw_type === "fill_in_the_blank") question_type = "fill_in_the_blank";
-                        else if (raw_type.includes("parear") || raw_type.includes("matching")) question_type = "matching";
-
+                        let raw_type = String(row[colType] || "").trim().toLowerCase();
                         let options: string[] = [];
 
-                        if (question_type === "multiple_choice" || question_type === "matching") {
-                            // Check if options are in a single delimited column or multiple columns
-                            const firstOptionVal = String(row[colOptionsStart] || "");
-                            if (firstOptionVal.includes(";") || firstOptionVal.includes("|")) {
-                                options = firstOptionVal.split(/[;|]/).map(o => o.trim()).filter(o => o !== "");
-                            } else {
-                                // Collect from multiple columns until we hit a known "named" column or run out of alternatives
-                                // We'll look at the next 4-6 columns starting from colOptionsStart
-                                for (let i = colOptionsStart; i < colOptionsStart + 6; i++) {
-                                    if (i === colCorrect || i === colTime || i === colPoints) break;
-                                    const val = String(row[i] || "").trim();
-                                    if (val) options.push(val);
-                                }
+                        // Collect options first to help with type inference
+                        const firstOptionVal = String(row[colOptionsStart] || "");
+                        if (firstOptionVal.includes(";") || firstOptionVal.includes("|")) {
+                            options = firstOptionVal.split(/[;|]/).map(o => o.trim()).filter(o => o !== "");
+                        } else {
+                            // Collect from multiple columns (up to 8)
+                            for (let i = colOptionsStart; i < colOptionsStart + 8; i++) {
+                                if (i === colCorrect || i === colTime || i === colPoints) break;
+                                const val = String(row[i] || "").trim();
+                                if (val) options.push(val);
                             }
+                        }
 
-                            if (options.length < 2 && question_type === "multiple_choice") {
-                                errors.push(`Fila ${index + 2}: Opciones insuficientes para selección múltiple.`);
+                        // Intelligent Type Inference
+                        let question_type: Question['question_type'] = "multiple_choice";
+                        if (raw_type.includes("v") || raw_type.includes("f") || raw_type === "true_false") {
+                            question_type = "true_false";
+                        } else if (raw_type.includes("oracion") || raw_type.includes("blank") || raw_type === "fill_in_the_blank") {
+                            question_type = "fill_in_the_blank";
+                        } else if (raw_type.includes("parear") || raw_type.includes("matching")) {
+                            question_type = "matching";
+                        } else if (!raw_type) {
+                            // Infer if empty: 2 options usually means True/False if they match standard values
+                            if (options.length === 2 && options.some(o => /^(verdadero|falso|true|false|v|f)$/i.test(o))) {
+                                question_type = "true_false";
                             }
-                        } else if (question_type === "true_false") {
+                        }
+
+                        if (question_type === "true_false") {
                             options = ["Verdadero", "Falso"];
                         }
 
-                        const correct_answer = String(row[colCorrect] || "").trim();
+                        let correct_answer = String(row[colCorrect] || "").trim();
+
+                        // Handle "Marked by Letter/Index" (A, B, C, D or 1, 2, 3, 4)
+                        const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+                        const letterIdx = alphabet.indexOf(correct_answer.toUpperCase());
+
+                        // Try to parse as number (1-indexed)
+                        const numVal = parseInt(correct_answer);
+                        const isNumericIndex = !isNaN(numVal) && String(numVal) === correct_answer;
+
+                        if (letterIdx !== -1 && letterIdx < options.length && options.length > 2) {
+                            // If it's a letter like A, B, C and we have enough options
+                            correct_answer = options[letterIdx];
+                        } else if (isNumericIndex && numVal >= 1 && numVal <= options.length) {
+                            // If it's a number like 1, 2, 3
+                            correct_answer = options[numVal - 1];
+                        }
+
+                        // Special case for T/F mapping if it wasn't caught
+                        if (question_type === "true_false") {
+                            if (/^(v|true|verdadero|1)$/i.test(correct_answer)) correct_answer = "Verdadero";
+                            else if (/^(f|false|falso|0)$/i.test(correct_answer)) correct_answer = "Falso";
+                        }
+
+                        if (question_type === "multiple_choice" && options.length < 2) {
+                            errors.push(`Fila ${index + 2}: Opciones insuficientes.`);
+                        }
+
                         const time_limit = parseInt(String(row[colTime])) || 20;
                         const points = parseInt(String(row[colPoints])) || 1000;
 
@@ -108,8 +139,8 @@ export const parseQuizFile = async (file: File): Promise<ImportResult> => {
 export const downloadTemplate = () => {
     const data = [
         ["Pregunta", "Tipo", "Opción 1", "Opción 2", "Opción 3", "Opción 4", "Correcta", "Tiempo", "Puntos"],
-        ["¿Cuál es el planeta más grande?", "opciones", "Marte", "Júpiter", "Saturno", "Tierra", "Júpiter", 20, 1000],
-        ["¿2+2 es 4?", "vf", "Verdadero", "Falso", "", "", "Verdadero", 10, 500],
+        ["¿Cuál es el planeta más grande?", "opciones", "Marte", "Júpiter", "Saturno", "Tierra", "B", 20, 1000],
+        ["¿2+2 es 4?", "vf", "Verdadero", "Falso", "", "", "1", 10, 500],
         ["La ______ es vital para la vida.", "oracion", "", "", "", "", "agua", 20, 1000],
         ["España:Madrid;Italia:Roma", "parear", "", "", "", "", "MATCHING_MODE", 30, 1500]
     ];
