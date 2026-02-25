@@ -25,6 +25,7 @@ interface Question {
     question_text: string;
     question_type: "multiple_choice" | "true_false";
     options: string[];
+    image_url?: string;
     sort_order: number;
 }
 
@@ -193,9 +194,15 @@ export default function TeacherSession() {
                     <div className="w-full space-y-12 animate-in slide-in-from-bottom-8 duration-500">
                         <div className="space-y-8">
                             <div className="flex justify-between items-end border-b border-slate-800 pb-6">
-                                <div className="text-left">
+                                <div className="text-left flex-1">
                                     <p className="text-blue-500 font-bold mb-1 uppercase tracking-wider text-sm">Pregunta {currentQuestionIndex + 1} de {questions.length}</p>
                                     <h1 className="text-4xl font-extrabold tracking-tight max-w-2xl">{questions[currentQuestionIndex].question_text}</h1>
+
+                                    {questions[currentQuestionIndex].image_url && (
+                                        <div className="mt-8 w-full max-w-lg h-64 rounded-[2rem] overflow-hidden border border-slate-800 shadow-2xl">
+                                            <img src={questions[currentQuestionIndex].image_url} alt="Question" className="w-full h-full object-cover" />
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="bg-slate-800/50 p-6 rounded-3xl border border-slate-700 min-w-[140px]">
                                     <p className="text-5xl font-black text-blue-500 mb-1">{responsesCount}</p>
@@ -208,11 +215,11 @@ export default function TeacherSession() {
                                     <div
                                         key={i}
                                         className={`p-8 rounded-[2.5rem] border-b-8 text-left flex items-center gap-4 transition-all ${questions[currentQuestionIndex].question_type === "true_false"
-                                                ? (opt === "Verdadero" ? "bg-blue-500 border-blue-700" : "bg-red-500 border-red-700")
-                                                : (i === 0 ? "bg-red-500 border-red-700" :
-                                                    i === 1 ? "bg-blue-500 border-blue-700" :
-                                                        i === 2 ? "bg-yellow-500 border-yellow-700" :
-                                                            "bg-green-500 border-green-700")
+                                            ? (opt === "Verdadero" ? "bg-blue-500 border-blue-700" : "bg-red-500 border-red-700")
+                                            : (i === 0 ? "bg-red-500 border-red-700" :
+                                                i === 1 ? "bg-blue-500 border-blue-700" :
+                                                    i === 2 ? "bg-yellow-500 border-yellow-700" :
+                                                        "bg-green-500 border-green-700")
                                             }`}
                                     >
                                         {questions[currentQuestionIndex].question_type !== "true_false" && (

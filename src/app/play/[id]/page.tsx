@@ -144,17 +144,23 @@ export default function StudentPlay() {
                                 {currentQuestion.question_text}
                             </h2>
 
+                            {currentQuestion.image_url && (
+                                <div className="w-full h-48 sm:h-64 rounded-3xl overflow-hidden border border-slate-200 shadow-sm">
+                                    <img src={currentQuestion.image_url} alt="Question" className="w-full h-full object-cover" />
+                                </div>
+                            )}
+
                             <div className={`grid gap-4 ${currentQuestion.question_type === "true_false" ? "grid-cols-2" : "grid-cols-1 sm:grid-cols-2"}`}>
                                 {currentQuestion.options.map((opt, i) => (
                                     <button
                                         key={i}
                                         onClick={() => submitAnswer(opt)}
                                         className={`group p-8 rounded-[2rem] text-left transition-all active:scale-95 shadow-sm hover:shadow-xl border-b-8 ${currentQuestion.question_type === "true_false"
-                                                ? (opt === "Verdadero" ? "bg-blue-500 border-blue-700" : "bg-red-500 border-red-700")
-                                                : (i === 0 ? "bg-red-500 border-red-700" :
-                                                    i === 1 ? "bg-blue-500 border-blue-700" :
-                                                        i === 2 ? "bg-yellow-500 border-yellow-700" :
-                                                            "bg-green-500 border-green-700")
+                                            ? (opt === "Verdadero" ? "bg-blue-500 border-blue-700" : "bg-red-500 border-red-700")
+                                            : (i === 0 ? "bg-red-500 border-red-700" :
+                                                i === 1 ? "bg-blue-500 border-blue-700" :
+                                                    i === 2 ? "bg-yellow-500 border-yellow-700" :
+                                                        "bg-green-500 border-green-700")
                                             }`}
                                     >
                                         <div className="flex items-center gap-4">

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { Plus, Trash2, Save, ArrowLeft, Loader2, Check, ToggleLeft, ListChecks } from "lucide-react";
+import { Plus, Trash2, Save, ArrowLeft, Loader2, Check, ToggleLeft, ListChecks, Image as ImageIcon } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 
 type Question = {
@@ -11,6 +11,7 @@ type Question = {
     question_type: "multiple_choice" | "true_false";
     options: string[];
     correct_answer: string;
+    image_url?: string;
     time_limit: number;
 };
 
@@ -48,6 +49,7 @@ export default function QuizEditor() {
             question_type: q.question_type as any,
             options: q.options,
             correct_answer: q.correct_answer,
+            image_url: q.image_url || "",
             time_limit: q.time_limit
         })));
         setFetching(false);
@@ -63,6 +65,7 @@ export default function QuizEditor() {
             question_type: "multiple_choice",
             options: ["", "", "", ""],
             correct_answer: "",
+            image_url: "",
             time_limit: 20
         }]);
     };
@@ -128,6 +131,7 @@ export default function QuizEditor() {
                 question_type: q.question_type,
                 options: q.options,
                 correct_answer: q.correct_answer,
+                image_url: q.image_url,
                 time_limit: q.time_limit,
                 sort_order: index
             }));
@@ -216,6 +220,20 @@ export default function QuizEditor() {
                             onChange={(e) => updateQuestion(qIndex, "question_text", e.target.value)}
                         />
 
+                        <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100 group/img">
+                            <ImageIcon className="w-5 h-5 text-slate-400" />
+                            <input
+                                type="text"
+                                placeholder="URL de la imagen (Opcional)"
+                                className="flex-1 bg-transparent border-none focus:ring-0 outline-none text-sm font-bold text-slate-600 placeholder:text-slate-200"
+                                value={q.image_url}
+                                onChange={(e) => updateQuestion(qIndex, "image_url", e.target.value)}
+                            />
+                            {q.image_url && (
+                                <img src={q.image_url} alt="Preview" className="w-12 h-12 rounded-lg object-cover border border-slate-200" />
+                            )}
+                        </div>
+
                         {q.question_type === "multiple_choice" ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {q.options.map((option, oIndex) => (
@@ -254,8 +272,8 @@ export default function QuizEditor() {
                                         key={val}
                                         onClick={() => updateQuestion(qIndex, "correct_answer", val)}
                                         className={`py-8 rounded-3xl border-4 font-black text-2xl transition-all ${q.correct_answer === val
-                                                ? "border-green-500 bg-green-50 text-green-600 shadow-xl shadow-green-100"
-                                                : "border-slate-50 text-slate-300 hover:border-slate-100"
+                                            ? "border-green-500 bg-green-50 text-green-600 shadow-xl shadow-green-100"
+                                            : "border-slate-50 text-slate-300 hover:border-slate-100"
                                             }`}
                                     >
                                         {val}

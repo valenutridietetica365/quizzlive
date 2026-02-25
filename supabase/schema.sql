@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS public.questions (
     correct_answer TEXT NOT NULL,
     time_limit INT NOT NULL DEFAULT 20, -- seconds
     points INT NOT NULL DEFAULT 1000,
+    image_url TEXT,
     sort_order INT NOT NULL DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
