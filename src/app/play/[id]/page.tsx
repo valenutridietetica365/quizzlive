@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useQuizStore } from "@/lib/store";
-import { Loader2, CheckCircle2, Clock, Trophy, Frown, Sparkles, ArrowRight } from "lucide-react";
+import { Loader2, CheckCircle2, Clock, Frown, Sparkles, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
 import { getTranslation } from "@/lib/i18n";

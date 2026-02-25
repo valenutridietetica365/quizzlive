@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useParams, useRouter } from "next/navigation";
-import { Users, Play, ChevronRight, BarChart3, Trophy, LogOut, Loader2, MessageSquare, QrCode, Clock } from "lucide-react";
+import { Users, Play, ChevronRight, BarChart3, LogOut, Loader2, MessageSquare, QrCode } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
 import QRDisplay from "@/components/QRDisplay";
@@ -184,7 +184,7 @@ export default function TeacherSession() {
         }
     };
 
-    const nextQuestion = async () => {
+    const nextQuestion = useCallback(async () => {
         if (!session) return;
         const nextIndex = currentQuestionIndex + 1;
         if (nextIndex < questions.length) {
@@ -206,9 +206,9 @@ export default function TeacherSession() {
                 .from("sessions")
                 .update({ status: "finished", finished_at: new Date().toISOString() })
                 .eq("id", id);
-            setSession({ ...session, status: "finished" });
+            setSession(prev => prev ? { ...prev, status: "finished" } : prev);
         }
-    };
+    }, [session, currentQuestionIndex, questions, id]);
 
     useEffect(() => {
         if (session?.status !== "active" || currentQuestionIndex === -1 || !questions[currentQuestionIndex]) {
