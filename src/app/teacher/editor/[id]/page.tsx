@@ -95,9 +95,25 @@ export default function QuizEditor() {
     };
 
     const handleSave = async () => {
+        // Validation
+        if (!title.trim()) {
+            toast.error("El cuestionario necesita un título");
+            return;
+        }
+
+        const invalidQuestionIndex = questions.findIndex(q => !q.question_text.trim() || !q.correct_answer);
+        if (invalidQuestionIndex !== -1) {
+            toast.error(`La pregunta ${invalidQuestionIndex + 1} está incompleta (falta texto o marcar respuesta correcta)`);
+            return;
+        }
+
         setLoading(true);
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        if (!user) {
+            toast.error("Debes iniciar sesión para guardar");
+            setLoading(false);
+            return;
+        }
 
         try {
             let quizId = id as string;
@@ -179,8 +195,8 @@ export default function QuizEditor() {
 
                 <button
                     onClick={handleSave}
-                    disabled={loading || !title || questions.some(q => !q.question_text || !q.correct_answer)}
-                    className="btn-premium !py-3.5 !px-8 flex items-center gap-2 disabled:opacity-30 disabled:grayscale transition-all"
+                    disabled={loading}
+                    className={`btn-premium !py-3.5 !px-8 flex items-center gap-2 transition-all ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                     {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                     <span className="hidden sm:inline">{isNew ? "PUBLICAR QUIZ" : "GUARDAR CAMBIOS"}</span>
@@ -356,13 +372,24 @@ export default function QuizEditor() {
 
                 <button
                     onClick={handleAddQuestion}
-                    className="w-full py-20 border-4 border-dashed border-slate-200 rounded-[4rem] text-slate-300 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50/50 transition-all flex flex-col items-center gap-6 font-black text-3xl group mb-20"
+                    className="w-full py-20 border-4 border-dashed border-slate-200 rounded-[4rem] text-slate-300 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50/50 transition-all flex flex-col items-center gap-6 font-black text-3xl group"
                 >
                     <div className="w-20 h-20 bg-slate-100 rounded-[2rem] flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm group-hover:shadow-xl group-hover:shadow-blue-200 group-hover:-translate-y-2">
                         <Plus className="w-10 h-10" />
                     </div>
                     <span>AÑADIR PREGUNTA</span>
                 </button>
+
+                <div className="flex justify-center pt-8 pb-20">
+                    <button
+                        onClick={handleSave}
+                        disabled={loading}
+                        className="btn-premium !py-6 !px-16 text-2xl flex items-center gap-4 shadow-2xl shadow-blue-200 animate-in fade-in slide-in-from-bottom-4 duration-1000"
+                    >
+                        {loading ? <Loader2 className="w-8 h-8 animate-spin" /> : <Check className="w-8 h-8" />}
+                        {isNew ? "PUBLICAR MI QUIZ" : "GUARDAR TODO"}
+                    </button>
+                </div>
             </main>
         </div>
     );
