@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { Plus, Trash2, Save, ArrowLeft, Loader2, Check, ToggleLeft, ListChecks, Image as ImageIcon, Sparkles } from "lucide-react";
+import { Plus, Trash2, Save, ArrowLeft, Loader2, Check, ToggleLeft, ListChecks, Image as ImageIcon } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
 
@@ -198,8 +198,8 @@ export default function QuizEditor() {
                                     <button
                                         onClick={() => updateQuestion(qIndex, "question_type", "multiple_choice")}
                                         className={`px-5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 ${q.question_type === "multiple_choice"
-                                                ? "bg-white shadow-md text-blue-600"
-                                                : "text-slate-400 hover:text-slate-600"
+                                            ? "bg-white shadow-md text-blue-600"
+                                            : "text-slate-400 hover:text-slate-600"
                                             }`}
                                     >
                                         <ListChecks className="w-4 h-4" />
@@ -208,8 +208,8 @@ export default function QuizEditor() {
                                     <button
                                         onClick={() => updateQuestion(qIndex, "question_type", "true_false")}
                                         className={`px-5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 ${q.question_type === "true_false"
-                                                ? "bg-white shadow-md text-orange-600"
-                                                : "text-slate-400 hover:text-slate-600"
+                                            ? "bg-white shadow-md text-orange-600"
+                                            : "text-slate-400 hover:text-slate-600"
                                             }`}
                                     >
                                         <ToggleLeft className="w-4 h-4" />
@@ -281,8 +281,8 @@ export default function QuizEditor() {
                                         <div
                                             key={oIndex}
                                             className={`relative flex items-center p-3 rounded-[2rem] border-4 transition-all duration-300 ${q.correct_answer === option && option !== ""
-                                                    ? "border-emerald-500 bg-emerald-50/50 shadow-lg shadow-emerald-100"
-                                                    : "border-slate-50 hover:border-slate-200 hover:bg-white"
+                                                ? "border-emerald-500 bg-emerald-50/50 shadow-lg shadow-emerald-100"
+                                                : "border-slate-50 hover:border-slate-200 hover:bg-white"
                                                 }`}
                                         >
                                             <div className={`w-14 h-14 flex items-center justify-center rounded-[1.25rem] font-black text-white text-xl mr-5 shadow-lg ${oIndex === 0 ? "bg-red-500" : oIndex === 1 ? "bg-blue-500" : oIndex === 2 ? "bg-amber-500" : "bg-emerald-500"
@@ -299,8 +299,8 @@ export default function QuizEditor() {
                                             <button
                                                 onClick={() => updateQuestion(qIndex, "correct_answer", option)}
                                                 className={`p-4 rounded-2xl transition-all active:scale-90 ${q.correct_answer === option && option !== ""
-                                                        ? "bg-emerald-500 text-white shadow-xl shadow-emerald-300"
-                                                        : "text-slate-200 hover:text-emerald-500 hover:bg-emerald-50"
+                                                    ? "bg-emerald-500 text-white shadow-xl shadow-emerald-300"
+                                                    : "text-slate-200 hover:text-emerald-500 hover:bg-emerald-50"
                                                     }`}
                                             >
                                                 <Check className="w-7 h-7" />
@@ -315,8 +315,8 @@ export default function QuizEditor() {
                                             key={val}
                                             onClick={() => updateQuestion(qIndex, "correct_answer", val)}
                                             className={`py-12 rounded-[2.5rem] border-4 font-black text-3xl transition-all ${q.correct_answer === val
-                                                    ? "border-emerald-500 bg-emerald-50 text-emerald-600 shadow-2xl shadow-emerald-100 scale-[1.02]"
-                                                    : "border-slate-50 text-slate-300 hover:border-slate-200 hover:bg-white bg-slate-50/50"
+                                                ? "border-emerald-500 bg-emerald-50 text-emerald-600 shadow-2xl shadow-emerald-100 scale-[1.02]"
+                                                : "border-slate-50 text-slate-300 hover:border-slate-200 hover:bg-white bg-slate-50/50"
                                                 }`}
                                         >
                                             {val}
