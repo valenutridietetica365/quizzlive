@@ -1,35 +1,114 @@
+"use client";
+
 import Link from "next/link";
-import { ArrowRight, BookOpenCheck, Presentation } from "lucide-react";
+import { Play, Rocket, BookOpen, GraduationCap, ArrowRight, Zap, Shield, Sparkles } from "lucide-react";
 
-export default function LandingPage() {
+export default function Home() {
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col justify-center items-center p-6 sm:p-12 relative overflow-hidden">
+        <div className="min-h-screen bg-white selection:bg-blue-100 italic-none">
+            {/* Navigation */}
+            <nav className="fixed top-0 w-full z-50 border-b border-slate-100 bg-white/80 backdrop-blur-xl">
+                <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                        <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white">
+                            <Rocket className="w-6 h-6 animate-float" />
+                        </div>
+                        <span className="text-2xl font-black text-slate-900 tracking-tighter">QuizzLive</span>
+                    </div>
 
-            {/* Decorative Background */}
-            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-            <div className="absolute top-[20%] right-[-10%] w-[40%] h-[40%] bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-            <div className="absolute bottom-[-20%] left-[20%] w-[40%] h-[40%] bg-pink-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
-
-            <div className="max-w-3xl w-full text-center z-10 space-y-8">
-                <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-slate-900 drop-shadow-sm">
-                    Aprende. <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">Juega.</span> Interactúa.
-                </h1>
-                <p className="text-lg md:text-xl text-slate-600 font-medium max-w-2xl mx-auto">
-                    Plataforma de quizzes en tiempo real diseñada para el aula moderna. Sin instalaciones. Acceso instantáneo.
-                </p>
-
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
-                    <Link href="/join" className="w-full sm:w-auto px-8 py-4 bg-white border-2 border-slate-200 rounded-2xl shadow-sm text-slate-800 font-bold hover:border-blue-500 hover:text-blue-600 hover:shadow-md transition-all flex items-center justify-center gap-2 group">
-                        <BookOpenCheck className="w-6 h-6 text-slate-400 group-hover:text-blue-500 transition-colors" />
-                        Soy Estudiante
-                    </Link>
-                    <Link href="/teacher/login" className="w-full sm:w-auto px-8 py-4 bg-slate-900 rounded-2xl shadow-lg text-white font-bold hover:bg-slate-800 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
-                        <Presentation className="w-6 h-6" />
-                        Soy Profesor
-                        <ArrowRight className="w-5 h-5 ml-1 opacity-80" />
-                    </Link>
+                    <div className="hidden md:flex items-center gap-8 text-sm font-bold text-slate-500">
+                        <a href="#features" className="hover:text-blue-600 transition-colors">Características</a>
+                        <a href="#how-it-works" className="hover:text-blue-600 transition-colors">Cómo funciona</a>
+                        <Link href="/teacher/login" className="px-6 py-2.5 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-all active:scale-95 shadow-lg shadow-slate-200">
+                            Panel Profesor
+                        </Link>
+                    </div>
                 </div>
-            </div>
+            </nav>
+
+            {/* Hero Section */}
+            <section className="pt-48 pb-32 px-6 relative overflow-hidden">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[600px] bg-gradient-to-b from-blue-50/50 to-transparent -z-10" />
+
+                <div className="max-w-5xl mx-auto text-center space-y-8 relative">
+                    <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest animate-in fade-in slide-in-from-top-4 duration-700">
+                        <Sparkles className="w-4 h-4" />
+                        La educación del futuro es hoy
+                    </div>
+
+                    <h1 className="text-6xl md:text-8xl font-black text-slate-900 tracking-tighter leading-[1] transition-all animate-in fade-in slide-in-from-bottom-8 duration-1000">
+                        Aprende. Juega. <br />
+                        <span className="text-blue-600">Interactúa en vivo.</span>
+                    </h1>
+
+                    <p className="max-w-2xl mx-auto text-xl text-slate-500 font-medium leading-relaxed animate-in fade-in duration-1000 delay-300">
+                        Potencia tu aula con una plataforma de quizzes en tiempo real diseñada para inspirar curiosidad y competencia sana. Sin instalaciones, acceso instantáneo.
+                    </p>
+
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-500">
+                        <Link
+                            href="/join"
+                            className="group w-full sm:w-auto px-10 py-5 bg-blue-600 text-white rounded-[2rem] font-black text-lg hover:bg-blue-700 transition-all hover:shadow-2xl hover:shadow-blue-200 active:scale-95 flex items-center justify-center gap-2"
+                        >
+                            <Play className="w-6 h-6 fill-white" />
+                            SOY ESTUDIANTE
+                        </Link>
+
+                        <Link
+                            href="/teacher/login"
+                            className="group w-full sm:w-auto px-10 py-5 bg-white text-slate-900 border-2 border-slate-100 rounded-[2rem] font-black text-lg hover:border-blue-100 hover:bg-slate-50 transition-all active:scale-95 flex items-center justify-center gap-2"
+                        >
+                            <GraduationCap className="w-6 h-6" />
+                            SOY PROFESOR
+                            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                        </Link>
+                    </div>
+                </div>
+            </section>
+
+            {/* Stats/Social Proof */}
+            <section className="py-20 border-y border-slate-50" id="features">
+                <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-12">
+                    <div className="flex flex-col items-center text-center space-y-4">
+                        <div className="w-14 h-14 bg-orange-100 text-orange-600 rounded-2xl flex items-center justify-center">
+                            <Zap className="w-7 h-7" />
+                        </div>
+                        <h3 className="text-xl font-black">Tiempo Real Real</h3>
+                        <p className="text-slate-500 font-medium">Sincronización instantánea entre profesor y alumnos sin latencia.</p>
+                    </div>
+                    <div className="flex flex-col items-center text-center space-y-4">
+                        <div className="w-14 h-14 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center">
+                            <Shield className="w-7 h-7" />
+                        </div>
+                        <h3 className="text-xl font-black">100% Seguro</h3>
+                        <p className="text-slate-500 font-medium">Acceso protegido para profesores y anonimato para estudiantes mediante nicknames.</p>
+                    </div>
+                    <div className="flex flex-col items-center text-center space-y-4">
+                        <div className="w-14 h-14 bg-green-100 text-green-600 rounded-2xl flex items-center justify-center">
+                            <BookOpen className="w-7 h-7" />
+                        </div>
+                        <h3 className="text-xl font-black">Editor Universal</h3>
+                        <p className="text-slate-500 font-medium">Crea preguntas con imágenes, múltiples opciones o verdadero/falso en segundos.</p>
+                    </div>
+                </div>
+            </section>
+
+            {/* Footer */}
+            <footer className="py-20 bg-slate-50">
+                <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
+                    <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center text-white">
+                            <Rocket className="w-5 h-5" />
+                        </div>
+                        <span className="text-xl font-black text-slate-900 tracking-tighter">QuizzLive</span>
+                    </div>
+                    <p className="text-slate-400 font-bold text-sm">© 2026 QuizzLive. Todos los derechos reservados.</p>
+                    <div className="flex gap-6 text-sm font-bold text-slate-400">
+                        <a href="#" className="hover:text-slate-900 transition-colors">Privacidad</a>
+                        <a href="#" className="hover:text-slate-900 transition-colors">Términos</a>
+                    </div>
+                </div>
+            </footer>
         </div>
     );
 }
