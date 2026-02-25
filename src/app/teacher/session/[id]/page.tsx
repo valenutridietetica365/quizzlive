@@ -169,8 +169,8 @@ export default function TeacherSession() {
             setResponsesCount(0);
         } catch (error) {
             console.error("Error starting quiz:", error);
-            const err = error as any;
-            toast.error(`Error al iniciar: ${err.message || t('dashboard.error_launching')}`);
+            const errorMessage = error instanceof Error ? error.message : t('dashboard.error_launching');
+            toast.error(`Error al iniciar: ${errorMessage}`);
         }
     };
 
