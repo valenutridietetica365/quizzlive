@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { Plus, BookOpen, Play, Trash2, LogOut, Loader2, History, Presentation, Calendar, Users, Trophy, Pencil } from "lucide-react";
+import { Plus, BookOpen, Play, Trash2, LogOut, Loader2, History, Presentation, Calendar, Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface Quiz {
@@ -54,7 +54,7 @@ export default function TeacherDashboard() {
             .eq("status", "finished")
             .order("finished_at", { ascending: false });
 
-        if (!error) setHistory(data as any || []);
+        if (!error) setHistory(data as unknown as FinishedSession[] || []);
     }, []);
 
     useEffect(() => {

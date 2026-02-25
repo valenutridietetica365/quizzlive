@@ -42,11 +42,11 @@ export default function QuizEditor() {
 
         setTitle(quiz.title);
         // Sort questions by sort_order
-        const sortedQuestions = (quiz.questions as any[]).sort((a, b) => a.sort_order - b.sort_order);
+        const sortedQuestions = (quiz.questions as unknown as (Question & { sort_order: number })[]).sort((a, b) => a.sort_order - b.sort_order);
         setQuestions(sortedQuestions.map(q => ({
             id: q.id,
             question_text: q.question_text,
-            question_type: q.question_type as any,
+            question_type: q.question_type as "multiple_choice" | "true_false",
             options: q.options,
             correct_answer: q.correct_answer,
             image_url: q.image_url || "",
@@ -70,7 +70,7 @@ export default function QuizEditor() {
         }]);
     };
 
-    const updateQuestion = (index: number, field: keyof Question, value: any) => {
+    const updateQuestion = (index: number, field: keyof Question, value: string | number) => {
         const newQuestions = [...questions];
 
         if (field === "question_type") {
@@ -143,8 +143,8 @@ export default function QuizEditor() {
             if (questionsError) throw new Error("Error al guardar preguntas");
 
             router.push("/teacher/dashboard");
-        } catch (error: any) {
-            alert(error.message);
+        } catch (error: unknown) {
+            alert(error instanceof Error ? error.message : "Error desconocido");
         } finally {
             setLoading(false);
         }

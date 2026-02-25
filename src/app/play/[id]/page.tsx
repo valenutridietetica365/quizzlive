@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useQuizStore } from "@/lib/store";
 import { Loader2, CheckCircle2, Clock, Trophy, Frown } from "lucide-react";
+import Image from "next/image";
 
 interface Session {
     id: string;
@@ -156,8 +157,14 @@ export default function StudentPlay() {
                             </h2>
 
                             {currentQuestion.image_url && (
-                                <div className="w-full h-48 sm:h-64 rounded-3xl overflow-hidden border border-slate-200 shadow-sm">
-                                    <img src={currentQuestion.image_url} alt="Question" className="w-full h-full object-cover" />
+                                <div className="w-full h-48 sm:h-64 rounded-3xl overflow-hidden border border-slate-200 shadow-sm relative">
+                                    <Image
+                                        src={currentQuestion.image_url}
+                                        alt="Question"
+                                        fill
+                                        className="object-cover"
+                                        unoptimized
+                                    />
                                 </div>
                             )}
 
