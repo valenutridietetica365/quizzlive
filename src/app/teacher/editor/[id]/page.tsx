@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { Plus, Trash2, Save, ArrowLeft, Loader2, Check, ToggleLeft, ListChecks, Image as ImageIcon, Share2, Type } from "lucide-react";
+import { Plus, Trash2, Save, ArrowLeft, Loader2, Check, ToggleLeft, ListChecks, Image as ImageIcon, Share2, Type, FileUp } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
 import { Question, QuestionSchema } from "@/lib/schemas";
@@ -407,12 +407,24 @@ export default function QuizEditor() {
                     </div>
                 ))}
 
-                <button onClick={handleAddQuestion} className="w-full py-12 border-4 border-dashed rounded-[3rem] text-slate-200 hover:text-blue-600 hover:border-blue-100 transition-all flex flex-col items-center gap-4 font-black text-xl">
-                    <Plus className="w-8 h-8" /> {t('editor.add_question')}
+                <button onClick={handleAddQuestion} className="w-full py-8 md:py-12 border-4 border-dashed rounded-[2rem] md:rounded-[3rem] text-slate-200 hover:text-blue-600 hover:border-blue-100 transition-all flex flex-col items-center gap-2 md:gap-4 font-black text-lg md:text-xl">
+                    <Plus className="w-6 md:w-8 h-6 md:h-8" /> {t('editor.add_question')}
                 </button>
 
-                <div className="flex justify-center pt-8 pb-10">
-                    <button onClick={handleSave} disabled={loading} className="btn-premium !py-5 !px-12 text-xl flex items-center gap-3 shadow-xl shadow-blue-100">
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-full max-w-sm px-6 z-40 md:hidden">
+                    <button
+                        onClick={handleAddQuestion}
+                        className="w-full bg-blue-600 text-white py-5 rounded-[2rem] font-black shadow-2xl shadow-blue-300 hover:bg-blue-700 transition-all active:scale-95 flex items-center justify-center gap-3 group"
+                    >
+                        <div className="bg-white/20 p-1.5 rounded-lg group-hover:rotate-90 transition-transform">
+                            <Plus className="w-6 h-6" />
+                        </div>
+                        {t('editor.add_question')}
+                    </button>
+                </div>
+
+                <div className="flex justify-center pt-8 pb-20 md:pb-10">
+                    <button onClick={handleSave} disabled={loading} className="btn-premium !py-4 md:!py-5 !px-10 md:!px-12 text-lg md:text-xl flex items-center gap-3 shadow-xl shadow-blue-100 w-full md:w-auto">
                         {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : <Check className="w-6 h-6" />}
                         {isNew ? t('editor.publish_button') : t('editor.save_button')}
                     </button>
