@@ -166,8 +166,9 @@ export default function TeacherSession() {
             setSession({ ...session, status: "active", current_question_id: firstQuestion.id });
             setCurrentQuestionIndex(0);
             setResponsesCount(0);
-        } catch {
-            toast.error(t('common.error'));
+        } catch (error) {
+            console.error("Error starting quiz:", error);
+            toast.error(t('dashboard.error_launching'));
         }
     };
 

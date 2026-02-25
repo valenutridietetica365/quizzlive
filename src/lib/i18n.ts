@@ -40,7 +40,8 @@ export const translations = {
             quizzes_subtitle: "Gestiona tus contenidos y comienza nuevas sesiones.",
             history_subtitle: "Revisa el desempeño de tus alumnos en sesiones pasadas.",
             new_quiz: "NUEVO QUIZ",
-            report_button: "INFORME"
+            report_button: "INFORME",
+            error_launching: "Error al iniciar la sesión"
         },
         sidebar: {
             my_quizzes: "Mis Quizzes",
@@ -241,7 +242,8 @@ export const translations = {
             quizzes_subtitle: "Manage your content and start new sessions.",
             history_subtitle: "Review your students' performance in past sessions.",
             new_quiz: "NEW QUIZ",
-            report_button: "REPORT"
+            report_button: "REPORT",
+            error_launching: "Error starting the session"
         },
         sidebar: {
             my_quizzes: "My Quizzes",

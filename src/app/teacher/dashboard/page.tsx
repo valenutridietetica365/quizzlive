@@ -98,19 +98,25 @@ export default function TeacherDashboard() {
     };
 
     const startSession = async (quizId: string) => {
-        const pin = Math.floor(100000 + Math.random() * 900000).toString();
-        const { data, error } = await supabase
-            .from("sessions")
-            .insert({
-                quiz_id: quizId,
-                pin: pin,
-                status: "waiting"
-            })
-            .select()
-            .single();
+        try {
+            const pin = Math.floor(100000 + Math.random() * 900000).toString();
+            const { data, error } = await supabase
+                .from("sessions")
+                .insert({
+                    quiz_id: quizId,
+                    pin: pin,
+                    status: "waiting"
+                })
+                .select()
+                .single();
 
-        if (!error && data) {
-            router.push(`/teacher/session/${data.id}`);
+            if (error) throw error;
+            if (data) {
+                router.push(`/teacher/session/${data.id}`);
+            }
+        } catch (error) {
+            console.error("Error starting session:", error);
+            toast.error(t('dashboard.error_launching') || "Error al lanzar la sesión");
         }
     };
 
