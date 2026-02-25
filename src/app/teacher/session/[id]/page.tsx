@@ -160,8 +160,9 @@ export default function TeacherSession() {
             setCurrentQuestionIndex(0);
             setResponsesCount(0);
             toast.success("¡Que comience el juego!");
-        } catch (err: any) {
-            toast.error("Error al iniciar el quiz: " + err.message);
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Error desconocido";
+            toast.error("Error al iniciar el quiz: " + errorMessage);
         }
     };
 
