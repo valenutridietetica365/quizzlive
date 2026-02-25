@@ -369,7 +369,11 @@ export default function TeacherDashboard() {
             <ConfirmModal
                 isOpen={confirmModal.open}
                 onClose={() => setConfirmModal({ open: false, quizId: null, historyId: null })}
-                onConfirm={() => confirmModal.quizId && deleteQuiz(confirmModal.quizId)}
+                onConfirm={() => {
+                    if (confirmModal.quizId) deleteQuiz(confirmModal.quizId);
+                    else if (confirmModal.historyId) deleteHistory(confirmModal.historyId);
+                    setConfirmModal({ open: false, quizId: null, historyId: null });
+                }}
                 title={t('dashboard.delete_confirm')}
                 message={t('dashboard.delete_confirm_desc')}
                 confirmText={t('common.delete')}
