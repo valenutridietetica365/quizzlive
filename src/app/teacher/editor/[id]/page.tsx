@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 import { Plus, Trash2, Save, ArrowLeft, Loader2, Check, ToggleLeft, ListChecks, Image as ImageIcon } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
@@ -137,9 +138,10 @@ export default function QuizEditor() {
 
             if (questionsError) throw new Error("Error al guardar preguntas");
 
+            toast.success("¡Quiz guardado con éxito!");
             router.push("/teacher/dashboard");
         } catch (error: unknown) {
-            alert(error instanceof Error ? error.message : "Error desconocido");
+            toast.error(error instanceof Error ? error.message : "Error desconocido");
         } finally {
             setLoading(false);
         }

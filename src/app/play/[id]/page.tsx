@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { useQuizStore } from "@/lib/store";
 import { Loader2, CheckCircle2, Clock, Trophy, Frown, Sparkles } from "lucide-react";
 import Image from "next/image";
+import { toast } from "sonner";
 
 interface Session {
     id: string;
@@ -185,11 +186,11 @@ export default function StudentPlay() {
                                         key={i}
                                         onClick={() => submitAnswer(opt)}
                                         className={`group p-8 rounded-[2rem] text-left transition-all active:scale-95 shadow-lg border-b-[8px] flex flex-col justify-between h-48 sm:h-auto ${currentQuestion.question_type === "true_false"
-                                                ? (opt === "Verdadero" ? "bg-blue-600 border-blue-800 shadow-blue-200" : "bg-red-600 border-red-800 shadow-red-200")
-                                                : (i === 0 ? "bg-red-600 border-red-800 shadow-red-200" :
-                                                    i === 1 ? "bg-blue-600 border-blue-800 shadow-blue-200" :
-                                                        i === 2 ? "bg-amber-500 border-amber-700 shadow-amber-100" :
-                                                            "bg-emerald-600 border-emerald-800 shadow-emerald-100")
+                                            ? (opt === "Verdadero" ? "bg-blue-600 border-blue-800 shadow-blue-200" : "bg-red-600 border-red-800 shadow-red-200")
+                                            : (i === 0 ? "bg-red-600 border-red-800 shadow-red-200" :
+                                                i === 1 ? "bg-blue-600 border-blue-800 shadow-blue-200" :
+                                                    i === 2 ? "bg-amber-500 border-amber-700 shadow-amber-100" :
+                                                        "bg-emerald-600 border-emerald-800 shadow-emerald-100")
                                             }`}
                                     >
                                         <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center font-black text-white text-xl">
@@ -203,8 +204,8 @@ export default function StudentPlay() {
                     ) : (
                         <div className="w-full text-center space-y-10 animate-in zoom-in duration-700">
                             <div className={`p-16 rounded-[4rem] shadow-2xl border-b-[16px] flex flex-col items-center gap-6 ${isCorrect
-                                    ? "bg-emerald-500 border-emerald-700 shadow-emerald-200"
-                                    : "bg-red-500 border-red-700 shadow-red-200"
+                                ? "bg-emerald-500 border-emerald-700 shadow-emerald-200"
+                                : "bg-red-500 border-red-700 shadow-red-200"
                                 }`}>
                                 {isCorrect ? (
                                     <CheckCircle2 className="w-32 h-32 text-white animate-in zoom-in-50 duration-500" />

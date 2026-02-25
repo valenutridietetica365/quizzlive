@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 import { Mail, Lock, AlertCircle, Eye, EyeOff, UserPlus, LogIn } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -37,7 +38,7 @@ export default function TeacherLogin() {
                     }
                 });
                 if (error) throw error;
-                alert("¡Registro exitoso! Ya puedes iniciar sesión.");
+                toast.success("¡Registro exitoso! Ya puedes iniciar sesión.");
                 setMode("login");
             }
         } catch (err: unknown) {

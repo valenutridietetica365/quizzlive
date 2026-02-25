@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useQuizStore } from "@/lib/store";
 import { Rocket, Sparkles, User, Key, ArrowRight, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 function JoinContent() {
     const [pin, setPin] = useState("");

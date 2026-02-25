@@ -191,7 +191,12 @@ CREATE POLICY "Teachers can view participants of their sessions"
 DROP POLICY IF EXISTS "Anyone can insert participant (join session)" ON public.participants;
 CREATE POLICY "Anyone can insert participant (join session)"
     ON public.participants FOR INSERT
-    WITH CHECK (true);
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM public.sessions
+            WHERE id = session_id AND status = 'waiting'
+        )
+    );
 
 DROP POLICY IF EXISTS "Participants can view other participants in same session" ON public.participants;
 CREATE POLICY "Participants can view other participants in same session"
@@ -214,7 +219,12 @@ CREATE POLICY "Teachers can view all answers for their sessions"
 DROP POLICY IF EXISTS "Anyone can insert answers" ON public.answers;
 CREATE POLICY "Anyone can insert answers"
     ON public.answers FOR INSERT
-    WITH CHECK (true);
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM public.sessions
+            WHERE id = session_id AND status = 'active'
+        )
+    );
 
 DROP POLICY IF EXISTS "Participants can view answers (for rankings)" ON public.answers;
 CREATE POLICY "Participants can view answers (for rankings)"
