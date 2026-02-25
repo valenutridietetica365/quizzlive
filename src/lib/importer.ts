@@ -46,7 +46,7 @@ export const parseQuizFile = async (file: File): Promise<ImportResult> => {
                     if (!question_text) return;
 
                     try {
-                        let raw_type = String(row[colType] || "").trim().toLowerCase();
+                        const raw_type = String(row[colType] || "").trim().toLowerCase();
                         let options: string[] = [];
 
                         // Collect options first to help with type inference
