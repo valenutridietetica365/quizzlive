@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { Plus, BookOpen, Play, Trash2, LogOut, Loader2, History, Presentation, Calendar, Pencil, LayoutDashboard, ChevronRight } from "lucide-react";
+import { Plus, BookOpen, Play, Trash2, LogOut, Loader2, History, Calendar, Pencil, LayoutDashboard, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface Quiz {
@@ -126,8 +126,8 @@ export default function TeacherDashboard() {
                     <button
                         onClick={() => setActiveTab("quizzes")}
                         className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl font-black transition-all ${activeTab === "quizzes"
-                                ? "bg-blue-50 text-blue-600"
-                                : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+                            ? "bg-blue-50 text-blue-600"
+                            : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"
                             }`}
                     >
                         <BookOpen className="w-5 h-5" />
@@ -136,8 +136,8 @@ export default function TeacherDashboard() {
                     <button
                         onClick={() => setActiveTab("history")}
                         className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl font-black transition-all ${activeTab === "history"
-                                ? "bg-blue-50 text-blue-600"
-                                : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+                            ? "bg-blue-50 text-blue-600"
+                            : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"
                             }`}
                     >
                         <History className="w-5 h-5" />
