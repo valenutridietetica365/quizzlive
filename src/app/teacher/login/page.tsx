@@ -64,22 +64,22 @@ export default function TeacherLogin() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 selection:bg-blue-100 italic-none">
-            <div className="absolute top-8 right-8">
+        <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-6 md:py-12 px-4 sm:px-6 lg:px-8 selection:bg-blue-100 italic-none">
+            <div className="fixed top-4 right-4 md:top-8 md:right-8 z-50">
                 <LanguageSelector />
             </div>
 
-            <div className="sm:mx-auto sm:w-full sm:max-w-md space-y-4">
+            <div className="sm:mx-auto sm:w-full sm:max-w-md space-y-4 pt-12 md:pt-0">
                 <div className="flex justify-center">
-                    <div className="w-16 h-16 bg-slate-900 rounded-3xl flex items-center justify-center text-white shadow-xl">
-                        {mode === "login" ? <LogIn className="w-8 h-8" /> : <UserPlus className="w-8 h-8" />}
+                    <div className="w-14 md:w-16 h-14 md:h-16 bg-slate-900 rounded-2xl md:rounded-3xl flex items-center justify-center text-white shadow-xl">
+                        {mode === "login" ? <LogIn className="w-7 h-7 md:w-8 md:h-8" /> : <UserPlus className="w-7 h-7 md:w-8 md:h-8" />}
                     </div>
                 </div>
                 <div>
-                    <h2 className="text-center text-3xl font-black text-slate-900 tracking-tight">
+                    <h2 className="text-center text-2xl md:text-3xl font-black text-slate-900 tracking-tight px-4">
                         {mode === "login" ? t('auth.login_title') : t('auth.signup_title')}
                     </h2>
-                    <p className="mt-2 text-center text-sm text-slate-500 font-medium">
+                    <p className="mt-2 text-center text-sm text-slate-500 font-medium px-6">
                         {mode === "login"
                             ? t('auth.login_subtitle')
                             : t('auth.signup_subtitle')}

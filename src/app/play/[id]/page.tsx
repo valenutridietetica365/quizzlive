@@ -249,15 +249,15 @@ export default function StudentPlay() {
             {session.status === "active" && currentQuestion && (
                 <div className="w-full max-w-2xl flex flex-col items-center">
                     {!answered ? (
-                        <div className="w-full space-y-10 animate-in slide-in-from-bottom-12 duration-700">
+                        <div className="w-full space-y-8 md:space-y-10 animate-in slide-in-from-bottom-12 duration-700">
                             <div className="text-center space-y-4 px-4">
-                                <h2 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight leading-none">
+                                <h2 className="text-2xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight">
                                     {currentQuestion.question_text}
                                 </h2>
                             </div>
 
                             {currentQuestion.image_url && (
-                                <div className="w-full aspect-video rounded-[2.5rem] overflow-hidden border-4 border-white shadow-2xl relative">
+                                <div className="w-full aspect-video rounded-3xl md:rounded-[2.5rem] overflow-hidden border-4 border-white shadow-2xl relative">
                                     <Image src={currentQuestion.image_url} alt="Question" fill className="object-cover" unoptimized />
                                     <div className="absolute inset-0 bg-gradient-to-t from-slate-900/20 to-transparent" />
                                 </div>
@@ -311,7 +311,7 @@ export default function StudentPlay() {
                                 </div>
                             ) : (
                                 <div className="w-full space-y-8">
-                                    <div className="grid grid-cols-2 gap-8">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                                         <div className="space-y-3">
                                             <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest pl-2">{t('play.concepts')}</span>
                                             {currentQuestion.options.map((pair, i) => {
@@ -322,10 +322,10 @@ export default function StudentPlay() {
                                                     <button
                                                         key={i}
                                                         onClick={() => !isPaired && setSelectedTerm(isSelected ? null : term)}
-                                                        className={`w-full p-5 rounded-2xl border-b-4 font-black transition-all text-left flex items-center justify-between ${isPaired
+                                                        className={`w-full p-4 md:p-5 rounded-xl md:rounded-2xl border-b-4 font-black transition-all text-left flex items-center justify-between text-sm md:text-base ${isPaired
                                                             ? "bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed"
                                                             : isSelected
-                                                                ? "bg-purple-600 border-purple-800 text-white scale-105 shadow-lg"
+                                                                ? "bg-purple-600 border-purple-800 text-white scale-[1.02] md:scale-105 shadow-lg"
                                                                 : "bg-white border-slate-100 text-slate-600 hover:border-slate-200"
                                                             }`}
                                                     >
@@ -348,7 +348,7 @@ export default function StudentPlay() {
                                                                 setSelectedTerm(null);
                                                             }
                                                         }}
-                                                        className={`w-full p-5 rounded-2xl border-b-4 font-black transition-all text-left ${isPaired
+                                                        className={`w-full p-4 md:p-5 rounded-xl md:rounded-2xl border-b-4 font-black transition-all text-left text-sm md:text-base ${isPaired
                                                             ? "bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed opacity-50"
                                                             : selectedTerm
                                                                 ? "bg-purple-50 border-purple-200 text-purple-600 hover:bg-purple-600 hover:text-white"

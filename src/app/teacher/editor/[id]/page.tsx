@@ -212,41 +212,49 @@ export default function QuizEditor() {
 
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col selection:bg-blue-100 italic-none">
-            <nav className="bg-white/80 backdrop-blur-2xl border-b border-slate-100 px-6 py-4 flex justify-between items-center sticky top-0 z-50">
-                <div className="flex items-center gap-6">
-                    <button onClick={() => router.back()} className="p-3 hover:bg-slate-50 rounded-2xl text-slate-400 hover:text-slate-900 transition-all active:scale-90">
-                        <ArrowLeft className="w-6 h-6" />
-                    </button>
-                    <div className="h-10 w-px bg-slate-100 hidden md:block" />
-                    <div className="flex flex-col">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('editor.title')}</span>
-                        <input
-                            type="text"
-                            placeholder={t('editor.quiz_title_placeholder')}
-                            className="text-2xl font-black text-slate-900 border-none focus:ring-0 outline-none w-64 md:w-[30rem] bg-transparent placeholder:text-slate-200"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                        />
+            <header className="fixed top-0 w-full bg-white/80 backdrop-blur-xl border-b border-slate-100 z-50 h-20 md:h-24">
+                <div className="max-w-5xl mx-auto px-4 md:px-6 h-full flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <button
+                            onClick={() => router.push("/teacher/dashboard")}
+                            className="p-2 md:p-3 hover:bg-slate-50 rounded-xl text-slate-400 hover:text-slate-900 transition-all flex-shrink-0"
+                        >
+                            <ArrowLeft className="w-5 md:w-6 h-5 md:h-6" />
+                        </button>
+                        <div className="h-8 w-px bg-slate-100 hidden sm:block" />
+                        <div className="min-w-0 flex flex-col">
+                            <span className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('editor.title')}</span>
+                            <input
+                                type="text"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                className="w-full bg-transparent border-none focus:ring-0 text-lg md:text-2xl font-black text-slate-900 placeholder:text-slate-200 truncate p-0 leading-none h-6 md:h-8"
+                                placeholder={t('editor.untitled')}
+                            />
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
+                        <button
+                            onClick={() => setIsImportModalOpen(true)}
+                            className="p-2.5 md:px-6 md:py-3 bg-blue-50 text-blue-600 rounded-xl md:rounded-[1.25rem] font-black transition-all active:scale-95 flex items-center gap-2"
+                            title={t('editor.import')}
+                        >
+                            <FileUp className="w-5 md:w-6 h-5 md:h-6" />
+                            <span className="hidden md:inline">{t('editor.import_button')}</span>
+                        </button>
+                        <button
+                            onClick={handleSave}
+                            disabled={loading}
+                            className="px-5 md:px-8 py-3 md:py-4 bg-slate-900 text-white rounded-xl md:rounded-[1.5rem] font-black shadow-xl shadow-slate-200 hover:bg-blue-600 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2"
+                        >
+                            {loading ? <Loader2 className="w-5 md:w-6 h-5 md:h-6 animate-spin" /> : <Save className="w-5 md:w-6 h-5 md:h-6" />}
+                            <span className="hidden sm:inline">{isNew ? t('editor.publish_button') : t('editor.save_button')}</span>
+                        </button>
                     </div>
                 </div>
+            </header>
 
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => setIsImportModalOpen(true)}
-                        className="hidden sm:flex items-center gap-2 px-6 py-3 bg-blue-50 text-blue-600 rounded-[1.2rem] font-black text-xs hover:bg-blue-100 transition-all active:scale-95"
-                    >
-                        <Plus className="w-4 h-4" />
-                        {t('editor.import_button')}
-                    </button>
-
-                    <button onClick={handleSave} disabled={loading} className={`btn-premium !py-3.5 !px-8 flex items-center gap-2 transition-all ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                        <span className="hidden sm:inline">{isNew ? t('editor.publish_button') : t('editor.save_button')}</span>
-                    </button>
-                </div>
-            </nav>
-
-            <main className="max-w-4xl mx-auto w-full p-6 md:p-12 space-y-12">
+            <main className="max-w-4xl mx-auto w-full p-4 md:p-12 pt-32 md:pt-40 space-y-8 md:space-y-12">
                 {questions.map((q, qIndex) => (
                     <div key={qIndex} className="bg-white rounded-[3rem] p-10 md:p-14 shadow-sm border border-slate-50 space-y-10 relative group hover:shadow-2xl hover:shadow-slate-200/50 transition-all duration-500">
                         <div className="flex justify-between items-center">
