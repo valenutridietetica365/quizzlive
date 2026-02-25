@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { Plus, Trash2, Save, ArrowLeft, Loader2, Check, ToggleLeft, ListChecks, Image as ImageIcon } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
+import Image from "next/image";
 
 type Question = {
     id?: string;
@@ -230,7 +231,15 @@ export default function QuizEditor() {
                                 onChange={(e) => updateQuestion(qIndex, "image_url", e.target.value)}
                             />
                             {q.image_url && (
-                                <img src={q.image_url} alt="Preview" className="w-12 h-12 rounded-lg object-cover border border-slate-200" />
+                                <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-slate-200">
+                                    <Image
+                                        src={q.image_url}
+                                        alt="Preview"
+                                        fill
+                                        className="object-cover"
+                                        unoptimized
+                                    />
+                                </div>
                             )}
                         </div>
 

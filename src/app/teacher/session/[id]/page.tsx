@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useParams, useRouter } from "next/navigation";
 import { Users, Play, ChevronRight, BarChart3, Trophy, LogOut, Loader2 } from "lucide-react";
+import Image from "next/image";
 import QRDisplay from "@/components/QRDisplay";
 
 interface Quiz {
@@ -199,8 +200,14 @@ export default function TeacherSession() {
                                     <h1 className="text-4xl font-extrabold tracking-tight max-w-2xl">{questions[currentQuestionIndex].question_text}</h1>
 
                                     {questions[currentQuestionIndex].image_url && (
-                                        <div className="mt-8 w-full max-w-lg h-64 rounded-[2rem] overflow-hidden border border-slate-800 shadow-2xl">
-                                            <img src={questions[currentQuestionIndex].image_url} alt="Question" className="w-full h-full object-cover" />
+                                        <div className="mt-8 w-full max-w-lg h-64 rounded-[2rem] overflow-hidden border border-slate-800 shadow-2xl relative">
+                                            <Image
+                                                src={questions[currentQuestionIndex].image_url}
+                                                alt="Question"
+                                                fill
+                                                className="object-cover"
+                                                unoptimized
+                                            />
                                         </div>
                                     )}
                                 </div>

@@ -41,7 +41,7 @@ export default function SessionReport() {
                 .single();
 
             if (!error && data) {
-                setReport(data as any);
+                setReport(data as unknown as ReportData);
             }
             setLoading(false);
         };
@@ -115,9 +115,9 @@ export default function SessionReport() {
                                 <div key={i} className="px-10 py-6 flex items-center justify-between group hover:bg-slate-50 transition-colors">
                                     <div className="flex items-center gap-6">
                                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg ${i === 0 ? "bg-yellow-100 text-yellow-600" :
-                                                i === 1 ? "bg-slate-100 text-slate-500" :
-                                                    i === 2 ? "bg-orange-100 text-orange-600" :
-                                                        "bg-white text-slate-300"
+                                            i === 1 ? "bg-slate-100 text-slate-500" :
+                                                i === 2 ? "bg-orange-100 text-orange-600" :
+                                                    "bg-white text-slate-300"
                                             }`}>
                                             {i + 1}
                                         </div>
