@@ -7,6 +7,8 @@ import { ArrowLeft, Trophy, Users, BarChart3, Loader2, Calendar, Target } from "
 import { useQuizStore } from "@/lib/store";
 import { getTranslation } from "@/lib/i18n";
 import LanguageSelector from "@/components/LanguageSelector";
+import SessionReport from "@/components/SessionReport";
+import SessionAnalytics from "@/components/SessionAnalytics";
 
 interface ReportData {
     id: string;
@@ -22,7 +24,7 @@ interface ReportData {
     }[];
 }
 
-export default function SessionReport() {
+export default function HistoricalReportPage() {
     const { id } = useParams();
     const router = useRouter();
     const { language } = useQuizStore();
@@ -117,38 +119,14 @@ export default function SessionReport() {
                     </div>
                 </div>
 
-                {/* Leaderboard */}
-                <div className="bg-white rounded-[3.5rem] shadow-sm border border-slate-100 overflow-hidden relative">
-                    <div className="px-12 py-10 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
-                        <h2 className="text-3xl font-black text-slate-900 flex items-center gap-4">
-                            <Trophy className="w-10 h-10 text-yellow-500" />
-                            {t('reports.podium_title')}
-                        </h2>
+                {/* Detailed Analytics & Report */}
+                <div className="space-y-16">
+                    <div className="bg-white p-8 md:p-12 rounded-[3.5rem] shadow-sm border border-slate-100">
+                        <SessionAnalytics sessionId={id as string} />
                     </div>
 
-                    <div className="divide-y divide-slate-50">
-                        {results.length === 0 ? (
-                            <div className="p-32 text-center text-slate-300 font-black uppercase tracking-widest text-sm">{t('reports.no_participants')}</div>
-                        ) : (
-                            results.map((res, i) => (
-                                <div key={i} className="px-12 py-8 flex items-center justify-between group hover:bg-slate-50 transition-all">
-                                    <div className="flex items-center gap-8">
-                                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-black text-2xl shadow-sm ${i === 0 ? "bg-yellow-100 text-yellow-600 rotate-2 group-hover:rotate-0" :
-                                            i === 1 ? "bg-slate-100 text-slate-500 -rotate-2 group-hover:rotate-0" :
-                                                i === 2 ? "bg-orange-100 text-orange-600 rotate-1 group-hover:rotate-0" :
-                                                    "bg-white border text-slate-200"
-                                            } transition-transform`}>
-                                            {i + 1}
-                                        </div>
-                                        <span className="text-2xl font-black text-slate-900 tracking-tight">{res.nickname}</span>
-                                    </div>
-                                    <div className="text-right">
-                                        <div className="text-4xl font-black text-slate-900 tabular-nums">{res.score.toLocaleString()}</div>
-                                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t('reports.total_points')}</div>
-                                    </div>
-                                </div>
-                            ))
-                        )}
+                    <div className="bg-white p-8 md:p-12 rounded-[3.5rem] shadow-sm border border-slate-100">
+                        <SessionReport sessionId={id as string} />
                     </div>
                 </div>
 

@@ -14,9 +14,11 @@ import { getTranslation } from "@/lib/i18n";
 import LanguageSelector from "@/components/LanguageSelector";
 import AudioController from "@/components/AudioController";
 import SessionAnalytics from "@/components/SessionAnalytics";
+import SessionReport from "@/components/SessionReport";
 import CircularTimer from "@/components/CircularTimer";
 import Leaderboard from "@/components/Leaderboard";
 import FinalPodium from "@/components/FinalPodium";
+import ParticipantMarquee from "@/components/game/ParticipantMarquee";
 
 import { Quiz, QuizSchema, Question, QuestionSchema, Session, SessionSchema, Participant, ParticipantSchema } from "@/lib/schemas";
 
@@ -464,30 +466,20 @@ export default function TeacherSession() {
                         </div>
 
                         {showAnalytics && (
-                            <div className="w-full animate-in fade-in slide-in-from-top-4 duration-700">
+                            <div className="w-full space-y-12 animate-in fade-in slide-in-from-top-4 duration-700">
                                 <SessionAnalytics sessionId={id as string} />
+                                <SessionReport sessionId={id as string} />
                             </div>
                         )}
                     </div>
                 )}
             </main>
 
-            <div className="p-5 bg-black/40 backdrop-blur-lg flex gap-4 overflow-hidden border-t border-white/5 whitespace-nowrap">
-                {participants.length === 0 ? (
-                    <p className="text-slate-700 font-bold uppercase tracking-[0.3em] font-mono text-xs mx-auto animate-pulse">{t('session.waiting_participants')}</p>
-                ) : (
-                    <div className="flex gap-6 animate-marquee">
-                        {participants.map((p) => (
-                            <div key={p.id} className="flex items-center gap-2 text-slate-400">
-                                <span className={`w-1.5 h-1.5 rounded-full ${p.current_streak > 2 ? 'bg-orange-500 animate-pulse shadow-[0_0_12px_rgba(249,115,22,0.8)]' : 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]'}`} />
-                                <span className={`text-xs font-black uppercase tracking-widest flex items-center gap-1 ${p.current_streak > 2 ? 'text-orange-400' : ''}`}>
-                                    {p.nickname}
-                                    {p.current_streak > 2 && <span className="animate-bounce">🔥</span>}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-                )}
+            <div className="fixed bottom-0 left-0 right-0 z-50">
+                <ParticipantMarquee
+                    participants={participants}
+                    waitingText={t('session.waiting_participants')}
+                />
             </div>
 
             <ShareModal
