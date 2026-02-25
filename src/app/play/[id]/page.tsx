@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useQuizStore } from "@/lib/store";
-import { Loader2, CheckCircle2, Clock, Trophy, Frown, Sparkles } from "lucide-react";
+import { Loader2, CheckCircle2, Clock, Trophy, Frown, Sparkles, ArrowRight } from "lucide-react";
 import Image from "next/image";
 
 interface Session {
@@ -35,6 +35,8 @@ export default function StudentPlay() {
     const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
     const [loading, setLoading] = useState(true);
     const [selectedOption, setSelectedOption] = useState<string | null>(null);
+    const [totalScore, setTotalScore] = useState<number | null>(null);
+    const [fetchingScore, setFetchingScore] = useState(false);
 
     const playSound = (type: "correct" | "wrong") => {
         const audio = new Audio(
@@ -71,6 +73,26 @@ export default function StudentPlay() {
         setLoading(false);
     }, [id, handleNewQuestion]);
 
+    const fetchTotalScore = useCallback(async () => {
+        setFetchingScore(true);
+        try {
+            const { data, error } = await supabase
+                .from("scores")
+                .select("total_points")
+                .eq("participant_id", participantId)
+                .eq("session_id", id)
+                .maybeSingle();
+
+            if (data) {
+                setTotalScore(data.total_points);
+            }
+        } catch (err) {
+            console.error("Error fetching score:", err);
+        } finally {
+            setFetchingScore(false);
+        }
+    }, [id, participantId]);
+
     useEffect(() => {
         if (!nickname || !participantId) {
             router.push("/join");
@@ -78,6 +100,10 @@ export default function StudentPlay() {
         }
 
         fetchInitialState();
+
+        if (session?.status === "finished" && totalScore === null && !fetchingScore) {
+            fetchTotalScore();
+        }
 
         const sessionChannel = supabase
             .channel(`play_session_${id}`)
@@ -87,6 +113,9 @@ export default function StudentPlay() {
                 (payload) => {
                     const newData = payload.new as Session;
                     setSession(newData);
+                    if (newData.status === "finished") {
+                        fetchTotalScore();
+                    }
                     if (newData.current_question_id !== session?.current_question_id) {
                         if (newData.current_question_id) {
                             handleNewQuestion(newData.current_question_id);
@@ -99,7 +128,7 @@ export default function StudentPlay() {
         return () => {
             supabase.removeChannel(sessionChannel);
         };
-    }, [id, nickname, participantId, fetchInitialState, handleNewQuestion, router, session?.current_question_id]);
+    }, [id, nickname, participantId, fetchInitialState, handleNewQuestion, router, session?.current_question_id, session?.status, totalScore, fetchingScore, fetchTotalScore]);
 
     const submitAnswer = async (answer: string) => {
         if (answered || !currentQuestion) return;
@@ -237,21 +266,56 @@ export default function StudentPlay() {
 
             {session.status === "finished" && (
                 <div className="max-w-md w-full text-center space-y-10 animate-in zoom-in duration-700">
-                    <div className="bg-white p-16 rounded-[4rem] shadow-2xl border border-slate-100 flex flex-col items-center gap-8 relative overflow-hidden">
-                        <div className="absolute inset-0 bg-blue-50/30 opacity-50 -z-10" />
-                        <Trophy className="w-32 h-32 text-amber-500 animate-float" />
-                        <div className="space-y-3">
-                            <h1 className="text-5xl font-black text-slate-900 tracking-tight leading-none">¡Juego <span className="text-blue-600">terminado!</span></h1>
-                            <p className="text-lg text-slate-500 font-medium">
-                                Lo has hecho increíble. Mira la pantalla principal para descubrir quién ganó.
+                    <div className="bg-white p-12 md:p-16 rounded-[4rem] shadow-2xl border border-slate-100 flex flex-col items-center gap-10 relative overflow-hidden">
+                        {/* Background Decoration */}
+                        <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-blue-50/50 to-transparent -z-10" />
+                        <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue-100/20 rounded-full blur-3xl" />
+
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-amber-400 blur-2xl opacity-20 animate-pulse" />
+                            <Trophy className="w-32 h-32 text-amber-500 animate-float relative z-10" />
+                            <div className="absolute -top-2 -right-2 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg animate-bounce">
+                                <Sparkles className="w-6 h-6 text-amber-400" />
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <h1 className="text-5xl font-black text-slate-900 tracking-tight leading-none">¡Increíble, <span className="text-blue-600 font-black">{nickname}</span>!</h1>
+                            <p className="text-lg text-slate-500 font-medium max-w-[280px] mx-auto">
+                                Has completado el desafío con éxito. Aquí tienes tu resultado:
                             </p>
                         </div>
-                        <button
-                            onClick={() => router.push("/")}
-                            className="btn-premium !bg-slate-900 !rounded-[2rem] w-full mt-4"
-                        >
-                            IR AL INICIO
-                        </button>
+
+                        <div className="bg-slate-900 p-10 rounded-[3rem] w-full shadow-2xl shadow-slate-200 relative group overflow-hidden">
+                            <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-transparent opacity-50" />
+                            <div className="relative z-10 flex flex-col items-center gap-2">
+                                <span className="text-xs font-black text-blue-400 uppercase tracking-[0.4em] mb-2">PUNTUACIÓN TOTAL</span>
+                                {fetchingScore ? (
+                                    <Loader2 className="w-12 h-12 animate-spin text-white" />
+                                ) : (
+                                    <span className="text-7xl font-black text-white tracking-tighter tabular-nums animate-in slide-in-from-bottom-4">
+                                        {(totalScore ?? 0).toLocaleString()}
+                                    </span>
+                                )}
+                                <div className="mt-4 px-6 py-2 bg-white/10 rounded-full border border-white/10 backdrop-blur-md">
+                                    <span className="text-white/80 font-bold text-sm">
+                                        {totalScore && totalScore > 0 ? "🏆 ¡Top del aula!" : "✨ ¡Buen esfuerzo!"}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="w-full space-y-4">
+                            <button
+                                onClick={() => router.push("/")}
+                                className="btn-premium w-full !bg-blue-600 !text-white !rounded-[2rem] !py-6 !text-xl flex items-center justify-center gap-3 active:scale-95 transition-all shadow-xl shadow-blue-100"
+                            >
+                                IR AL INICIO <ArrowRight className="w-6 h-6" />
+                            </button>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                Gracias por jugar QuizzLive
+                            </p>
+                        </div>
                     </div>
                 </div>
             )}
