@@ -426,8 +426,11 @@ export default function TeacherSession() {
                     <div className="flex gap-6 animate-marquee">
                         {participants.map((p) => (
                             <div key={p.id} className="flex items-center gap-2 text-slate-400">
-                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
-                                <span className="text-xs font-black uppercase tracking-widest">{p.nickname}</span>
+                                <span className={`w-1.5 h-1.5 rounded-full ${p.current_streak > 2 ? 'bg-orange-500 animate-pulse shadow-[0_0_12px_rgba(249,115,22,0.8)]' : 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]'}`} />
+                                <span className={`text-xs font-black uppercase tracking-widest flex items-center gap-1 ${p.current_streak > 2 ? 'text-orange-400' : ''}`}>
+                                    {p.nickname}
+                                    {p.current_streak > 2 && <span className="animate-bounce">🔥</span>}
+                                </span>
                             </div>
                         ))}
                     </div>

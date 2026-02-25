@@ -27,6 +27,7 @@ export default function StudentPlay() {
     const [fetchingScore, setFetchingScore] = useState(false);
     const [questionStartTime, setQuestionStartTime] = useState<number>(0);
     const [pointsEarned, setPointsEarned] = useState<number>(0);
+    const [currentStreak, setCurrentStreak] = useState<number>(0);
 
     // States for new question types
     const [fillAnswer, setFillAnswer] = useState("");
@@ -199,6 +200,7 @@ export default function StudentPlay() {
         }
 
         setPointsEarned(points);
+        setCurrentStreak(prev => correct ? prev + 1 : 0);
 
         try {
             const { data, error } = await supabase.rpc('submit_answer', {
@@ -213,6 +215,7 @@ export default function StudentPlay() {
             if (data && data.success) {
                 setPointsEarned(data.points_earned);
                 setIsCorrect(data.is_correct);
+                setCurrentStreak(data.current_streak || 0);
             }
         } catch (e) {
             console.error("Error al enviar respuesta:", e);
@@ -381,7 +384,15 @@ export default function StudentPlay() {
                                 }`}>
                                 {isCorrect ? <CheckCircle2 className="w-32 h-32 text-white animate-in zoom-in-50" /> : <Frown className="w-32 h-32 text-white animate-in zoom-in-50" />}
                                 <h1 className="text-6xl font-black text-white tracking-tighter">{isCorrect ? t('play.yes') : t('play.almost')}</h1>
-                                <p className="text-white/90 font-black text-2xl uppercase tracking-widest">{isCorrect ? `+${pointsEarned.toLocaleString()} ${t('play.points_earned')}` : t('play.next_adventure')}</p>
+                                <div className="flex flex-col items-center gap-2">
+                                    <p className="text-white/90 font-black text-2xl uppercase tracking-widest">{isCorrect ? `+${pointsEarned.toLocaleString()} ${t('play.points_earned')}` : t('play.next_adventure')}</p>
+                                    {isCorrect && currentStreak > 1 && (
+                                        <div className="flex items-center gap-2 px-4 py-1 bg-white/20 rounded-full animate-bounce">
+                                            <Sparkles className="w-4 h-4 text-amber-300" />
+                                            <span className="text-white font-black text-xs uppercase tracking-widest">{currentStreak} {t('play.streak_fire')} 🔥</span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                             <div className="flex flex-col items-center gap-3">
                                 <div className="h-2 w-48 bg-slate-200 rounded-full overflow-hidden"><div className="h-full bg-blue-600 animate-pulse w-1/2" /></div>

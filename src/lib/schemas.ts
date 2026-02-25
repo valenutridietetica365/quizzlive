@@ -43,6 +43,8 @@ export const ParticipantSchema = z.object({
     session_id: z.string(),
     nickname: z.string().min(2).max(20),
     joined_at: z.string().optional(),
+    current_streak: z.number().default(0),
+    max_streak: z.number().default(0),
 });
 
 export type Question = z.infer<typeof QuestionSchema>;
