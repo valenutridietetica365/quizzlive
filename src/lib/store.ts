@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { Language } from './i18n'
+export type { Language }
 
 export type QuestionData = {
     id: string
@@ -37,7 +38,7 @@ interface QuizState {
     // Participants & Leaderboard
     participants: ParticipantData[]
     setParticipants: (participants: ParticipantData[]) => void
-    addParticipant: (participant) => void
+    addParticipant: (participant: ParticipantData) => void
     updateParticipantScore: (participantId: string, score: number) => void
 
     // User state (for Student)
@@ -63,7 +64,7 @@ export const useQuizStore = create<QuizState>()(
             setSessionStatus: (status) => set({ sessionStatus: status }),
 
             currentQuestion: null,
-            setCurrentQuestion: (question) => set({ currentQuestion: question }),
+            setCurrentQuestion: (question: QuestionData | null) => set({ currentQuestion: question }),
 
             participants: [],
             setParticipants: (participants) => set({ participants }),

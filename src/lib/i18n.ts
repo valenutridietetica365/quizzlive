@@ -371,12 +371,14 @@ export const translations = {
 
 export const getTranslation = (lang: Language, key: string) => {
     const keys = key.split('.');
-    let current: any = translations[lang];
+    let current: unknown = translations[lang];
 
     for (const k of keys) {
-        if (current === undefined || current[k] === undefined) return key;
-        current = current[k];
+        if (current === null || typeof current !== 'object') return key;
+        const obj = current as Record<string, unknown>;
+        if (obj[k] === undefined) return key;
+        current = obj[k];
     }
 
-    return current as string;
+    return typeof current === 'string' ? current : key;
 };

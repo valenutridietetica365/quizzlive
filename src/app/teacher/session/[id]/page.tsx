@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useParams, useRouter } from "next/navigation";
-import { Users, Play, ChevronRight, BarChart3, Trophy, LogOut, Loader2, Sparkles, MessageSquare, QrCode } from "lucide-react";
+import { Users, Play, ChevronRight, BarChart3, Trophy, LogOut, Loader2, MessageSquare, QrCode } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
 import QRDisplay from "@/components/QRDisplay";
@@ -28,7 +28,7 @@ export default function TeacherSession() {
     const [responsesCount, setResponsesCount] = useState(0);
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
-    const t = (key: string) => getTranslation(language, key);
+    const t = useCallback((key: string) => getTranslation(language, key), [language]);
 
     const fetchSessionData = useCallback(async () => {
         try {
@@ -61,17 +61,17 @@ export default function TeacherSession() {
             if (sessionData) {
                 try {
                     const s = SessionSchema.parse(sessionData);
-                    setSession(s as any);
+                    setSession(s as Session);
                     setQuiz(QuizSchema.parse(sessionData.quiz));
-                } catch (e) {
-                    console.error("Error validando sesión:", e);
+                } catch {
+                    console.error("Error validando sesión");
                 }
             }
 
             const validQuestions = (questionsData || []).map(q => {
                 try {
                     return QuestionSchema.parse(q);
-                } catch (e) {
+                } catch {
                     return null;
                 }
             }).filter((q): q is Question => q !== null);
@@ -79,20 +79,19 @@ export default function TeacherSession() {
             const validParticipants = (participantsData || []).map(p => {
                 try {
                     return ParticipantSchema.parse(p);
-                } catch (e) {
+                } catch {
                     return null;
                 }
             }).filter((p): p is Participant => p !== null);
 
             setQuestions(validQuestions);
             setParticipants(validParticipants);
-        } catch (err) {
-            console.error(err);
+        } catch {
             toast.error(t('common.error'));
         } finally {
             setLoading(false);
         }
-    }, [id, router, language]);
+    }, [id, router, t]);
 
     useEffect(() => {
         fetchSessionData();
@@ -111,8 +110,8 @@ export default function TeacherSession() {
                                 if (exists) return prev;
                                 return [...prev, p];
                             });
-                        } catch (e) {
-                            console.error("Error validando nuevo participante:", e);
+                        } catch {
+                            console.error("Error validando nuevo participante");
                         }
                     }
                 }
@@ -138,7 +137,7 @@ export default function TeacherSession() {
             supabase.removeChannel(participantsChannel);
             supabase.removeChannel(answersChannel);
         };
-    }, [id, fetchSessionData]);
+    }, [id, fetchSessionData, t]);
 
     const startQuiz = async () => {
         if (!session) return;
@@ -163,7 +162,7 @@ export default function TeacherSession() {
             setSession({ ...session, status: "active", current_question_id: firstQuestion.id });
             setCurrentQuestionIndex(0);
             setResponsesCount(0);
-        } catch (err) {
+        } catch {
             toast.error(t('common.error'));
         }
     };

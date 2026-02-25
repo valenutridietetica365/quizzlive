@@ -22,7 +22,7 @@ export default function QuizEditor() {
     const [fetching, setFetching] = useState(!isNew);
     const router = useRouter();
 
-    const t = (key: string, params?: Record<string, any>) => {
+    const t = useCallback((key: string, params?: Record<string, string | number>) => {
         let text = getTranslation(language, key);
         if (params) {
             Object.entries(params).forEach(([k, v]) => {
@@ -30,7 +30,7 @@ export default function QuizEditor() {
             });
         }
         return text;
-    };
+    }, [language]);
 
     const fetchQuizData = useCallback(async () => {
         if (isNew) return;
@@ -47,7 +47,7 @@ export default function QuizEditor() {
         }
 
         setTitle(quiz.title);
-        const validQuestions = quiz.questions.map((q: any) => {
+        const validQuestions = (quiz.questions as unknown[]).map((q) => {
             try {
                 return QuestionSchema.parse(q);
             } catch (e) {

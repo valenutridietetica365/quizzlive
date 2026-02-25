@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuizStore } from "@/lib/store";
+import { useQuizStore, Language } from "@/lib/store";
 import { Globe } from "lucide-react";
 
 export default function LanguageSelector() {
@@ -11,7 +11,7 @@ export default function LanguageSelector() {
             <Globe className="w-4 h-4 text-slate-400 group-hover:text-blue-400" />
             <select
                 value={language}
-                onChange={(e) => setLanguage(e.target.value as any)}
+                onChange={(e) => setLanguage(e.target.value as Language)}
                 className="bg-transparent text-xs font-black text-slate-400 uppercase tracking-widest outline-none cursor-pointer hover:text-white transition-colors"
             >
                 <option value="es" className="bg-slate-900 text-white">Español</option>

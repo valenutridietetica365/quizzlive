@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useQuizStore } from "@/lib/store";
-import { Rocket, Sparkles, User, Key, ArrowRight, Loader2, ChevronRight } from "lucide-react";
+import { Rocket, Sparkles, User, Key, ArrowRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { getTranslation } from "@/lib/i18n";
 import LanguageSelector from "@/components/LanguageSelector";
