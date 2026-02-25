@@ -119,6 +119,7 @@ CREATE POLICY "Teachers can view own profile"
     ON public.teachers FOR SELECT 
     USING (auth.uid() = id);
 
+-- Quizzes: Owner can do anything, others can only view if there is a session
 DROP POLICY IF EXISTS "Teachers can CRUD own quizzes" ON public.quizzes;
 CREATE POLICY "Teachers can CRUD own quizzes" 
     ON public.quizzes FOR ALL 
@@ -127,8 +128,14 @@ CREATE POLICY "Teachers can CRUD own quizzes"
 DROP POLICY IF EXISTS "Anyone can view quizzes if they join a session (via session relation)" ON public.quizzes;
 CREATE POLICY "Anyone can view quizzes if they join a session (via session relation)"
     ON public.quizzes FOR SELECT
-    USING (true);
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.sessions 
+            WHERE sessions.quiz_id = quizzes.id
+        )
+    );
 
+-- Questions: Owner can do anything, others can only view if there is a session
 DROP POLICY IF EXISTS "Teachers can CRUD questions for their quizzes" ON public.questions;
 CREATE POLICY "Teachers can CRUD questions for their quizzes" 
     ON public.questions FOR ALL 
@@ -143,8 +150,14 @@ CREATE POLICY "Teachers can CRUD questions for their quizzes"
 DROP POLICY IF EXISTS "Anyone can view questions" ON public.questions;
 CREATE POLICY "Anyone can view questions"
     ON public.questions FOR SELECT
-    USING (true);
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.sessions 
+            WHERE sessions.quiz_id = questions.quiz_id
+        )
+    );
 
+-- Sessions: Anyone can search for a session (by PIN), but only teacher can manage
 DROP POLICY IF EXISTS "Teachers can CRUD own sessions" ON public.sessions;
 CREATE POLICY "Teachers can CRUD own sessions" 
     ON public.sessions FOR ALL 
@@ -161,6 +174,7 @@ CREATE POLICY "Anyone can view sessions by PIN or ID"
     ON public.sessions FOR SELECT
     USING (true);
 
+-- Participants: Teacher can see all, students can see others in same session
 DROP POLICY IF EXISTS "Teachers can view participants of their sessions" ON public.participants;
 CREATE POLICY "Teachers can view participants of their sessions" 
     ON public.participants FOR SELECT 
@@ -183,6 +197,7 @@ CREATE POLICY "Participants can view other participants in same session"
     ON public.participants FOR SELECT
     USING (true);
 
+-- Answers: Teacher can see all, participants can only insert
 DROP POLICY IF EXISTS "Teachers can view all answers for their sessions" ON public.answers;
 CREATE POLICY "Teachers can view all answers for their sessions" 
     ON public.answers FOR SELECT 
@@ -203,8 +218,15 @@ CREATE POLICY "Anyone can insert answers"
 DROP POLICY IF EXISTS "Participants can view answers (for rankings)" ON public.answers;
 CREATE POLICY "Participants can view answers (for rankings)"
     ON public.answers FOR SELECT
-    USING (true);
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.sessions
+            WHERE sessions.id = answers.session_id
+            AND sessions.status != 'finished'
+        )
+    );
 
+-- Scores: Everyone in the session can see rankings
 DROP POLICY IF EXISTS "Anyone can view scores" ON public.scores;
 CREATE POLICY "Anyone can view scores"
     ON public.scores FOR SELECT
@@ -213,7 +235,13 @@ CREATE POLICY "Anyone can view scores"
 DROP POLICY IF EXISTS "Anyone can update/insert scores" ON public.scores;
 CREATE POLICY "Anyone can update/insert scores"
     ON public.scores FOR ALL
-    USING (true)
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.sessions
+            WHERE sessions.id = scores.session_id
+            AND sessions.status != 'finished'
+        )
+    )
     WITH CHECK (true);
 
 ----------------------------------------------------------
