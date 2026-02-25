@@ -33,6 +33,7 @@ export const SessionSchema = z.object({
     status: z.enum(["waiting", "active", "finished"]),
     quiz_id: z.string(),
     current_question_id: z.string().nullable().optional(),
+    current_question_started_at: z.string().nullable().optional(),
     started_at: z.string().nullable().optional(),
     finished_at: z.string().nullable().optional(),
 });

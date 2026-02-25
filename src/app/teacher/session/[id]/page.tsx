@@ -153,7 +153,8 @@ export default function TeacherSession() {
                 .update({
                     status: "active",
                     current_question_id: firstQuestion.id,
-                    started_at: new Date().toISOString()
+                    started_at: new Date().toISOString(),
+                    current_question_started_at: new Date().toISOString()
                 })
                 .eq("id", id);
 
@@ -174,7 +175,10 @@ export default function TeacherSession() {
             const nextQuestion = questions[nextIndex];
             await supabase
                 .from("sessions")
-                .update({ current_question_id: nextQuestion.id })
+                .update({
+                    current_question_id: nextQuestion.id,
+                    current_question_started_at: new Date().toISOString()
+                })
                 .eq("id", id);
 
             setCurrentQuestionIndex(nextIndex);
