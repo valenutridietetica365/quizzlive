@@ -4,16 +4,7 @@ import Image from "next/image";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import CircularTimer from "@/components/CircularTimer";
 
-interface Question {
-    id: string;
-    question_text: string;
-    question_type: string;
-    options: string[];
-    correct_answer: string;
-    points: number;
-    time_limit?: number;
-    image_url?: string;
-}
+import { Question } from "@/lib/schemas";
 
 interface QuestionViewProps {
     currentQuestion: Question;
