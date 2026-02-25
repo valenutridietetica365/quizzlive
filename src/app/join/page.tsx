@@ -13,7 +13,7 @@ function JoinContent() {
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
     const searchParams = useSearchParams();
-    const setParticipant = useQuizStore((state) => state.setParticipant);
+    const setParticipantInfo = useQuizStore((state) => state.setParticipantInfo);
 
     useEffect(() => {
         const pinFromUrl = searchParams.get("pin");
@@ -46,10 +46,10 @@ function JoinContent() {
 
             if (participantError) throw new Error("Error al unirse a la sesión");
 
-            setParticipant(participant.id, nickname);
+            setParticipantInfo(participant.id, nickname);
             router.push(`/play/${session.id}`);
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "Error desconocido");
         } finally {
             setLoading(false);
         }
