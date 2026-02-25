@@ -8,16 +8,16 @@ export const QuestionTypeSchema = z.enum([
 ]);
 
 export const QuestionSchema = z.object({
-    id: z.string().optional(),
-    quiz_id: z.string().optional(),
+    id: z.string().nullable().optional(),
+    quiz_id: z.string().nullable().optional(),
     question_text: z.string().min(1, "La pregunta no puede estar vacía"),
     question_type: QuestionTypeSchema,
     options: z.array(z.string()),
     correct_answer: z.string().min(1, "Debe haber una respuesta correcta"),
-    image_url: z.string().url().or(z.literal("")).optional(),
+    image_url: z.string().url().or(z.literal("")).nullable().optional(),
     time_limit: z.number().min(5).max(300).default(20),
     points: z.number().min(0).default(1000),
-    sort_order: z.number().optional(),
+    sort_order: z.number().nullable().optional(),
 });
 
 export const QuizSchema = z.object({

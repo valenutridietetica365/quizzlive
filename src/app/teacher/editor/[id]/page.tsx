@@ -186,8 +186,9 @@ export default function QuizEditor() {
                 question_type: q.question_type,
                 options: q.options,
                 correct_answer: q.correct_answer,
-                image_url: q.image_url,
+                image_url: q.image_url || null,
                 time_limit: q.time_limit,
+                points: q.points || 1000,
                 sort_order: index
             }));
 
@@ -310,7 +311,7 @@ export default function QuizEditor() {
                                     type="text"
                                     placeholder={t('editor.image_url_placeholder')}
                                     className="flex-1 bg-transparent border-none focus:ring-0 outline-none font-bold text-slate-700"
-                                    value={q.image_url}
+                                    value={q.image_url || ""}
                                     onChange={(e) => updateQuestion(qIndex, "image_url", e.target.value)}
                                 />
                             </div>
