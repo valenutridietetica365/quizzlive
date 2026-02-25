@@ -22,6 +22,7 @@ interface Question {
     correct_answer: string;
     image_url?: string;
     points: number;
+    time_limit: number;
 }
 
 export default function StudentPlay() {
@@ -37,6 +38,8 @@ export default function StudentPlay() {
     const [selectedOption, setSelectedOption] = useState<string | null>(null);
     const [totalScore, setTotalScore] = useState<number | null>(null);
     const [fetchingScore, setFetchingScore] = useState(false);
+    const [questionStartTime, setQuestionStartTime] = useState<number>(0);
+    const [pointsEarned, setPointsEarned] = useState<number>(0);
 
     const playSound = (type: "correct" | "wrong") => {
         const audio = new Audio(
@@ -57,6 +60,8 @@ export default function StudentPlay() {
         setCurrentQuestion(questionData as Question);
         setAnswered(false);
         setIsCorrect(null);
+        setPointsEarned(0);
+        setQuestionStartTime(Date.now());
     }, []);
 
     const fetchInitialState = useCallback(async () => {
@@ -139,7 +144,17 @@ export default function StudentPlay() {
         setIsCorrect(correct);
         playSound(correct ? "correct" : "wrong");
 
-        const points = correct ? currentQuestion.points : 0;
+        let points = 0;
+        if (correct) {
+            const timeTaken = (Date.now() - questionStartTime) / 1000;
+            const timeLimit = currentQuestion.time_limit || 20;
+            const percentage = Math.min(timeTaken / timeLimit, 1);
+            // Decay formula: MaxPoints * (1 - (percentage / 2))
+            // Min points = 50% of base points if answered within limit
+            points = Math.round(currentQuestion.points * (1 - (percentage / 2)));
+        }
+
+        setPointsEarned(points);
 
         await supabase.from("answers").insert({
             participant_id: participantId,
@@ -248,7 +263,7 @@ export default function StudentPlay() {
                                     {isCorrect ? "¡SÍÍÍ!" : "¡CASI!"}
                                 </h1>
                                 <p className="text-white/90 font-black text-2xl uppercase tracking-widest">
-                                    {isCorrect ? "+1,000 Puntos" : "A por la próxima"}
+                                    {isCorrect ? `+${pointsEarned.toLocaleString()} Puntos` : "A por la próxima"}
                                 </p>
                             </div>
                             <div className="flex flex-col items-center gap-3">
