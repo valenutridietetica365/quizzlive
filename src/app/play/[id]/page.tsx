@@ -76,7 +76,7 @@ export default function StudentPlay() {
     const fetchTotalScore = useCallback(async () => {
         setFetchingScore(true);
         try {
-            const { data, error } = await supabase
+            const { data } = await supabase
                 .from("scores")
                 .select("total_points")
                 .eq("participant_id", participantId)
