@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, X, Download, FileText, Loader2, AlertCircle, Check } from 'lucide-react';
+import { Upload, X, Download, FileText, Loader2, AlertCircle } from 'lucide-react';
 import { getTranslation } from '@/lib/i18n';
 import { useQuizStore } from '@/lib/store';
 import { parseQuizFile, downloadTemplate } from '@/lib/importer';
@@ -16,10 +16,10 @@ export default function ImportModal({ isOpen, onClose, onImport }: ImportModalPr
     const { language } = useQuizStore();
     const [isDragging, setIsDragging] = useState(false);
     const [loading, setLoading] = useState(false);
-    const t = (key: string, params?: any) => {
+    const t = (key: string, params?: Record<string, string | number>) => {
         let text = getTranslation(language, key);
         if (params) {
-            Object.entries(params).forEach(([k, v]: [string, any]) => {
+            Object.entries(params).forEach(([k, v]) => {
                 text = text.replace(`{${k}}`, v.toString());
             });
         }

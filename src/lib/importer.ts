@@ -15,7 +15,7 @@ export const parseQuizFile = async (file: File): Promise<ImportResult> => {
                 const workbook = XLSX.read(data, { type: 'binary' });
                 const sheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[sheetName];
-                const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+                const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as unknown[][];
 
                 if (json.length < 2) {
                     resolve({ questions: [], errors: ["El archivo está vacío o no tiene el formato correcto."] });
@@ -36,7 +36,7 @@ export const parseQuizFile = async (file: File): Promise<ImportResult> => {
                         const raw_type = String(row[1] || "multiple_choice").trim().toLowerCase();
 
                         // Map human readable/common types to schema types
-                        let question_type: any = "multiple_choice";
+                        let question_type: Question['question_type'] = "multiple_choice";
                         if (raw_type.includes("v") || raw_type.includes("f") || raw_type === "true_false") question_type = "true_false";
                         else if (raw_type.includes("oracion") || raw_type.includes("blank") || raw_type === "fill_in_the_blank") question_type = "fill_in_the_blank";
                         else if (raw_type.includes("parear") || raw_type.includes("matching")) question_type = "matching";
@@ -54,8 +54,8 @@ export const parseQuizFile = async (file: File): Promise<ImportResult> => {
                         }
 
                         const correct_answer = String(row[3] || "").trim();
-                        const time_limit = parseInt(row[4]) || 20;
-                        const points = parseInt(row[5]) || 1000;
+                        const time_limit = parseInt(String(row[4])) || 20;
+                        const points = parseInt(String(row[5])) || 1000;
 
                         questions.push({
                             question_text,
@@ -65,13 +65,13 @@ export const parseQuizFile = async (file: File): Promise<ImportResult> => {
                             time_limit,
                             points
                         } as Question);
-                    } catch (err) {
+                    } catch {
                         errors.push(`Fila ${index + 2}: Error de formato.`);
                     }
                 });
 
                 resolve({ questions, errors });
-            } catch (err) {
+            } catch {
                 resolve({ questions: [], errors: ["Error al leer el archivo. Asegúrate de que sea un Excel o CSV válido."] });
             }
         };
