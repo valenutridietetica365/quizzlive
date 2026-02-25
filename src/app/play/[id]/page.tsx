@@ -59,6 +59,7 @@ export default function StudentPlay() {
                 setFillAnswer("");
                 setMatchingPairs({});
                 setSelectedTerm(null);
+                setIsSubmitting(false); // Crucial fix: allow interaction in the new question
 
                 if (q.question_type === "matching") {
                     const matches = q.options.map(opt => opt.split(":")[1]);
@@ -68,6 +69,9 @@ export default function StudentPlay() {
                 console.error("Error validando pregunta:", e);
                 toast.error("Error al cargar los datos de la pregunta");
             }
+        } else {
+            console.error("No question data found for ID:", questionId);
+            toast.error("Error: No se pudo encontrar la pregunta");
         }
     }, []);
 
@@ -217,6 +221,7 @@ export default function StudentPlay() {
                 setIsCorrect(data.is_correct);
                 setCurrentStreak(data.current_streak || 0);
             }
+            setIsSubmitting(false); // Clean up state after successful sync
         } catch (e) {
             console.error("Error al enviar respuesta:", e);
             toast.error("Error de conexión al enviar tu respuesta");
