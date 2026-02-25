@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { Plus, BookOpen, Play, Trash2, LogOut, Loader2, History, Presentation, Calendar, Users, Trophy, Pencil } from "lucide-react";

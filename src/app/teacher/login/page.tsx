@@ -20,7 +20,7 @@ export default function TeacherLogin() {
         const { error } = await supabase.auth.signInWithOtp({
             email,
             options: {
-                emailRedirectTo: `${window.location.origin}/teacher/dashboard`,
+                emailRedirectTo: `${window.location.origin}/auth/callback`,
             },
         });
 
