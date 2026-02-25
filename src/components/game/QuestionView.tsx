@@ -1,11 +1,22 @@
 "use client";
 
 import Image from "next/image";
-import { Clock, ArrowRight, CheckCircle2 } from "lucide-react";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
 import CircularTimer from "@/components/CircularTimer";
 
+interface Question {
+    id: string;
+    question_text: string;
+    question_type: string;
+    options: string[];
+    correct_answer: string;
+    points: number;
+    time_limit?: number;
+    image_url?: string;
+}
+
 interface QuestionViewProps {
-    currentQuestion: any;
+    currentQuestion: Question;
     timeLeft: number | null;
     isSubmitting: boolean;
     answered: boolean;
@@ -14,7 +25,7 @@ interface QuestionViewProps {
     fillAnswer: string;
     setFillAnswer: (val: string) => void;
     matchingPairs: Record<string, string>;
-    setMatchingPairs: (pairs: any) => void;
+    setMatchingPairs: (pairs: Record<string, string>) => void;
     selectedTerm: string | null;
     setSelectedTerm: (term: string | null) => void;
     shuffledMatches: string[];

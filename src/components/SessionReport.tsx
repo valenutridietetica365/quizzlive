@@ -2,9 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { Download, Users, CheckCircle2, XCircle, Clock, FileSpreadsheet } from "lucide-react";
-import { getTranslation } from "@/lib/i18n";
-import { useQuizStore } from "@/lib/store";
+import { Users, CheckCircle2, FileSpreadsheet } from "lucide-react";
+
 
 interface ReportProps {
     sessionId: string;
@@ -23,11 +22,16 @@ interface ParticipantData {
     }[];
 }
 
+interface SupabaseParticipant {
+    id: string;
+    nickname: string;
+    scores: { total_points: number }[];
+    answers: ParticipantData["answers"];
+}
+
 export default function SessionReport({ sessionId }: ReportProps) {
-    const { language } = useQuizStore();
     const [participants, setParticipants] = useState<ParticipantData[]>([]);
     const [loading, setLoading] = useState(true);
-    const t = (key: string) => getTranslation(language, key);
 
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -43,7 +47,7 @@ export default function SessionReport({ sessionId }: ReportProps) {
             .eq("session_id", sessionId);
 
         if (partData) {
-            const formatted = partData.map((p: any) => ({
+            const formatted = (partData as unknown as SupabaseParticipant[]).map((p) => ({
                 id: p.id,
                 nickname: p.nickname,
                 total_points: p.scores?.[0]?.total_points ?? 0,

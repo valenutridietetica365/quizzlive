@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { ArrowLeft, Trophy, Users, BarChart3, Loader2, Calendar, Target } from "lucide-react";
+import { ArrowLeft, Users, BarChart3, Loader2, Calendar, Target } from "lucide-react";
 import { useQuizStore } from "@/lib/store";
 import { getTranslation } from "@/lib/i18n";
 import LanguageSelector from "@/components/LanguageSelector";

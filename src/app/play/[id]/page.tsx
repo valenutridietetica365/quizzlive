@@ -4,16 +4,13 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useQuizStore } from "@/lib/store";
-import { Loader2, CheckCircle2, Clock, Frown, Sparkles, ArrowRight } from "lucide-react";
+import { Loader2, Clock, Sparkles, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
-import Image from "next/image";
 import { getTranslation } from "@/lib/i18n";
 
 import { Question, QuestionSchema, Session, SessionSchema } from "@/lib/schemas";
 import { StudentPlaySkeleton } from "@/components/Skeleton";
 import AudioController, { playSFX } from "@/components/AudioController";
-import CircularTimer from "@/components/CircularTimer";
-import Leaderboard from "@/components/Leaderboard";
 import FinalPodium from "@/components/FinalPodium";
 import QuestionView from "@/components/game/QuestionView";
 import AnswerWaiting from "@/components/game/AnswerWaiting";
@@ -25,7 +22,7 @@ export default function StudentPlay() {
     const { participantId, nickname, language } = useQuizStore();
 
     const [session, setSession] = useState<Session | null>(null);
-    const [participants, setParticipants] = useState<any[]>([]);
+    const [participants, setParticipants] = useState<{ id: string; nickname: string; current_streak?: number }[]>([]);
     const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
     const [answered, setAnswered] = useState(false);
     const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
@@ -187,7 +184,7 @@ export default function StudentPlay() {
         return () => {
             supabase.removeChannel(sessionChannel);
         };
-    }, [id, nickname, participantId, fetchInitialState, handleNewQuestion, router, totalScore, fetchingScore, fetchTotalScore, fetchParticipants]);
+    }, [id, nickname, participantId, fetchInitialState, handleNewQuestion, router, totalScore, fetchingScore, fetchTotalScore, fetchParticipants, session?.status]);
 
     // Countdown timer synchronized with session's current_question_started_at
     useEffect(() => {
