@@ -23,6 +23,7 @@ interface Session {
 interface Question {
     id: string;
     question_text: string;
+    question_type: "multiple_choice" | "true_false";
     options: string[];
     sort_order: number;
 }
@@ -65,7 +66,7 @@ export default function TeacherSession() {
 
         setSession(sessionData as Session);
         setQuiz(sessionData.quiz as Quiz);
-        setQuestions(questionsData || []);
+        setQuestions(questionsData as Question[] || []);
         setParticipants(participantsData || []);
         setLoading(false);
     }, [id, router]);
@@ -202,13 +203,24 @@ export default function TeacherSession() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className={`grid gap-4 ${questions[currentQuestionIndex].question_type === "true_false" ? "grid-cols-2" : "grid-cols-2"}`}>
                                 {questions[currentQuestionIndex].options.map((opt: string, i: number) => (
-                                    <div key={i} className="bg-slate-800/30 p-8 rounded-3xl border border-slate-800 text-left flex items-center gap-4">
-                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${i === 0 ? "bg-red-500" : i === 1 ? "bg-blue-500" : i === 2 ? "bg-yellow-500" : "bg-green-500"}`}>
-                                            {String.fromCharCode(65 + i)}
-                                        </div>
-                                        <span className="text-xl font-bold opacity-80">{opt}</span>
+                                    <div
+                                        key={i}
+                                        className={`p-8 rounded-[2.5rem] border-b-8 text-left flex items-center gap-4 transition-all ${questions[currentQuestionIndex].question_type === "true_false"
+                                                ? (opt === "Verdadero" ? "bg-blue-500 border-blue-700" : "bg-red-500 border-red-700")
+                                                : (i === 0 ? "bg-red-500 border-red-700" :
+                                                    i === 1 ? "bg-blue-500 border-blue-700" :
+                                                        i === 2 ? "bg-yellow-500 border-yellow-700" :
+                                                            "bg-green-500 border-green-700")
+                                            }`}
+                                    >
+                                        {questions[currentQuestionIndex].question_type !== "true_false" && (
+                                            <div className="bg-white/20 w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm text-white">
+                                                {String.fromCharCode(65 + i)}
+                                            </div>
+                                        )}
+                                        <span className={`text-2xl font-black text-white ${questions[currentQuestionIndex].question_type === "true_false" ? "w-full text-center" : ""}`}>{opt}</span>
                                     </div>
                                 ))}
                             </div>
