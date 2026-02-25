@@ -11,6 +11,7 @@ import { getTranslation } from "@/lib/i18n";
 
 import { Question, QuestionSchema, Session, SessionSchema } from "@/lib/schemas";
 import { StudentPlaySkeleton } from "@/components/Skeleton";
+import AudioController, { playSFX } from "@/components/AudioController";
 
 export default function StudentPlay() {
     const { id } = useParams();
@@ -37,14 +38,6 @@ export default function StudentPlay() {
 
     const t = (key: string) => getTranslation(language, key);
 
-    const playSound = (type: "correct" | "wrong") => {
-        const audio = new Audio(
-            type === "correct"
-                ? "https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"
-                : "https://assets.mixkit.co/active_storage/sfx/2001/2001-preview.mp3"
-        );
-        audio.play().catch(() => { });
-    };
 
     const handleNewQuestion = useCallback(async (questionId: string) => {
         const { data: questionData } = await supabase
@@ -189,7 +182,8 @@ export default function StudentPlay() {
         }
 
         setIsCorrect(correct);
-        playSound(correct ? "correct" : "wrong");
+        playSFX(correct ? "correct" : "wrong");
+        if (correct && currentStreak >= 2) playSFX("streak");
 
         let points = 0;
         if (correct) {
@@ -429,6 +423,7 @@ export default function StudentPlay() {
                     </div>
                 </div>
             )}
+            <AudioController type={session.status} />
         </div>
     );
 }

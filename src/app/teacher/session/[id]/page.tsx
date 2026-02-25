@@ -12,6 +12,8 @@ import { TeacherSessionSkeleton } from "@/components/Skeleton";
 import { useQuizStore } from "@/lib/store";
 import { getTranslation } from "@/lib/i18n";
 import LanguageSelector from "@/components/LanguageSelector";
+import AudioController from "@/components/AudioController";
+import SessionAnalytics from "@/components/SessionAnalytics";
 
 import { Quiz, QuizSchema, Question, QuestionSchema, Session, SessionSchema, Participant, ParticipantSchema } from "@/lib/schemas";
 
@@ -27,6 +29,7 @@ export default function TeacherSession() {
     const [loading, setLoading] = useState(true);
     const [responsesCount, setResponsesCount] = useState(0);
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+    const [showAnalytics, setShowAnalytics] = useState(false);
 
     const t = useCallback((key: string) => getTranslation(language, key), [language]);
 
@@ -400,21 +403,28 @@ export default function TeacherSession() {
                                 </p>
                                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                                     <button
+                                        onClick={() => setShowAnalytics(!showAnalytics)}
+                                        className={`btn-premium flex items-center justify-center gap-2 ${showAnalytics ? "!bg-slate-700" : "!bg-emerald-600 !hover:bg-emerald-700"}`}
+                                    >
+                                        <BarChart3 className="w-5 h-5" />
+                                        {t('session.view_detailed_analytics')}
+                                    </button>
+                                    <button
                                         onClick={() => router.push("/teacher/dashboard")}
                                         className="btn-premium !bg-blue-600 !hover:bg-blue-700 flex items-center justify-center gap-2"
                                     >
                                         <BarChart3 className="w-5 h-5" />
                                         {t('session.view_results')}
                                     </button>
-                                    <button
-                                        onClick={() => router.push("/teacher/dashboard")}
-                                        className="btn-premium !bg-slate-800 flex items-center justify-center gap-2"
-                                    >
-                                        {t('session.go_back')}
-                                    </button>
                                 </div>
                             </div>
                         </div>
+
+                        {showAnalytics && (
+                            <div className="w-full mt-12 animate-in fade-in slide-in-from-top-4 duration-700">
+                                <SessionAnalytics sessionId={id as string} />
+                            </div>
+                        )}
                     </div>
                 )}
             </main>
@@ -443,6 +453,7 @@ export default function TeacherSession() {
                 pin={session.pin}
                 joinUrl={joinUrl}
             />
+            <AudioController type={session.status} />
         </div>
     );
 }

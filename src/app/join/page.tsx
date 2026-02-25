@@ -10,12 +10,13 @@ import { getTranslation } from "@/lib/i18n";
 import LanguageSelector from "@/components/LanguageSelector";
 
 function JoinContent() {
-    const { setParticipantInfo, language } = useQuizStore();
+    const { setParticipantInfo, language, participantId, nickname: storedNickname } = useQuizStore();
     const [pin, setPin] = useState("");
     const [nickname, setNickname] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [hasPinFromUrl, setHasPinFromUrl] = useState(false);
+    const [rejoinSession, setRejoinSession] = useState<{ sessionId: string; pin: string } | null>(null);
     const router = useRouter();
     const searchParams = useSearchParams();
 
@@ -27,7 +28,23 @@ function JoinContent() {
             setPin(pinFromUrl);
             setHasPinFromUrl(true);
         }
-    }, [searchParams]);
+
+        // Check if there's an existing active session for the stored participant
+        const checkRejoin = async () => {
+            if (!participantId) return;
+            const { data } = await supabase
+                .from("participants")
+                .select("session_id, sessions(id, pin, status)")
+                .eq("id", participantId)
+                .single();
+            if (!data?.sessions) return;
+            const s = data.sessions as unknown as { id: string; pin: string; status: string };
+            if (s.status === "active") {
+                setRejoinSession({ sessionId: s.id, pin: s.pin });
+            }
+        };
+        checkRejoin();
+    }, [searchParams, participantId]);
 
     const handleJoin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -66,6 +83,10 @@ function JoinContent() {
         }
     };
 
+    const handleRejoin = () => {
+        if (rejoinSession) router.push(`/play/${rejoinSession.sessionId}`);
+    };
+
     return (
         <div className="min-h-screen bg-white flex flex-col justify-center py-12 px-6">
             <div className="fixed top-6 right-6 z-50">
@@ -73,6 +94,22 @@ function JoinContent() {
             </div>
 
             <div className="max-w-md w-full mx-auto space-y-12">
+                {/* Rejoin Banner */}
+                {rejoinSession && (
+                    <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-5 rounded-3xl flex items-center justify-between gap-4 animate-in slide-in-from-top-4">
+                        <div>
+                            <p className="font-black text-sm">¡Sesión activa encontrada!</p>
+                            <p className="text-xs font-medium text-emerald-600">PIN: {rejoinSession.pin} · {storedNickname}</p>
+                        </div>
+                        <button
+                            onClick={handleRejoin}
+                            className="bg-emerald-600 text-white px-4 py-2 rounded-xl font-black text-sm hover:bg-emerald-700 transition-all active:scale-95"
+                        >
+                            Volver 🔥
+                        </button>
+                    </div>
+                )}
+
                 <div className="text-center space-y-6">
                     <div className="w-20 h-20 bg-slate-900 rounded-[2.5rem] flex items-center justify-center text-white shadow-2xl mx-auto rotate-3">
                         <Rocket className="w-10 h-10 animate-float" />

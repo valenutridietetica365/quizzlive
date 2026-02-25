@@ -82,6 +82,12 @@ export const translations = {
             concepts: "Conceptos",
             pairs: "Parejas"
         },
+        analytics: {
+            avg_success: "Promedio de Acierto",
+            participation: "Participantes",
+            best_question: "Mejor Pregunta",
+            success_by_question: "Éxito por Pregunta"
+        },
         session: {
             title: "Sesión en Vivo",
             participants: "ALUMNOS",
@@ -100,6 +106,7 @@ export const translations = {
             mission_accomplished: "¡Misión",
             accomplished: "Cumplida!",
             finished_desc: "Has completado el quiz satisfactoriamente. Todos los datos han sido guardados en el historial.",
+            view_detailed_analytics: "Ver Analíticas",
             view_results: "VER RESULTADOS",
             go_back: "VOLVER",
             expected_answer: "RESPUESTA ESPERADA",
@@ -266,6 +273,12 @@ export const translations = {
             concepts: "Concepts",
             pairs: "Pairs"
         },
+        analytics: {
+            avg_success: "Avg. Success",
+            participation: "Total Participants",
+            best_question: "Best Question",
+            success_by_question: "Success by Question"
+        },
         session: {
             title: "Live Session",
             participants: "STUDENTS",
@@ -284,6 +297,7 @@ export const translations = {
             mission_accomplished: "Mission",
             accomplished: "Accomplished!",
             finished_desc: "You have successfully completed the quiz. All data has been saved in the history.",
+            view_detailed_analytics: "View Detailed Analytics",
             view_results: "VIEW RESULTS",
             go_back: "BACK",
             expected_answer: "EXPECTED ANSWER",

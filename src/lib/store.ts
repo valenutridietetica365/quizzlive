@@ -50,6 +50,10 @@ interface QuizState {
     language: Language
     setLanguage: (lang: Language) => void
 
+    // Audio
+    isMuted: boolean
+    toggleMute: () => void
+
     // Reset
     resetStore: () => void
 }
@@ -85,6 +89,9 @@ export const useQuizStore = create<QuizState>()(
 
             language: 'es',
             setLanguage: (lang) => set({ language: lang }),
+
+            isMuted: false,
+            toggleMute: () => set((state) => ({ isMuted: !state.isMuted })),
 
             resetStore: () => {
                 const current = get();
