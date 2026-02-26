@@ -51,6 +51,7 @@ export const translations = {
         sidebar: {
             my_quizzes: "Mis Quizzes",
             history: "Historial",
+            classes: "Clases",
             user: "Usuario",
             logout: "Cerrar Sesión"
         },
@@ -93,7 +94,10 @@ export const translations = {
             avg_success: "Promedio de Acierto",
             participation: "Participantes",
             best_question: "Mejor Pregunta",
-            success_by_question: "Éxito por Pregunta"
+            success_by_question: "Éxito por Pregunta",
+            critical_questions: "Preguntas Críticas",
+            insight_title: "Diagnóstico Pedagógico",
+            insight_desc: "Se recomienda reforzar los temas relacionados con estas preguntas."
         },
         session: {
             title: "Sesión en Vivo",
@@ -172,6 +176,8 @@ export const translations = {
             save_success: "¡Quiz guardado con éxito!",
             login_required: "Debes iniciar sesión para guardar",
             import_button: "IMPORTAR",
+            assign_class: "Asignar a Clase",
+            no_class: "Sin Clase",
             import_title: "Importación Inteligente",
             import_desc: "Sube un archivo Excel o CSV para añadir preguntas masivamente.",
             import_select_file: "Seleccionar Archivo",
@@ -260,6 +266,7 @@ export const translations = {
         sidebar: {
             my_quizzes: "My Quizzes",
             history: "History",
+            classes: "Classes",
             user: "User",
             logout: "Logout"
         },
@@ -302,7 +309,10 @@ export const translations = {
             avg_success: "Avg. Success",
             participation: "Total Participants",
             best_question: "Best Question",
-            success_by_question: "Success by Question"
+            success_by_question: "Success by Question",
+            critical_questions: "Critical Questions",
+            insight_title: "Learning Insight",
+            insight_desc: "It is recommended to reinforce the topics related to these questions."
         },
         session: {
             title: "Live Session",
@@ -381,6 +391,8 @@ export const translations = {
             save_success: "Quiz saved successfully!",
             login_required: "You must log in to save",
             import_button: "IMPORT",
+            assign_class: "Assign to Class",
+            no_class: "No Class",
             import_title: "Smart Import",
             import_desc: "Upload an Excel or CSV file to add questions in bulk.",
             import_select_file: "Select File",

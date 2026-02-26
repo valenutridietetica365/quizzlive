@@ -3,12 +3,12 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { Plus, Trash2, Save, ArrowLeft, Loader2, Check, ToggleLeft, ListChecks, Image as ImageIcon, Share2, Type, FileUp } from "lucide-react";
-import { useRouter, useParams } from "next/navigation";
-import Image from "next/image";
-import { Question, QuestionSchema } from "@/lib/schemas";
+import { Question, QuestionSchema, Class } from "@/lib/schemas";
 import { useQuizStore } from "@/lib/store";
 import { getTranslation } from "@/lib/i18n";
+import { Plus, Trash2, Save, ArrowLeft, Loader2, Check, ToggleLeft, ListChecks, Image as ImageIcon, Share2, Type, FileUp, Users } from "lucide-react";
+import { useRouter, useParams } from "next/navigation";
+import Image from "next/image";
 import ImportModal from "@/components/ImportModal";
 
 export default function QuizEditor() {
@@ -18,6 +18,8 @@ export default function QuizEditor() {
     const [title, setTitle] = useState("");
     const [tags, setTags] = useState<string[]>([]);
     const [newTag, setNewTag] = useState("");
+    const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+    const [classes, setClasses] = useState<Class[]>([]);
     const [questions, setQuestions] = useState<Question[]>([
         { question_text: "", question_type: "multiple_choice", options: ["", "", "", ""], correct_answer: "", time_limit: 20, points: 1000 }
     ]);
@@ -41,7 +43,7 @@ export default function QuizEditor() {
 
         const { data: quiz, error: quizError } = await supabase
             .from("quizzes")
-            .select("title, tags, questions(*)")
+            .select("title, tags, class_id, questions(*)")
             .eq("id", id)
             .single();
 
@@ -52,6 +54,7 @@ export default function QuizEditor() {
 
         setTitle(quiz.title);
         setTags(quiz.tags || []);
+        setSelectedClassId(quiz.class_id);
         const validQuestions = (quiz.questions as unknown[]).map((q) => {
             try {
                 return QuestionSchema.parse(q);
@@ -67,6 +70,14 @@ export default function QuizEditor() {
 
     useEffect(() => {
         fetchQuizData();
+
+        const fetchClasses = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+            const { data } = await supabase.from("classes").select("*").eq("teacher_id", user.id);
+            if (data) setClasses(data);
+        };
+        fetchClasses();
     }, [fetchQuizData]);
 
     const handleAddQuestion = () => {
@@ -180,7 +191,7 @@ export default function QuizEditor() {
 
                 const { error: quizError } = await supabase
                     .from("quizzes")
-                    .update({ title, tags })
+                    .update({ title, tags, class_id: selectedClassId })
                     .eq("id", id);
 
                 if (quizError) throw new Error(t('common.error'));
@@ -190,7 +201,7 @@ export default function QuizEditor() {
             } else {
                 const { data: newQuiz, error: quizError } = await supabase
                     .from("quizzes")
-                    .insert({ title, tags, teacher_id: user.id })
+                    .insert({ title, tags, class_id: selectedClassId, teacher_id: user.id })
                     .select()
                     .single();
 
@@ -280,6 +291,21 @@ export default function QuizEditor() {
                             }}
                         />
                     </div>
+
+                    <div className="hidden xl:flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-2xl border border-slate-100">
+                        <Users className="w-4 h-4 text-slate-400" />
+                        <select
+                            value={selectedClassId || ""}
+                            onChange={(e) => setSelectedClassId(e.target.value || null)}
+                            className="bg-transparent border-none focus:ring-0 text-[10px] font-black uppercase tracking-widest text-slate-600 p-0 pr-8"
+                        >
+                            <option value="">{t('editor.no_class')}</option>
+                            {classes.map(cls => (
+                                <option key={cls.id} value={cls.id}>{cls.name}</option>
+                            ))}
+                        </select>
+                    </div>
+
                     <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
                         <button
                             onClick={() => setIsImportModalOpen(true)}

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { Plus, BookOpen, Play, Trash2, LogOut, History, Calendar, Pencil, LayoutDashboard, ChevronRight } from "lucide-react";
+import { Plus, BookOpen, Play, Trash2, LogOut, History, Calendar, Pencil, LayoutDashboard, ChevronRight, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { QuizCardSkeleton } from "@/components/Skeleton";
 import ConfirmModal from "@/components/ConfirmModal";
@@ -17,7 +17,15 @@ interface Quiz {
     id: string;
     title: string;
     tags: string[];
+    class_id?: string | null;
     questions: { id: string }[];
+}
+
+interface Class {
+    id: string;
+    name: string;
+    description: string;
+    created_at: string;
 }
 
 interface User {
@@ -44,10 +52,12 @@ const StatsHeader = ({ stats, t }: { stats: { quizzes: number; sessions: number;
 
 export default function TeacherDashboard() {
     const { language } = useQuizStore();
-    const [activeTab, setActiveTab] = useState<"quizzes" | "history">("quizzes");
+    const [activeTab, setActiveTab] = useState<"quizzes" | "history" | "classes">("quizzes");
     const [selectedQuizTag, setSelectedQuizTag] = useState<string>("All");
     const [selectedHistoryTag, setSelectedHistoryTag] = useState<string>("All");
     const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+    const [classes, setClasses] = useState<Class[]>([]);
+    const [newClassName, setNewClassName] = useState("");
     const [history, setHistory] = useState<FinishedSession[]>([]);
     const [liveSessions, setLiveSessions] = useState<LiveSession[]>([]);
     const [loading, setLoading] = useState(true);
@@ -62,6 +72,16 @@ export default function TeacherDashboard() {
     }>({ open: false, quizId: null, historyId: null });
 
     const router = useRouter();
+
+    const fetchClasses = useCallback(async (userId: string) => {
+        const { data, error } = await supabase
+            .from("classes")
+            .select("*")
+            .eq("teacher_id", userId)
+            .order("created_at", { ascending: false });
+
+        if (!error) setClasses(data || []);
+    }, []);
 
     const fetchQuizzes = useCallback(async (userId: string) => {
         const { data, error } = await supabase
@@ -142,7 +162,8 @@ export default function TeacherDashboard() {
             await Promise.all([
                 fetchQuizzes(user.id),
                 fetchHistory(user.id),
-                fetchLiveSessions(user.id)
+                fetchLiveSessions(user.id),
+                fetchClasses(user.id)
             ]);
             setLoading(false);
         };
@@ -210,6 +231,34 @@ export default function TeacherDashboard() {
             toast.success("Informe eliminado con éxito");
         } else {
             toast.error("No se pudo eliminar el informe");
+        }
+    };
+
+    const createClass = async () => {
+        if (!user || !newClassName.trim()) return;
+
+        const { data, error } = await supabase
+            .from("classes")
+            .insert({ name: newClassName, teacher_id: user.id })
+            .select()
+            .single();
+
+        if (!error) {
+            setClasses([data, ...classes]);
+            setNewClassName("");
+            toast.success("Clase creada con éxito");
+        } else {
+            toast.error("Error al crear la clase");
+        }
+    };
+
+    const deleteClass = async (id: string) => {
+        const { error } = await supabase.from("classes").delete().eq("id", id);
+        if (!error) {
+            setClasses(classes.filter(c => c.id !== id));
+            toast.success("Clase eliminada");
+        } else {
+            toast.error("Error al eliminar la clase");
         }
     };
 
@@ -382,6 +431,57 @@ export default function TeacherDashboard() {
                     </div>
                 </div>
             );
+        } else if (activeTab === "classes") {
+            return (
+                <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                    <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-6">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div className="space-y-1">
+                                <h2 className="text-xl font-black text-slate-900 uppercase tracking-widest leading-none">{t('sidebar.classes')}</h2>
+                                <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Crea grupos permanentes para tus alumnos</p>
+                            </div>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={newClassName}
+                                    onChange={(e) => setNewClassName(e.target.value)}
+                                    placeholder="Nombre de la clase (ej. 3º B)"
+                                    className="flex-1 md:w-64 bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 rounded-xl px-4 py-3 font-bold text-sm"
+                                    onKeyDown={(e) => e.key === 'Enter' && createClass()}
+                                />
+                                <button
+                                    onClick={createClass}
+                                    className="bg-slate-900 text-white p-3 rounded-xl hover:bg-blue-600 transition-all active:scale-95"
+                                >
+                                    <Plus className="w-6 h-6" />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {classes.map((cls) => (
+                                <div key={cls.id} className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 group relative hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 transition-all">
+                                    <div className="space-y-3">
+                                        <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-blue-600 shadow-sm group-hover:bg-blue-600 group-hover:text-white transition-all">
+                                            <Users className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-black text-xl text-slate-900">{cls.name}</h3>
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{new Date(cls.created_at).toLocaleDateString()}</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => deleteClass(cls.id)}
+                                        className="absolute top-6 right-6 p-2 text-slate-300 hover:text-red-500 transition-colors"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
         } else {
             return history.length === 0 ? (
                 <div className="bg-white rounded-[2.5rem] md:rounded-[3rem] border-4 border-dashed border-slate-100 p-10 md:p-20 text-center space-y-6">
@@ -551,6 +651,16 @@ export default function TeacherDashboard() {
                     >
                         <History className="w-4 md:w-5 h-4 md:h-5" />
                         <span className="hidden sm:inline md:inline">{t('sidebar.history')}</span>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab("classes")}
+                        className={`flex-1 md:flex-none flex items-center justify-center md:justify-start gap-3 px-3 md:px-4 py-2.5 md:py-3.5 rounded-xl md:rounded-2xl font-black transition-all text-xs md:text-base ${activeTab === "classes"
+                            ? "bg-blue-50 text-blue-600"
+                            : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+                            }`}
+                    >
+                        <Users className="w-4 md:w-5 h-4 md:h-5" />
+                        <span className="hidden sm:inline md:inline">{t('sidebar.classes')}</span>
                     </button>
                 </nav>
 

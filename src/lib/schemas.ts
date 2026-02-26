@@ -24,7 +24,16 @@ export const QuizSchema = z.object({
     id: z.string().optional(),
     title: z.string().min(1, "El título es obligatorio"),
     tags: z.array(z.string()).optional().default([]),
+    class_id: z.string().nullable().optional(),
     teacher_id: z.string().optional(),
+    created_at: z.string().optional(),
+});
+
+export const ClassSchema = z.object({
+    id: z.string().optional(),
+    teacher_id: z.string().optional(),
+    name: z.string().min(1, "El nombre de la clase es obligatorio"),
+    description: z.string().nullable().optional(),
     created_at: z.string().optional(),
 });
 
@@ -52,6 +61,7 @@ export type Question = z.infer<typeof QuestionSchema>;
 export type Quiz = z.infer<typeof QuizSchema>;
 export type Session = z.infer<typeof SessionSchema>;
 export type Participant = z.infer<typeof ParticipantSchema>;
+export type Class = z.infer<typeof ClassSchema>;
 
 export interface FinishedSession {
     id: string;
