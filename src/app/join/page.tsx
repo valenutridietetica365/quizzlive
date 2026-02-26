@@ -104,7 +104,13 @@ function JoinContent() {
             if (sessionError || !session) throw new Error(t('join.invalid_pin'));
             if (session.status === "finished") throw new Error("Esta sesión ya ha finalizado");
 
-            const payload: any = {
+            type JoinPayload = {
+                session_id: string;
+                nickname: string;
+                student_id?: string;
+            };
+
+            const payload: JoinPayload = {
                 session_id: session.id,
                 nickname: nickname
             };
