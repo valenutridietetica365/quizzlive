@@ -257,7 +257,7 @@ export default function TeacherSession() {
     return (
         <div className="min-h-screen bg-slate-950 text-white flex flex-col selection:bg-blue-500/30">
             {/* Top Bar */}
-            <div className="p-6 md:p-8 flex justify-between items-center bg-slate-900/50 backdrop-blur-2xl border-b border-white/5 sticky top-0 z-50">
+            <div className="p-3 md:p-4 flex justify-between items-center bg-slate-900/50 backdrop-blur-2xl border-b border-white/5 sticky top-0 z-50">
                 <div className="flex items-center gap-6">
                     <div className="hidden lg:flex items-center gap-2 px-4 py-2 bg-blue-500/10 rounded-full border border-blue-500/20">
                         <span className="text-xs font-black text-blue-400 uppercase tracking-widest">{quiz.title}</span>
@@ -305,13 +305,13 @@ export default function TeacherSession() {
             <main className="flex-1 flex flex-col items-center justify-center p-8 md:p-12 w-full max-w-7xl mx-auto">
                 {session.status === "waiting" && (
                     <div className="w-full grid md:grid-cols-2 gap-16 items-center animate-in fade-in zoom-in duration-700">
-                        <div className="space-y-10 text-center md:text-left">
-                            <div className="space-y-4">
-                                <h1 className="text-6xl md:text-8xl font-black tracking-tighter leading-none">
+                        <div className="space-y-4 text-center md:text-left">
+                            <div className="space-y-2">
+                                <h1 className="text-4xl md:text-6xl font-black tracking-tighter leading-none">
                                     {t('session.it_is_time')} <br />
                                     <span className="text-blue-500">{t('session.to_play')}</span>
                                 </h1>
-                                <p className="text-xl text-slate-400 font-medium max-w-md">
+                                <p className="text-lg text-slate-400 font-medium max-w-md">
                                     {t('session.share_desc')}
                                 </p>
                             </div>
@@ -344,10 +344,10 @@ export default function TeacherSession() {
                 )}
 
                 {session.status === "active" && currentQuestionIndex !== -1 && (
-                    <div className="w-full grid lg:grid-cols-3 gap-8 animate-in slide-in-from-bottom-12 duration-700">
-                        <div className="lg:col-span-2 space-y-10">
-                            <div className="flex items-center gap-4">
-                                <span className="px-4 py-2 bg-blue-500/10 rounded-xl text-blue-400 font-black text-xs uppercase tracking-[0.2em]">
+                    <div className="w-full grid lg:grid-cols-3 gap-6 animate-in slide-in-from-bottom-12 duration-700">
+                        <div className="lg:col-span-2 space-y-4 md:space-y-6">
+                            <div className="flex items-center gap-3">
+                                <span className="px-3 py-1.5 bg-blue-500/10 rounded-lg text-blue-400 font-black text-[10px] uppercase tracking-[0.2em]">
                                     {t('session.question_of')} {currentQuestionIndex + 1} / {questions.length}
                                 </span>
                                 <div className="h-1 flex-1 bg-slate-900 rounded-full overflow-hidden">
@@ -355,7 +355,7 @@ export default function TeacherSession() {
                                 </div>
                             </div>
 
-                            <h1 className="text-4xl md:text-6xl font-black tracking-tight leading-tight">
+                            <h1 className="text-2xl md:text-5xl font-black tracking-tight leading-tight">
                                 {questions[currentQuestionIndex].question_text}
                             </h1>
 
@@ -377,7 +377,7 @@ export default function TeacherSession() {
                                     {questions[currentQuestionIndex].options.map((opt, i) => (
                                         <div
                                             key={i}
-                                            className={`p-6 md:p-8 rounded-[2rem] border-b-[6px] transition-all flex items-center gap-5 ${questions[currentQuestionIndex].question_type === "true_false"
+                                            className={`p-4 md:p-6 rounded-2xl border-b-4 transition-all flex items-center gap-4 ${questions[currentQuestionIndex].question_type === "true_false"
                                                 ? (opt === "Verdadero" || opt === "True" ? "bg-blue-600/90 border-blue-800" : "bg-red-600/90 border-red-800")
                                                 : (i === 0 ? "bg-red-600/90 border-red-800" :
                                                     i === 1 ? "bg-blue-600/90 border-blue-800" :
@@ -385,10 +385,10 @@ export default function TeacherSession() {
                                                             "bg-emerald-600/90 border-emerald-800")
                                                 }`}
                                         >
-                                            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-xl font-black shadow-lg">
+                                            <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center text-lg font-black shadow-lg">
                                                 {String.fromCharCode(65 + i)}
                                             </div>
-                                            <span className="text-xl md:text-2xl font-black text-white">{opt}</span>
+                                            <span className="text-lg md:text-xl font-black text-white">{opt}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -414,31 +414,31 @@ export default function TeacherSession() {
                         </div>
 
                         <div className="space-y-6">
-                            <div className="bg-slate-900/80 backdrop-blur-xl p-10 rounded-[2.5rem] border border-white/5 flex flex-col items-center text-center space-y-4 shadow-2xl">
-                                <div className="w-20 h-20 bg-blue-500/10 rounded-full flex items-center justify-center text-blue-500 ring-8 ring-blue-500/5">
-                                    <MessageSquare className="w-10 h-10" />
+                            <div className="bg-slate-900/80 backdrop-blur-xl p-6 md:p-8 rounded-3xl border border-white/5 flex flex-col items-center text-center space-y-3 shadow-2xl">
+                                <div className="w-14 h-14 bg-blue-500/10 rounded-full flex items-center justify-center text-blue-500 ring-4 ring-blue-500/5">
+                                    <MessageSquare className="w-7 h-7" />
                                 </div>
                                 <div>
-                                    <p className="text-6xl font-black text-white tabular-nums tracking-tighter">{responsesCount}</p>
-                                    <p className="text-sm font-black text-slate-500 uppercase tracking-widest mt-1">{t('session.responses')}</p>
+                                    <p className="text-4xl md:text-5xl font-black text-white tabular-nums tracking-tighter">{responsesCount}</p>
+                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">{t('session.responses')}</p>
                                 </div>
-                                <div className="pt-4 flex gap-1">
+                                <div className="pt-2 flex gap-1">
                                     {[...Array(5)].map((_, i) => (
-                                        <div key={i} className={`h-1.5 w-1.5 rounded-full ${i < (responsesCount % 6) ? 'bg-blue-500' : 'bg-slate-800'}`} />
+                                        <div key={i} className={`h-1 w-1 rounded-full ${i < (responsesCount % 6) ? 'bg-blue-500' : 'bg-slate-800'}`} />
                                     ))}
                                 </div>
                             </div>
 
                             {/* Live Ranking */}
-                            <div className="bg-slate-900/80 backdrop-blur-xl p-6 rounded-[2.5rem] border border-white/5 shadow-2xl">
+                            <div className="bg-slate-900/80 backdrop-blur-xl p-4 rounded-3xl border border-white/5 shadow-2xl">
                                 <Leaderboard sessionId={id as string} />
                             </div>
 
                             {/* Timer Card */}
                             {timeLeft !== null && (
-                                <div className="bg-slate-900/80 backdrop-blur-xl p-10 rounded-[2.5rem] border border-white/5 flex flex-col items-center text-center space-y-4 shadow-2xl">
-                                    <CircularTimer timeLeft={timeLeft} timeLimit={questions[currentQuestionIndex]?.time_limit || 20} size="lg" />
-                                    <p className="text-sm font-black text-slate-500 uppercase tracking-widest">{t('session.time_remaining')}</p>
+                                <div className="bg-slate-900/80 backdrop-blur-xl p-6 md:p-8 rounded-3xl border border-white/5 flex flex-col items-center text-center space-y-3 shadow-2xl">
+                                    <CircularTimer timeLeft={timeLeft} timeLimit={questions[currentQuestionIndex]?.time_limit || 20} size="sm" />
+                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('session.time_remaining')}</p>
                                 </div>
                             )}
 
