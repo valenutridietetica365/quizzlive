@@ -302,9 +302,9 @@ export default function TeacherDashboard() {
                         </div>
                     )}
 
-                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                         {quizzes.map((quiz) => (
-                            <div key={quiz.id} className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-50 transition-all hover:shadow-2xl hover:shadow-slate-200/50 flex flex-col justify-between space-y-6 relative group overflow-hidden">
+                            <div key={quiz.id} className="bg-white rounded-2xl p-4 shadow-sm border border-slate-50 transition-all hover:shadow-2xl hover:shadow-slate-200/50 flex flex-col justify-between space-y-4 relative group overflow-hidden">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50/50 rounded-bl-[4rem] -mr-8 -mt-8 -z-0 transition-all group-hover:scale-110" />
 
                                 <div className="space-y-4 relative z-10">
@@ -473,7 +473,7 @@ export default function TeacherDashboard() {
 
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
-            <aside className="w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-slate-100 p-4 flex flex-row md:flex-col items-center md:items-stretch fixed md:sticky top-0 md:h-screen z-[100] gap-4">
+            <aside className="w-full md:w-60 bg-white border-b md:border-b-0 md:border-r border-slate-100 p-3 flex flex-row md:flex-col items-center md:items-stretch fixed md:sticky top-0 md:h-screen z-[100] gap-3">
                 <div className="flex items-center gap-3 md:mb-6">
                     <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-lg flex-shrink-0">
                         <LayoutDashboard className="w-6 h-6" />
@@ -528,7 +528,7 @@ export default function TeacherDashboard() {
                 </div>
             </aside>
 
-            <main className="flex-1 p-4 md:p-8 space-y-6 md:space-y-8 overflow-y-auto">
+            <main className="flex-1 p-2 md:p-6 space-y-4 md:space-y-6 overflow-y-auto">
                 <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mt-16 md:mt-0">
                     <div className="space-y-1">
                         <h1 className="text-3xl md:text-5xl font-black text-slate-900 leading-tight">

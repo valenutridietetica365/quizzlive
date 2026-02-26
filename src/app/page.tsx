@@ -73,8 +73,8 @@ export default function Home() {
             </nav>
 
             {/* Hero Section */}
-            <section className="pt-24 md:pt-32 pb-12 md:pb-20 px-6 relative overflow-hidden">
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[400px] bg-gradient-to-b from-blue-50/50 to-transparent -z-10" />
+            <section className="pt-16 md:pt-24 pb-8 md:pb-12 px-6 relative overflow-hidden">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[300px] bg-gradient-to-b from-blue-50/50 to-transparent -z-10" />
 
                 <div className="max-w-5xl mx-auto text-center space-y-6 md:space-y-8 relative">
                     <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-full text-[10px] md:text-xs font-black uppercase tracking-widest animate-in fade-in slide-in-from-top-4 duration-700">
@@ -113,9 +113,9 @@ export default function Home() {
             </section>
 
             {/* Features/Social Proof */}
-            <section className="py-12 border-y border-slate-50 bg-white" id="features">
-                <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6">
-                    <div className="flex flex-col items-center text-center space-y-3 p-6 rounded-3xl hover:bg-slate-50 transition-colors">
+            <section className="py-8 border-y border-slate-50 bg-white" id="features">
+                <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-4">
+                    <div className="flex flex-col items-center text-center space-y-2 p-4 rounded-2xl hover:bg-slate-50 transition-colors">
                         <div className="w-16 h-16 bg-orange-100 text-orange-600 rounded-[2rem] flex items-center justify-center shadow-inner shadow-orange-200/50">
                             <Zap className="w-8 h-8" />
                         </div>
