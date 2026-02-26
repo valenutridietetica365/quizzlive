@@ -31,7 +31,6 @@ interface ExportAnswer {
     participants: {
         id: string;
         nickname: string;
-        students: { name: string } | null;
     } | null;
 }
 
@@ -55,7 +54,7 @@ const SessionAnalytics = React.memo(function SessionAnalytics({ sessionId }: Ses
                 is_correct,
                 points_awarded,
                 questions(question_text),
-                participants(nickname, students(name))
+                participants(nickname)
             `)
             .eq("session_id", sessionId);
 
@@ -66,7 +65,7 @@ const SessionAnalytics = React.memo(function SessionAnalytics({ sessionId }: Ses
 
         const headers = ["Alumno", "Pregunta", "Correcto", "Puntos"];
         const rows = (answers as unknown as ExportAnswer[]).map(a => [
-            a.participants?.students?.name || a.participants?.nickname || "Anónimo",
+            a.participants?.nickname || "Anónimo",
             a.questions?.question_text || "Pregunta",
             a.is_correct ? "SÍ" : "NO",
             a.points_awarded
@@ -88,7 +87,7 @@ const SessionAnalytics = React.memo(function SessionAnalytics({ sessionId }: Ses
         const fetchAnalytics = async () => {
             const { data: answers } = await supabase
                 .from("answers")
-                .select("is_correct, question_id, questions(question_text), participants(id, nickname, students(name))")
+                .select("is_correct, question_id, questions(question_text), participants(id, nickname)")
                 .eq("session_id", sessionId);
 
             if (answers) {
@@ -129,7 +128,7 @@ const SessionAnalytics = React.memo(function SessionAnalytics({ sessionId }: Ses
                     questionMap.set(qId, qText.substring(0, 10) + "...");
 
                     const pId = a.participants?.id || "unknown";
-                    const pName = a.participants?.students?.name || a.participants?.nickname || "Anónimo";
+                    const pName = a.participants?.nickname || "Anónimo";
 
                     if (!userMap.has(pId)) {
                         userMap.set(pId, { participantId: pId, studentName: pName, answers: {} });

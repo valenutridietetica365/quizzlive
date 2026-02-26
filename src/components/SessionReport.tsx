@@ -12,7 +12,6 @@ interface ReportProps {
 interface ParticipantData {
     id: string;
     nickname: string;
-    student_name?: string | null;
     total_points: number;
     answers: {
         question_id: string;
@@ -26,7 +25,6 @@ interface ParticipantData {
 interface SupabaseParticipant {
     id: string;
     nickname: string;
-    students?: { name: string } | null;
     scores: { total_points: number }[];
     answers: ParticipantData["answers"];
 }
@@ -43,7 +41,6 @@ const SessionReport = React.memo(function SessionReport({ sessionId }: ReportPro
             .select(`
                 id, 
                 nickname, 
-                students:students(name),
                 scores:scores(total_points),
                 answers:answers(question_id, is_correct, points_awarded, answer_text, answered_at)
             `)
@@ -53,7 +50,6 @@ const SessionReport = React.memo(function SessionReport({ sessionId }: ReportPro
             const formatted = (partData as unknown as SupabaseParticipant[]).map((p) => ({
                 id: p.id,
                 nickname: p.nickname,
-                student_name: p.students?.name,
                 total_points: p.scores?.[0]?.total_points ?? 0,
                 answers: p.answers || []
             }));
@@ -69,12 +65,11 @@ const SessionReport = React.memo(function SessionReport({ sessionId }: ReportPro
     const exportToCSV = () => {
         if (participants.length === 0) return;
 
-        const headers = ["Nombre Estudiante", "Nickname", "Puntos Totales", "Correctas", "% Éxito"];
+        const headers = ["Nickname", "Puntos Totales", "Correctas", "% Éxito"];
         const rows = participants.map(p => {
             const correctCount = p.answers.filter(a => a.is_correct).length;
             const successRate = p.answers.length > 0 ? ((correctCount / p.answers.length) * 100).toFixed(1) : 0;
             return [
-                p.student_name || "N/A",
                 p.nickname,
                 p.total_points,
                 correctCount,
