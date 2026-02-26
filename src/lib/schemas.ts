@@ -23,6 +23,7 @@ export const QuestionSchema = z.object({
 export const QuizSchema = z.object({
     id: z.string().optional(),
     title: z.string().min(1, "El título es obligatorio"),
+    tags: z.array(z.string()).optional().default([]),
     teacher_id: z.string().optional(),
     created_at: z.string().optional(),
 });
