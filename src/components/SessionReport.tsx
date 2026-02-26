@@ -107,13 +107,22 @@ export default function SessionReport({ sessionId }: ReportProps) {
                         <p className="text-sm text-slate-500 font-medium">Resultados individuales detallados</p>
                     </div>
                 </div>
-                <button
-                    onClick={exportToCSV}
-                    className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-black transition-all active:scale-95 shadow-lg shadow-emerald-900/20"
-                >
-                    <FileSpreadsheet className="w-4 h-4" />
-                    Exportar Excel (CSV)
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => window.print()}
+                        className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-xl text-sm font-black transition-all active:scale-95 border border-white/5"
+                    >
+                        <Users className="w-4 h-4 text-blue-400" />
+                        Imprimir / PDF
+                    </button>
+                    <button
+                        onClick={exportToCSV}
+                        className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-black transition-all active:scale-95 shadow-lg shadow-emerald-900/20"
+                    >
+                        <FileSpreadsheet className="w-4 h-4" />
+                        Exportar Excel (CSV)
+                    </button>
+                </div>
             </div>
 
             <div className="overflow-x-auto rounded-2xl border border-white/5 bg-slate-900/30">

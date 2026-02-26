@@ -68,7 +68,8 @@ export default function QuestionView({
                             key={i}
                             disabled={isSubmitting || answered}
                             onClick={() => submitAnswer(opt)}
-                            className={`group p-8 rounded-[2rem] text-left transition-all active:scale-95 shadow-lg border-b-[8px] flex flex-col justify-between h-48 sm:h-auto overflow-hidden relative ${(isSubmitting || answered) && selectedOption !== opt ? "opacity-50 grayscale" : ""} ${selectedOption === opt ? "scale-105 brightness-110 z-10 ring-4 ring-white shadow-2xl" : ""
+                            style={{ animationDelay: `${i * 100}ms` }}
+                            className={`group p-8 rounded-[2rem] text-left transition-all active:scale-95 shadow-lg border-b-[8px] flex flex-col justify-between h-48 sm:h-auto overflow-hidden relative animate-in fade-in slide-in-from-bottom-8 fill-mode-both ${(isSubmitting || answered) && selectedOption !== opt ? "opacity-50 grayscale" : ""} ${selectedOption === opt ? "scale-105 brightness-110 z-10 ring-4 ring-white shadow-2xl" : ""
                                 } ${currentQuestion.question_type === "true_false"
                                     ? (opt === "Verdadero" || opt === "True" ? "bg-blue-600 border-blue-800 shadow-blue-200" : "bg-red-600 border-red-800 shadow-red-200")
                                     : (i === 0 ? "bg-red-600 border-red-800 shadow-red-200" :

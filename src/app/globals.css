@@ -5,12 +5,12 @@
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;
-  
+
   --primary: #2563eb;
   --primary-hover: #1d4ed8;
-  
+
   --secondary: #64748b;
-  
+
   --accent: #f59e0b;
   --accent-hover: #d97706;
 
@@ -24,7 +24,12 @@
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-outfit font-black tracking-tight;
   }
 }
@@ -62,11 +67,57 @@
 
 /* Animations */
 @keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-  100% { transform: translateY(0px); }
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
 }
 
 .animate-float {
   animation: float 3s ease-in-out infinite;
+}
+
+@media print {
+
+  nav,
+  footer,
+  button,
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  .card-premium,
+  .bg-slate-900\/50,
+  .bg-slate-900\/30 {
+    background: white !important;
+    border: 1px solid #eee !important;
+    box-shadow: none !important;
+    color: black !important;
+    margin: 0 !important;
+    padding: 10px !important;
+  }
+
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  th,
+  td {
+    border: 1px solid #ddd !important;
+    color: black !important;
+    padding: 8px !important;
+  }
 }

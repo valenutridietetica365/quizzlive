@@ -41,7 +41,11 @@ export const translations = {
             history_subtitle: "Revisa el desempeño de tus alumnos en sesiones pasadas.",
             new_quiz: "NUEVO QUIZ",
             report_button: "INFORME",
-            error_launching: "Error al iniciar la sesión"
+            error_launching: "Error al iniciar la sesión",
+            stats_title: "Vista General",
+            total_quizzes: "Quizzes Totales",
+            total_sessions: "Sesiones Totales",
+            avg_participation: "Participación Promedio"
         },
         sidebar: {
             my_quizzes: "Mis Quizzes",
@@ -245,7 +249,11 @@ export const translations = {
             history_subtitle: "Review your students' performance in past sessions.",
             new_quiz: "NEW QUIZ",
             report_button: "REPORT",
-            error_launching: "Error starting the session"
+            error_launching: "Error starting the session",
+            stats_title: "Overview",
+            total_quizzes: "Total Quizzes",
+            total_sessions: "Total Sessions",
+            avg_participation: "Average Participation"
         },
         sidebar: {
             my_quizzes: "My Quizzes",

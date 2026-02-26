@@ -74,13 +74,20 @@ export default function TeacherDashboard() {
             .from("sessions")
             .select(`
                 id, pin, created_at, finished_at,
-                quiz:quizzes!inner(title, teacher_id)
+                quiz:quizzes!inner(title, teacher_id),
+                participants:participants(count)
             `)
             .eq("quiz.teacher_id", userId)
             .eq("status", "finished")
             .order("finished_at", { ascending: false });
 
-        if (!error) setHistory(data as unknown as FinishedSession[] || []);
+        if (!error && data) {
+            const formatted = (data as any[]).map(s => ({
+                ...s,
+                _count: { participants: s.participants?.[0]?.count || 0 }
+            }));
+            setHistory(formatted);
+        }
     }, []);
 
     const fetchLiveSessions = useCallback(async (userId: string) => {
@@ -531,6 +538,27 @@ export default function TeacherDashboard() {
                         </button>
                     )}
                 </header>
+
+                {activeTab === "quizzes" && !loading && (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 animate-in fade-in slide-in-from-top-4 duration-1000">
+                        <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col gap-1">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('dashboard.total_quizzes')}</span>
+                            <span className="text-3xl font-black text-slate-900">{quizzes.length}</span>
+                        </div>
+                        <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col gap-1">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('dashboard.total_sessions')}</span>
+                            <span className="text-3xl font-black text-slate-900">{history.length + liveSessions.length}</span>
+                        </div>
+                        <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col gap-1">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('dashboard.avg_participation')}</span>
+                            <span className="text-3xl font-black text-slate-900">
+                                {history.length > 0
+                                    ? Math.round(history.reduce((acc, curr) => acc + (curr._count?.participants || 0), 0) / history.length)
+                                    : 0}
+                            </span>
+                        </div>
+                    </div>
+                )}
 
                 {renderContent()}
             </main>
