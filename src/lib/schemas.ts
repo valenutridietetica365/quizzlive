@@ -57,11 +57,20 @@ export const ParticipantSchema = z.object({
     max_streak: z.number().default(0),
 });
 
+export const StudentSchema = z.object({
+    id: z.string().optional(),
+    class_id: z.string(),
+    name: z.string().min(1, "El nombre es obligatorio"),
+    email: z.string().email().optional().nullable(),
+    created_at: z.string().optional(),
+});
+
 export type Question = z.infer<typeof QuestionSchema>;
 export type Quiz = z.infer<typeof QuizSchema>;
 export type Session = z.infer<typeof SessionSchema>;
 export type Participant = z.infer<typeof ParticipantSchema>;
 export type Class = z.infer<typeof ClassSchema>;
+export type Student = z.infer<typeof StudentSchema>;
 
 export interface FinishedSession {
     id: string;

@@ -17,6 +17,9 @@ function JoinContent() {
     const [error, setError] = useState<string | null>(null);
     const [hasPinFromUrl, setHasPinFromUrl] = useState(false);
     const [rejoinSession, setRejoinSession] = useState<{ sessionId: string; pin: string } | null>(null);
+    const [students, setStudents] = useState<any[]>([]);
+    const [selectedStudentId, setSelectedStudentId] = useState<string>("");
+    const [classInfo, setClassInfo] = useState<{ id: string; name: string } | null>(null);
     const router = useRouter();
     const searchParams = useSearchParams();
 
@@ -46,6 +49,32 @@ function JoinContent() {
         checkRejoin();
     }, [searchParams, participantId]);
 
+    useEffect(() => {
+        if (pin.length === 6) {
+            checkPin(pin);
+        }
+    }, [pin]);
+
+    const checkPin = async (currentPin: string) => {
+        const { data: session } = await supabase
+            .from("sessions")
+            .select(`
+                id,
+                quiz:quizzes!inner(class_id, class:classes(id, name, students(*)))
+            `)
+            .eq("pin", currentPin)
+            .single();
+
+        const s = session as any;
+        if (s?.quiz?.class) {
+            setClassInfo(s.quiz.class);
+            setStudents(s.quiz.class.students || []);
+        } else {
+            setClassInfo(null);
+            setStudents([]);
+        }
+    };
+
     const handleJoin = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -65,7 +94,8 @@ function JoinContent() {
                 .from("participants")
                 .insert({
                     session_id: session.id,
-                    nickname: nickname
+                    nickname: nickname,
+                    student_id: selectedStudentId || null
                 })
                 .select()
                 .single();
@@ -164,21 +194,45 @@ function JoinContent() {
                                     </div>
                                 )}
 
-                                <div className="space-y-2">
-                                    <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                                        <User className="w-3 h-3 text-blue-500" />
-                                        {t('join.nickname_placeholder')}
-                                    </label>
-                                    <input
-                                        type="text"
-                                        placeholder="Ej: ProfeGenial"
-                                        value={nickname}
-                                        onChange={(e) => setNickname(e.target.value)}
-                                        className="input-premium !bg-white/80"
-                                        required
-                                        autoFocus={hasPinFromUrl}
-                                    />
-                                </div>
+                                {students.length > 0 ? (
+                                    <div className="space-y-2">
+                                        <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                                            <User className="w-3 h-3 text-blue-500" />
+                                            Selecciona tu nombre ({classInfo?.name})
+                                        </label>
+                                        <select
+                                            value={selectedStudentId}
+                                            onChange={(e) => {
+                                                const student = students.find(s => s.id === e.target.value);
+                                                setSelectedStudentId(e.target.value);
+                                                if (student) setNickname(student.name);
+                                            }}
+                                            className="input-premium !bg-white/80 appearance-none"
+                                            required
+                                        >
+                                            <option value="">-- Elige tu nombre --</option>
+                                            {students.sort((a, b) => a.name.localeCompare(b.name)).map(s => (
+                                                <option key={s.id} value={s.id}>{s.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                                            <User className="w-3 h-3 text-blue-500" />
+                                            {t('join.nickname_placeholder')}
+                                        </label>
+                                        <input
+                                            type="text"
+                                            placeholder="Ej: ProfeGenial"
+                                            value={nickname}
+                                            onChange={(e) => setNickname(e.target.value)}
+                                            className="input-premium !bg-white/80"
+                                            required
+                                            autoFocus={hasPinFromUrl}
+                                        />
+                                    </div>
+                                )}
                             </div>
 
                             {error && (

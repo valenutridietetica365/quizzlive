@@ -6,6 +6,7 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell
 } from "recharts";
 import { Loader2, Users, Target, TrendingUp } from "lucide-react";
+import { toast } from "sonner";
 import { getTranslation } from "@/lib/i18n";
 import { useQuizStore } from "@/lib/store";
 
@@ -32,6 +33,42 @@ export default function SessionAnalytics({ sessionId }: AnalyticsProps) {
     const [data, setData] = useState<QuestionStat[]>([]);
     const [loading, setLoading] = useState(true);
     const t = (key: string) => getTranslation(language, key);
+
+    const exportToCSV = async () => {
+        const { data: answers, error } = await supabase
+            .from("answers")
+            .select(`
+                is_correct,
+                points_awarded,
+                questions(question_text),
+                participants(nickname, students(name))
+            `)
+            .eq("session_id", sessionId);
+
+        if (error || !answers) {
+            toast.error("Error al exportar datos");
+            return;
+        }
+
+        const headers = ["Alumno", "Pregunta", "Correcto", "Puntos"];
+        const rows = (answers as any[]).map(a => [
+            a.participants?.students?.name || a.participants?.nickname || "Anónimo",
+            a.questions?.question_text || "Pregunta",
+            a.is_correct ? "SÍ" : "NO",
+            a.points_awarded
+        ]);
+
+        const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `Reporte_Sesion_${sessionId}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 
     useEffect(() => {
         const fetchAnalytics = async () => {
@@ -77,6 +114,19 @@ export default function SessionAnalytics({ sessionId }: AnalyticsProps) {
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="flex justify-between items-center">
+                <div className="space-y-1">
+                    <h2 className="text-2xl font-black text-white uppercase tracking-tight">Estadísticas de Sesión</h2>
+                    <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Resumen detallado de resultados</p>
+                </div>
+                <button
+                    onClick={exportToCSV}
+                    className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-sm hover:bg-blue-700 transition-all active:scale-95 shadow-lg shadow-blue-500/20 flex items-center gap-2"
+                >
+                    <TrendingUp className="w-4 h-4" />
+                    Exportar CSV
+                </button>
+            </div>
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-slate-900/50 p-6 rounded-3xl border border-white/5 space-y-2">

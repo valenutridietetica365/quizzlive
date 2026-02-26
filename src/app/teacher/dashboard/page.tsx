@@ -26,7 +26,10 @@ interface Class {
     name: string;
     description: string;
     created_at: string;
+    students?: Student[];
 }
+
+import { Student } from "@/lib/schemas";
 
 interface User {
     id: string;
@@ -58,7 +61,9 @@ export default function TeacherDashboard() {
     const [selectedGlobalClassId, setSelectedGlobalClassId] = useState<string>("All");
     const [quizzes, setQuizzes] = useState<Quiz[]>([]);
     const [classes, setClasses] = useState<Class[]>([]);
+    const [selectedClassForManagement, setSelectedClassForManagement] = useState<Class | null>(null);
     const [newClassName, setNewClassName] = useState("");
+    const [newStudentName, setNewStudentName] = useState("");
     const [history, setHistory] = useState<FinishedSession[]>([]);
     const [liveSessions, setLiveSessions] = useState<LiveSession[]>([]);
     const [loading, setLoading] = useState(true);
@@ -77,7 +82,7 @@ export default function TeacherDashboard() {
     const fetchClasses = useCallback(async (userId: string) => {
         const { data, error } = await supabase
             .from("classes")
-            .select("*")
+            .select("*, students(*)")
             .eq("teacher_id", userId)
             .order("created_at", { ascending: false });
 
@@ -245,7 +250,7 @@ export default function TeacherDashboard() {
             .single();
 
         if (!error) {
-            setClasses([data, ...classes]);
+            setClasses([{ ...data, students: [] }, ...classes]);
             setNewClassName("");
             toast.success("Clase creada con éxito");
         } else {
@@ -261,6 +266,57 @@ export default function TeacherDashboard() {
             toast.success("Clase eliminada");
         } else {
             toast.error("Error al eliminar la clase");
+        }
+    };
+
+    const removeStudent = async (studentId: string) => {
+        const { error } = await supabase.from("students").delete().eq("id", studentId);
+        if (!error) {
+            const updatedClasses = classes.map(cls =>
+                cls.id === selectedClassForManagement?.id
+                    ? { ...cls, students: cls.students?.filter(s => s.id !== studentId) }
+                    : cls
+            );
+            setClasses(updatedClasses);
+            if (selectedClassForManagement) {
+                setSelectedClassForManagement({
+                    ...selectedClassForManagement,
+                    students: selectedClassForManagement.students?.filter(s => s.id !== studentId)
+                });
+            }
+            toast.success("Alumno eliminado");
+        } else {
+            toast.error("Error al eliminar alumno");
+        }
+    };
+
+    const addStudent = async () => {
+        if (!selectedClassForManagement || !newStudentName.trim()) return;
+
+        const { data, error } = await supabase
+            .from("students")
+            .insert({
+                class_id: selectedClassForManagement.id,
+                name: newStudentName.trim()
+            })
+            .select()
+            .single();
+
+        if (!error) {
+            const updatedClasses = classes.map(cls =>
+                cls.id === selectedClassForManagement.id
+                    ? { ...cls, students: [...(cls.students || []), data] }
+                    : cls
+            );
+            setClasses(updatedClasses);
+            setSelectedClassForManagement({
+                ...selectedClassForManagement,
+                students: [...(selectedClassForManagement.students || []), data]
+            });
+            setNewStudentName("");
+            toast.success("Alumno añadido");
+        } else {
+            toast.error("Error al añadir alumno");
         }
     };
 
@@ -476,18 +532,21 @@ export default function TeacherDashboard() {
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                             {classes.map((cls) => (
-                                <div key={cls.id} className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 group relative hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 transition-all">
+                                <div key={cls.id} className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 group relative hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 transition-all cursor-pointer" onClick={() => setSelectedClassForManagement(cls)}>
                                     <div className="space-y-3">
                                         <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-blue-600 shadow-sm group-hover:bg-blue-600 group-hover:text-white transition-all">
                                             <Users className="w-6 h-6" />
                                         </div>
                                         <div>
                                             <h3 className="font-black text-xl text-slate-900">{cls.name}</h3>
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{new Date(cls.created_at).toLocaleDateString()}</p>
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{cls.students?.length || 0} Alumnos</p>
                                         </div>
                                     </div>
                                     <button
-                                        onClick={() => deleteClass(cls.id)}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            deleteClass(cls.id);
+                                        }}
                                         className="absolute top-6 right-6 p-2 text-slate-300 hover:text-red-500 transition-colors"
                                     >
                                         <Trash2 className="w-4 h-4" />
@@ -495,6 +554,63 @@ export default function TeacherDashboard() {
                                 </div>
                             ))}
                         </div>
+
+                        {selectedClassForManagement && (
+                            <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                                <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+                                    <div className="p-8 md:p-12 space-y-8">
+                                        <div className="flex justify-between items-start">
+                                            <div className="space-y-2">
+                                                <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tight">{selectedClassForManagement.name}</h2>
+                                                <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">Gestión de Alumnos</p>
+                                            </div>
+                                            <button onClick={() => setSelectedClassForManagement(null)} className="p-4 bg-slate-50 rounded-2xl text-slate-400 hover:text-slate-900 transition-all">
+                                                <ChevronRight className="w-6 h-6 rotate-180" />
+                                            </button>
+                                        </div>
+
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={newStudentName}
+                                                onChange={(e) => setNewStudentName(e.target.value)}
+                                                placeholder="Nombre completo del alumno"
+                                                className="flex-1 bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 rounded-2xl px-6 py-4 font-bold"
+                                                onKeyDown={(e) => e.key === 'Enter' && addStudent()}
+                                            />
+                                            <button
+                                                onClick={addStudent}
+                                                className="bg-blue-600 text-white px-8 rounded-2xl font-black hover:bg-blue-700 transition-all active:scale-95 shadow-lg shadow-blue-100"
+                                            >
+                                                Añadir
+                                            </button>
+                                        </div>
+
+                                        <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 no-scrollbar">
+                                            {selectedClassForManagement.students?.length === 0 ? (
+                                                <div className="text-center py-12 bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200">
+                                                    <p className="text-slate-400 font-bold uppercase text-xs tracking-widest">No hay alumnos en esta clase</p>
+                                                </div>
+                                            ) : (
+                                                selectedClassForManagement.students?.map((student) => (
+                                                    <div key={student.id} className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-white hover:shadow-lg transition-all">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 font-black">
+                                                                {student.name.charAt(0).toUpperCase()}
+                                                            </div>
+                                                            <span className="font-black text-slate-900">{student.name}</span>
+                                                        </div>
+                                                        <button onClick={() => removeStudent(student.id!)} className="p-2 text-slate-300 hover:text-red-500 transition-colors">
+                                                            <Trash2 className="w-5 h-5" />
+                                                        </button>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             );
