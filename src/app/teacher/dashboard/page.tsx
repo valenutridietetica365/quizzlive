@@ -46,6 +46,7 @@ export default function TeacherDashboard() {
     const { language } = useQuizStore();
     const [activeTab, setActiveTab] = useState<"quizzes" | "history">("quizzes");
     const [selectedQuizTag, setSelectedQuizTag] = useState<string>("All");
+    const [selectedHistoryTag, setSelectedHistoryTag] = useState<string>("All");
     const [quizzes, setQuizzes] = useState<Quiz[]>([]);
     const [history, setHistory] = useState<FinishedSession[]>([]);
     const [liveSessions, setLiveSessions] = useState<LiveSession[]>([]);
@@ -77,7 +78,7 @@ export default function TeacherDashboard() {
             .from("sessions")
             .select(`
                 id, pin, created_at, finished_at,
-                quiz:quizzes!inner(title, teacher_id),
+                quiz:quizzes!inner(title, teacher_id, tags),
                 participants:participants(count)
             `)
             .eq("quiz.teacher_id", userId)
@@ -90,7 +91,7 @@ export default function TeacherDashboard() {
                 pin: s.pin,
                 created_at: s.created_at,
                 finished_at: s.finished_at,
-                quiz: { title: s.quiz.title },
+                quiz: { title: s.quiz.title, tags: s.quiz.tags },
                 _count: { participants: s.participants?.[0]?.count || 0 }
             }));
             setHistory(formatted);
@@ -225,6 +226,11 @@ export default function TeacherDashboard() {
         ? quizzes
         : quizzes.filter(q => q.tags?.includes(selectedQuizTag));
 
+    const allHistoryTags = ["All", ...Array.from(new Set(history.flatMap(h => h.quiz.tags || [])))];
+    const filteredHistory = selectedHistoryTag === "All"
+        ? history
+        : history.filter(h => h.quiz.tags?.includes(selectedHistoryTag));
+
     const renderContent = () => {
         if (loading) {
             return (
@@ -263,8 +269,8 @@ export default function TeacherDashboard() {
                                 key={tag}
                                 onClick={() => setSelectedQuizTag(tag)}
                                 className={`px-5 py-2.5 rounded-xl font-black text-sm whitespace-nowrap transition-all ${selectedQuizTag === tag
-                                        ? "bg-slate-900 text-white shadow-lg shadow-slate-200"
-                                        : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+                                    ? "bg-slate-900 text-white shadow-lg shadow-slate-200"
+                                    : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"
                                     }`}
                             >
                                 {tag === "All" ? (t('dashboard.all_tags') || "Todos") : tag}
@@ -391,6 +397,21 @@ export default function TeacherDashboard() {
                 </div>
             ) : (
                 <div className="space-y-6">
+                    <div className="flex bg-white p-1.5 rounded-2xl border border-slate-100 overflow-x-auto no-scrollbar gap-2 max-w-full mb-4">
+                        {allHistoryTags.map((tag: string) => (
+                            <button
+                                key={tag}
+                                onClick={() => setSelectedHistoryTag(tag)}
+                                className={`px-5 py-2.5 rounded-xl font-black text-sm whitespace-nowrap transition-all ${selectedHistoryTag === tag
+                                    ? "bg-slate-900 text-white shadow-lg shadow-slate-200"
+                                    : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+                                    }`}
+                            >
+                                {tag === "All" ? (t('dashboard.all_tags') || "Todos") : tag}
+                            </button>
+                        ))}
+                    </div>
+
                     {/* Desktop Table View */}
                     <div className="hidden md:block bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 overflow-hidden border border-slate-100">
                         <div className="overflow-x-auto">
@@ -404,7 +425,7 @@ export default function TeacherDashboard() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50 font-bold text-slate-600">
-                                    {history.map((session) => (
+                                    {filteredHistory.map((session: FinishedSession) => (
                                         <tr key={session.id} className="hover:bg-blue-50/30 transition-all group">
                                             <td className="px-10 py-8">
                                                 <div className="font-black text-slate-900 text-lg group-hover:text-blue-600 transition-colors">
@@ -451,7 +472,7 @@ export default function TeacherDashboard() {
 
                     {/* Mobile Card View */}
                     <div className="md:hidden grid grid-cols-1 gap-6">
-                        {history.map((session) => (
+                        {filteredHistory.map((session: FinishedSession) => (
                             <div key={session.id} className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-50 space-y-6">
                                 <div className="space-y-2">
                                     <div className="flex items-center gap-2 text-[10px] font-black text-slate-300 uppercase tracking-widest">

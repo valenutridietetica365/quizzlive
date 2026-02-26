@@ -58,7 +58,7 @@ export interface FinishedSession {
     pin: string;
     created_at: string;
     finished_at: string;
-    quiz: { title: string };
+    quiz: { title: string; tags?: string[] };
     _count?: { participants: number };
 }
 
@@ -67,7 +67,7 @@ export interface SupabaseSessionResponse {
     pin: string;
     created_at: string;
     finished_at: string;
-    quiz: { title: string; teacher_id: string };
+    quiz: { title: string; teacher_id: string; tags?: string[] };
     participants: { count: number }[];
 }
 
