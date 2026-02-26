@@ -114,7 +114,10 @@ function JoinContent() {
                 .select()
                 .single();
 
-            if (participantError) throw new Error("Error al unirse a la sesión");
+            if (participantError) {
+                console.error("Detalle del error Supabase:", participantError);
+                throw new Error(participantError.message || "Error al unirse a la sesión");
+            }
 
             setParticipantInfo(participant.id, nickname);
             router.push(`/play/${session.id}`);
