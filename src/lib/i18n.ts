@@ -45,7 +45,8 @@ export const translations = {
             stats_title: "Vista General",
             total_quizzes: "Quizzes Totales",
             total_sessions: "Sesiones Totales",
-            avg_participation: "Participación Promedio"
+            avg_participation: "Participación Promedio",
+            all_tags: "Todos"
         },
         sidebar: {
             my_quizzes: "Mis Quizzes",
@@ -253,7 +254,8 @@ export const translations = {
             stats_title: "Overview",
             total_quizzes: "Total Quizzes",
             total_sessions: "Total Sessions",
-            avg_participation: "Average Participation"
+            avg_participation: "Average Participation",
+            all_tags: "All"
         },
         sidebar: {
             my_quizzes: "My Quizzes",

@@ -16,6 +16,8 @@ export default function QuizEditor() {
     const isNew = id === "new";
     const { language } = useQuizStore();
     const [title, setTitle] = useState("");
+    const [tags, setTags] = useState<string[]>([]);
+    const [newTag, setNewTag] = useState("");
     const [questions, setQuestions] = useState<Question[]>([
         { question_text: "", question_type: "multiple_choice", options: ["", "", "", ""], correct_answer: "", time_limit: 20, points: 1000 }
     ]);
@@ -39,7 +41,7 @@ export default function QuizEditor() {
 
         const { data: quiz, error: quizError } = await supabase
             .from("quizzes")
-            .select("title, questions(*)")
+            .select("title, tags, questions(*)")
             .eq("id", id)
             .single();
 
@@ -49,6 +51,7 @@ export default function QuizEditor() {
         }
 
         setTitle(quiz.title);
+        setTags(quiz.tags || []);
         const validQuestions = (quiz.questions as unknown[]).map((q) => {
             try {
                 return QuestionSchema.parse(q);
@@ -177,7 +180,7 @@ export default function QuizEditor() {
 
                 const { error: quizError } = await supabase
                     .from("quizzes")
-                    .update({ title })
+                    .update({ title, tags })
                     .eq("id", id);
 
                 if (quizError) throw new Error(t('common.error'));
@@ -187,7 +190,7 @@ export default function QuizEditor() {
             } else {
                 const { data: newQuiz, error: quizError } = await supabase
                     .from("quizzes")
-                    .insert({ title, teacher_id: user.id })
+                    .insert({ title, tags, teacher_id: user.id })
                     .select()
                     .single();
 
@@ -248,6 +251,34 @@ export default function QuizEditor() {
                                 placeholder={t('editor.untitled')}
                             />
                         </div>
+                    </div>
+
+                    <div className="hidden lg:flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-2xl border border-slate-100 max-w-md overflow-hidden">
+                        <div className="flex gap-2 overflow-x-auto no-scrollbar">
+                            {tags.map(tag => (
+                                <span key={tag} className="bg-blue-600 text-white text-[10px] font-black px-2 py-1 rounded-lg flex items-center gap-1 shrink-0">
+                                    {tag}
+                                    <button onClick={() => setTags(tags.filter(t => t !== tag))} className="hover:text-blue-200">
+                                        <Plus className="w-3 h-3 rotate-45" />
+                                    </button>
+                                </span>
+                            ))}
+                        </div>
+                        <input
+                            type="text"
+                            placeholder={t('editor.add_tag') || "+ Etiqueta"}
+                            className="bg-transparent border-none focus:ring-0 text-[10px] font-black w-20 p-0"
+                            value={newTag}
+                            onChange={(e) => setNewTag(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && newTag.trim()) {
+                                    if (!tags.includes(newTag.trim())) {
+                                        setTags([...tags, newTag.trim()]);
+                                    }
+                                    setNewTag("");
+                                }
+                            }}
+                        />
                     </div>
                     <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
                         <button

@@ -16,6 +16,7 @@ import { FinishedSession, SupabaseSessionResponse, LiveSession } from "@/lib/sch
 interface Quiz {
     id: string;
     title: string;
+    tags: string[];
     questions: { id: string }[];
 }
 
@@ -44,6 +45,7 @@ const StatsHeader = ({ stats, t }: { stats: { quizzes: number; sessions: number;
 export default function TeacherDashboard() {
     const { language } = useQuizStore();
     const [activeTab, setActiveTab] = useState<"quizzes" | "history">("quizzes");
+    const [selectedQuizTag, setSelectedQuizTag] = useState<string>("All");
     const [quizzes, setQuizzes] = useState<Quiz[]>([]);
     const [history, setHistory] = useState<FinishedSession[]>([]);
     const [liveSessions, setLiveSessions] = useState<LiveSession[]>([]);
@@ -218,6 +220,11 @@ export default function TeacherDashboard() {
             : 0
     };
 
+    const allTags = ["All", ...Array.from(new Set(quizzes.flatMap(q => q.tags || [])))];
+    const filteredQuizzes = selectedQuizTag === "All"
+        ? quizzes
+        : quizzes.filter(q => q.tags?.includes(selectedQuizTag));
+
     const renderContent = () => {
         if (loading) {
             return (
@@ -250,6 +257,21 @@ export default function TeacherDashboard() {
                 </div>
             ) : (
                 <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                    <div className="flex bg-white p-1.5 rounded-2xl border border-slate-100 overflow-x-auto no-scrollbar gap-2 max-w-full">
+                        {allTags.map(tag => (
+                            <button
+                                key={tag}
+                                onClick={() => setSelectedQuizTag(tag)}
+                                className={`px-5 py-2.5 rounded-xl font-black text-sm whitespace-nowrap transition-all ${selectedQuizTag === tag
+                                        ? "bg-slate-900 text-white shadow-lg shadow-slate-200"
+                                        : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+                                    }`}
+                            >
+                                {tag === "All" ? (t('dashboard.all_tags') || "Todos") : tag}
+                            </button>
+                        ))}
+                    </div>
+
                     {liveSessions.length > 0 && (
                         <div className="space-y-6">
                             <div className="flex items-center gap-3">
@@ -301,7 +323,7 @@ export default function TeacherDashboard() {
                     )}
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                        {quizzes.map((quiz) => (
+                        {filteredQuizzes.map((quiz) => (
                             <div key={quiz.id} className="bg-white rounded-2xl p-4 shadow-sm border border-slate-50 transition-all hover:shadow-2xl hover:shadow-slate-200/50 flex flex-col justify-between space-y-4 relative group overflow-hidden">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50/50 rounded-bl-[4rem] -mr-8 -mt-8 -z-0 transition-all group-hover:scale-110" />
 
@@ -315,6 +337,11 @@ export default function TeacherDashboard() {
                                             <span className="bg-slate-100 px-3 py-1 rounded-full text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                                 {quiz.questions.length} {t('common.questions')}
                                             </span>
+                                            {quiz.tags?.map(tag => (
+                                                <span key={tag} className="bg-blue-50 px-3 py-1 rounded-full text-[10px] font-black text-blue-400 uppercase tracking-widest">
+                                                    #{tag}
+                                                </span>
+                                            ))}
                                         </div>
                                     </div>
                                 </div>
