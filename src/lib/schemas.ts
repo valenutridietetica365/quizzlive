@@ -68,7 +68,7 @@ export interface FinishedSession {
     pin: string;
     created_at: string;
     finished_at: string;
-    quiz: { title: string; tags?: string[] };
+    quiz: { title: string; tags?: string[]; class_id?: string | null };
     _count?: { participants: number };
 }
 
@@ -77,7 +77,7 @@ export interface SupabaseSessionResponse {
     pin: string;
     created_at: string;
     finished_at: string;
-    quiz: { title: string; teacher_id: string; tags?: string[] };
+    quiz: { title: string; teacher_id: string; tags?: string[]; class_id?: string | null };
     participants: { count: number }[];
 }
 
@@ -85,6 +85,6 @@ export interface LiveSession {
     id: string;
     pin: string;
     status: "waiting" | "active";
-    quiz: { title: string };
+    quiz: { title: string; class_id?: string | null };
     created_at: string;
 }

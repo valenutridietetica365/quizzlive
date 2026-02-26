@@ -55,6 +55,7 @@ export default function TeacherDashboard() {
     const [activeTab, setActiveTab] = useState<"quizzes" | "history" | "classes">("quizzes");
     const [selectedQuizTag, setSelectedQuizTag] = useState<string>("All");
     const [selectedHistoryTag, setSelectedHistoryTag] = useState<string>("All");
+    const [selectedGlobalClassId, setSelectedGlobalClassId] = useState<string>("All");
     const [quizzes, setQuizzes] = useState<Quiz[]>([]);
     const [classes, setClasses] = useState<Class[]>([]);
     const [newClassName, setNewClassName] = useState("");
@@ -98,7 +99,7 @@ export default function TeacherDashboard() {
             .from("sessions")
             .select(`
                 id, pin, created_at, finished_at,
-                quiz:quizzes!inner(title, teacher_id, tags),
+                quiz:quizzes!inner(title, teacher_id, tags, class_id),
                 participants:participants(count)
             `)
             .eq("quiz.teacher_id", userId)
@@ -111,7 +112,7 @@ export default function TeacherDashboard() {
                 pin: s.pin,
                 created_at: s.created_at,
                 finished_at: s.finished_at,
-                quiz: { title: s.quiz.title, tags: s.quiz.tags },
+                quiz: { title: s.quiz.title, tags: s.quiz.tags, class_id: s.quiz.class_id },
                 _count: { participants: s.participants?.[0]?.count || 0 }
             }));
             setHistory(formatted);
@@ -126,7 +127,7 @@ export default function TeacherDashboard() {
             .from("sessions")
             .select(`
                 id, pin, status, created_at,
-                quiz:quizzes!inner(title, teacher_id)
+                quiz:quizzes!inner(title, teacher_id, class_id)
             `)
             .eq("quiz.teacher_id", userId)
             .in("status", ["waiting", "active"])
@@ -248,7 +249,8 @@ export default function TeacherDashboard() {
             setNewClassName("");
             toast.success("Clase creada con éxito");
         } else {
-            toast.error("Error al crear la clase");
+            console.error("Error creating class:", error);
+            toast.error(`Error: ${error.message || "No se pudo crear la clase"}`);
         }
     };
 
@@ -271,14 +273,22 @@ export default function TeacherDashboard() {
     };
 
     const allTags = ["All", ...Array.from(new Set(quizzes.flatMap(q => q.tags || [])))];
-    const filteredQuizzes = selectedQuizTag === "All"
-        ? quizzes
-        : quizzes.filter(q => q.tags?.includes(selectedQuizTag));
+    const filteredQuizzes = quizzes.filter(q => {
+        const matchesTag = selectedQuizTag === "All" || q.tags?.includes(selectedQuizTag);
+        const matchesClass = selectedGlobalClassId === "All" || q.class_id === selectedGlobalClassId;
+        return matchesTag && matchesClass;
+    });
 
     const allHistoryTags = ["All", ...Array.from(new Set(history.flatMap(h => h.quiz.tags || [])))];
-    const filteredHistory = selectedHistoryTag === "All"
-        ? history
-        : history.filter(h => h.quiz.tags?.includes(selectedHistoryTag));
+    const filteredHistory = history.filter(h => {
+        const matchesTag = selectedHistoryTag === "All" || h.quiz.tags?.includes(selectedHistoryTag);
+        const matchesClass = selectedGlobalClassId === "All" || h.quiz.class_id === selectedGlobalClassId;
+        return matchesTag && matchesClass;
+    });
+
+    const filteredLiveSessions = liveSessions.filter(s => {
+        return selectedGlobalClassId === "All" || s.quiz.class_id === selectedGlobalClassId;
+    });
 
     const renderContent = () => {
         if (loading) {
@@ -327,7 +337,7 @@ export default function TeacherDashboard() {
                         ))}
                     </div>
 
-                    {liveSessions.length > 0 && (
+                    {filteredLiveSessions.length > 0 && (
                         <div className="space-y-6">
                             <div className="flex items-center gap-3">
                                 <span className="relative flex h-3 w-3">
@@ -337,7 +347,7 @@ export default function TeacherDashboard() {
                                 <h2 className="text-xl font-black text-slate-900 uppercase tracking-widest">{t('dashboard.live_sessions') || "Sesiones en Vivo"}</h2>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {liveSessions.map((session) => (
+                                {filteredLiveSessions.map((session) => (
                                     <div
                                         key={session.id}
                                         onClick={() => router.push(`/teacher/session/${session.id}`)}
@@ -716,13 +726,53 @@ export default function TeacherDashboard() {
 
                 <StatsHeader stats={stats} t={t} />
 
+                {/* Global Class Filter */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 py-6 border-y border-slate-50">
+                    <div className="space-y-1">
+                        <h2 className="text-xl font-black text-slate-900 uppercase tracking-widest leading-none">
+                            {activeTab === "quizzes" ? t('sidebar.quizzes') : activeTab === "history" ? t('sidebar.history') : t('sidebar.classes')}
+                        </h2>
+                        <p className="text-slate-400 text-[10px] font-black uppercase tracking-wider">
+                            Filtro por Clase
+                        </p>
+                    </div>
+
+                    {(activeTab === "quizzes" || activeTab === "history") && classes.length > 0 && (
+                        <div className="flex items-center gap-3 bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
+                            <div className="flex gap-1 overflow-x-auto no-scrollbar max-w-[300px] md:max-w-md">
+                                <button
+                                    onClick={() => setSelectedGlobalClassId("All")}
+                                    className={`px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all whitespace-nowrap ${selectedGlobalClassId === "All"
+                                        ? "bg-slate-900 text-white shadow-lg"
+                                        : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+                                        }`}
+                                >
+                                    Todas
+                                </button>
+                                {classes.map(cls => (
+                                    <button
+                                        key={cls.id}
+                                        onClick={() => setSelectedGlobalClassId(cls.id)}
+                                        className={`px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all whitespace-nowrap ${selectedGlobalClassId === cls.id
+                                            ? "bg-blue-600 text-white shadow-lg shadow-blue-100"
+                                            : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+                                            }`}
+                                    >
+                                        {cls.name}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
                 {history.length > 0 && activeTab === "history" && (
                     <div className="space-y-3">
                         <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest pl-2">
                             {t('dashboard.stats_trend') || 'Tendencia de Participación'}
                         </h3>
                         <PerformanceChart
-                            data={history.slice(0, 7).reverse().map(s => ({
+                            data={filteredHistory.slice(0, 7).reverse().map(s => ({
                                 date: new Date(s.finished_at).toLocaleDateString(undefined, { day: '2-digit', month: 'short' }),
                                 participation: s._count?.participants || 0
                             }))}
