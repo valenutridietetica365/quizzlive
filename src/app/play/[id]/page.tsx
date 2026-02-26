@@ -251,7 +251,7 @@ export default function StudentPlay() {
     if (loading || !session) return <StudentPlaySkeleton />;
 
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col p-6 md:p-12 items-center justify-center selection:bg-blue-100">
+        <div className="min-h-screen bg-slate-50 flex flex-col p-3 md:p-8 items-center justify-center selection:bg-blue-100">
             {session.status === "waiting" && (
                 <div className="max-w-md w-full text-center space-y-10 animate-in zoom-in duration-700">
                     <div className="bg-white p-12 rounded-[3.5rem] shadow-xl border border-slate-100 flex flex-col items-center gap-8 relative overflow-hidden">

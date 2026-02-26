@@ -43,13 +43,15 @@ export default function QuestionView({
         <div className="w-full space-y-4 md:space-y-6 animate-in slide-in-from-bottom-12 duration-700">
             {/* Circular Timer */}
             {timeLeft !== null && (
-                <div className="flex justify-center">
-                    <CircularTimer timeLeft={timeLeft} timeLimit={currentQuestion.time_limit || 20} size="sm" />
+                <div className="flex justify-center -mb-2">
+                    <div className="scale-75 md:scale-100 origin-center">
+                        <CircularTimer timeLeft={timeLeft} timeLimit={currentQuestion.time_limit || 20} size="sm" />
+                    </div>
                 </div>
             )}
 
-            <div className="text-center space-y-2 px-2">
-                <h2 className="text-xl md:text-4xl font-black text-slate-900 tracking-tight leading-tight">
+            <div className="text-center space-y-1 px-1">
+                <h2 className="text-base md:text-3xl font-black text-slate-800 tracking-tight leading-tight">
                     {currentQuestion.question_text}
                 </h2>
             </div>
@@ -62,14 +64,14 @@ export default function QuestionView({
             )}
 
             {currentQuestion.question_type === "multiple_choice" || currentQuestion.question_type === "true_false" ? (
-                <div className={`grid gap-4 w-full ${currentQuestion.question_type === "true_false" ? "grid-cols-2" : "grid-cols-1 sm:grid-cols-2"}`}>
+                <div className={`grid gap-3 w-full ${currentQuestion.question_type === "true_false" ? "grid-cols-2" : "grid-cols-1 sm:grid-cols-2"}`}>
                     {currentQuestion.options.map((opt: string, i: number) => (
                         <button
                             key={i}
                             disabled={isSubmitting || answered}
                             onClick={() => submitAnswer(opt)}
                             style={{ animationDelay: `${i * 100}ms` }}
-                            className={`group p-4 rounded-xl text-left transition-all active:scale-95 shadow-md border-b-[4px] flex flex-col justify-between h-32 sm:h-auto overflow-hidden relative animate-in fade-in slide-in-from-bottom-8 fill-mode-both ${(isSubmitting || answered) && selectedOption !== opt ? "opacity-50 grayscale" : ""} ${selectedOption === opt ? "scale-105 brightness-110 z-10 ring-2 ring-white shadow-xl" : ""
+                            className={`group p-3 md:p-6 rounded-lg md:rounded-2xl text-left transition-all active:scale-95 shadow-md border-b-[3px] flex flex-col justify-between h-24 sm:h-auto overflow-hidden relative animate-in fade-in slide-in-from-bottom-8 fill-mode-both ${(isSubmitting || answered) && selectedOption !== opt ? "opacity-50 grayscale" : ""} ${selectedOption === opt ? "scale-105 brightness-110 z-10 ring-2 ring-white shadow-xl" : ""
                                 } ${currentQuestion.question_type === "true_false"
                                     ? (opt === "Verdadero" || opt === "True" ? "bg-blue-600 border-blue-800 shadow-blue-200" : "bg-red-600 border-red-800 shadow-red-200")
                                     : (i === 0 ? "bg-red-600 border-red-800 shadow-red-200" :
@@ -79,10 +81,10 @@ export default function QuestionView({
                                 }`}
                         >
                             <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center font-black text-white text-xl relative z-10">
+                            <div className="w-8 h-8 md:w-12 md:h-12 bg-white/20 rounded-lg md:rounded-2xl flex items-center justify-center font-black text-white text-base md:text-xl relative z-10">
                                 {String.fromCharCode(65 + i)}
                             </div>
-                            <span className="text-2xl font-black text-white mt-4 relative z-10">{opt}</span>
+                            <span className="text-xl md:text-2xl font-black text-white mt-2 md:mt-4 relative z-10">{opt}</span>
                         </button>
                     ))}
                 </div>
