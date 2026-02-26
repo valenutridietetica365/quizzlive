@@ -104,13 +104,17 @@ function JoinContent() {
             if (sessionError || !session) throw new Error(t('join.invalid_pin'));
             if (session.status === "finished") throw new Error("Esta sesión ya ha finalizado");
 
+            const payload: any = {
+                session_id: session.id,
+                nickname: nickname
+            };
+            if (selectedStudentId) {
+                payload.student_id = selectedStudentId;
+            }
+
             const { data: participant, error: participantError } = await supabase
                 .from("participants")
-                .insert({
-                    session_id: session.id,
-                    nickname: nickname,
-                    student_id: selectedStudentId || null
-                })
+                .insert(payload)
                 .select()
                 .single();
 
