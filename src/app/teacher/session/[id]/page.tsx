@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Users, Play, ChevronRight, BarChart3, LogOut, Loader2, MessageSquare, QrCode } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import QRDisplay from "@/components/QRDisplay";
 import ShareModal from "@/components/ShareModal";
 import { TeacherSessionSkeleton } from "@/components/Skeleton";
@@ -13,13 +14,14 @@ import { useQuizStore } from "@/lib/store";
 import { getTranslation } from "@/lib/i18n";
 import LanguageSelector from "@/components/LanguageSelector";
 import AudioController from "@/components/AudioController";
-import SessionAnalytics from "@/components/SessionAnalytics";
-import SessionReport from "@/components/SessionReport";
 import CircularTimer from "@/components/CircularTimer";
-import Leaderboard from "@/components/Leaderboard";
-import FinalPodium from "@/components/FinalPodium";
-import ParticipantMarquee from "@/components/game/ParticipantMarquee";
-import ReactionSystem from "@/components/game/ReactionSystem";
+
+const SessionAnalytics = dynamic(() => import("@/components/SessionAnalytics"), { ssr: false });
+const SessionReport = dynamic(() => import("@/components/SessionReport"), { ssr: false });
+const FinalPodium = dynamic(() => import("@/components/FinalPodium"), { ssr: false });
+const Leaderboard = dynamic(() => import("@/components/Leaderboard"), { ssr: false });
+const ParticipantMarquee = dynamic(() => import("@/components/game/ParticipantMarquee"), { ssr: false });
+const ReactionSystem = dynamic(() => import("@/components/game/ReactionSystem"), { ssr: false });
 
 import { Quiz, QuizSchema, Question, QuestionSchema, Session, SessionSchema, Participant, ParticipantSchema } from "@/lib/schemas";
 

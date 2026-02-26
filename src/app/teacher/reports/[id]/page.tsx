@@ -7,8 +7,10 @@ import { ArrowLeft, Users, BarChart3, Loader2, Calendar, Target } from "lucide-r
 import { useQuizStore } from "@/lib/store";
 import { getTranslation } from "@/lib/i18n";
 import LanguageSelector from "@/components/LanguageSelector";
-import SessionReport from "@/components/SessionReport";
-import SessionAnalytics from "@/components/SessionAnalytics";
+import dynamic from "next/dynamic";
+
+const SessionReport = dynamic(() => import("@/components/SessionReport"), { ssr: false });
+const SessionAnalytics = dynamic(() => import("@/components/SessionAnalytics"), { ssr: false });
 
 interface ReportData {
     id: string;

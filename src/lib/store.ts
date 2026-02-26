@@ -56,6 +56,15 @@ interface QuizState {
 
     // Reset
     resetStore: () => void
+
+    // Dashboard Caching
+    dashboardLoaded: boolean
+    dashboardQuizzes: unknown[]
+    dashboardClasses: unknown[]
+    dashboardHistory: unknown[]
+    dashboardLiveSessions: unknown[]
+    setDashboardLoaded: (loaded: boolean) => void
+    setDashboardData: (data: { dashboardQuizzes?: unknown[], dashboardClasses?: unknown[], dashboardHistory?: unknown[], dashboardLiveSessions?: unknown[] }) => void
 }
 
 export const useQuizStore = create<QuizState>()(
@@ -102,9 +111,22 @@ export const useQuizStore = create<QuizState>()(
                     currentQuestion: null,
                     participants: [],
                     participantId: current.participantId,
-                    nickname: current.nickname
+                    nickname: current.nickname,
+                    dashboardLoaded: false,
+                    dashboardQuizzes: [],
+                    dashboardClasses: [],
+                    dashboardHistory: [],
+                    dashboardLiveSessions: []
                 })
-            }
+            },
+
+            dashboardLoaded: false,
+            dashboardQuizzes: [],
+            dashboardClasses: [],
+            dashboardHistory: [],
+            dashboardLiveSessions: [],
+            setDashboardLoaded: (loaded) => set({ dashboardLoaded: loaded }),
+            setDashboardData: (data) => set((state) => ({ ...state, ...data }))
         }),
         {
             name: 'quizzlive-storage-v2', // Incrementing version to avoid conflicts

@@ -54,18 +54,42 @@ const StatsHeader = ({ stats, t }: { stats: { quizzes: number; sessions: number;
 );
 
 export default function TeacherDashboard() {
-    const { language } = useQuizStore();
+    const {
+        language,
+        dashboardLoaded,
+        dashboardQuizzes,
+        dashboardClasses,
+        dashboardHistory,
+        dashboardLiveSessions,
+        setDashboardLoaded,
+        setDashboardData
+    } = useQuizStore();
+
+    const quizzes = dashboardQuizzes as Quiz[];
+    const classes = dashboardClasses as Class[];
+    const history = dashboardHistory as FinishedSession[];
+    const liveSessions = dashboardLiveSessions as LiveSession[];
+
     const [activeTab, setActiveTab] = useState<"quizzes" | "history" | "classes">("quizzes");
     const [selectedQuizTag, setSelectedQuizTag] = useState<string>("All");
     const [selectedHistoryTag, setSelectedHistoryTag] = useState<string>("All");
     const [selectedGlobalClassId, setSelectedGlobalClassId] = useState<string>("All");
-    const [quizzes, setQuizzes] = useState<Quiz[]>([]);
-    const [classes, setClasses] = useState<Class[]>([]);
+
+    // Derived setters mapping to Zustand
+    const setQuizzes = useCallback((newQuizzes: Quiz[]) => setDashboardData({ dashboardQuizzes: newQuizzes }), [setDashboardData]);
+    const setClasses = useCallback((newClasses: Class[]) => setDashboardData({ dashboardClasses: newClasses }), [setDashboardData]);
+    const setHistory = useCallback((newHistory: FinishedSession[]) => setDashboardData({ dashboardHistory: newHistory }), [setDashboardData]);
+    const setLiveSessions = useCallback((newLive: LiveSession[] | ((prev: LiveSession[]) => LiveSession[])) => {
+        if (typeof newLive === 'function') {
+            setDashboardData({ dashboardLiveSessions: newLive(liveSessions) });
+        } else {
+            setDashboardData({ dashboardLiveSessions: newLive });
+        }
+    }, [liveSessions, setDashboardData]);
+
     const [selectedClassForManagement, setSelectedClassForManagement] = useState<Class | null>(null);
     const [newClassName, setNewClassName] = useState("");
     const [newStudentName, setNewStudentName] = useState("");
-    const [history, setHistory] = useState<FinishedSession[]>([]);
-    const [liveSessions, setLiveSessions] = useState<LiveSession[]>([]);
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState<User | null>(null);
 
@@ -87,7 +111,7 @@ export default function TeacherDashboard() {
             .order("created_at", { ascending: false });
 
         if (!error) setClasses(data || []);
-    }, []);
+    }, [setClasses]);
 
     const fetchQuizzes = useCallback(async (userId: string) => {
         const { data, error } = await supabase
@@ -97,7 +121,7 @@ export default function TeacherDashboard() {
             .order("created_at", { ascending: false });
 
         if (!error) setQuizzes(data || []);
-    }, []);
+    }, [setQuizzes]);
 
     const fetchHistory = useCallback(async (userId: string) => {
         const { data, error } = await supabase
@@ -122,7 +146,7 @@ export default function TeacherDashboard() {
             }));
             setHistory(formatted);
         }
-    }, []);
+    }, [setHistory]);
 
     const fetchLiveSessions = useCallback(async (userId: string) => {
         const yesterday = new Date();
@@ -140,7 +164,7 @@ export default function TeacherDashboard() {
             .order("created_at", { ascending: false });
 
         if (!error) setLiveSessions(data as unknown as LiveSession[] || []);
-    }, []);
+    }, [setLiveSessions]);
 
     const finishSession = async (sessionId: string) => {
         const { error } = await supabase
@@ -165,17 +189,21 @@ export default function TeacherDashboard() {
                 return;
             }
             setUser(user);
-            await Promise.all([
-                fetchQuizzes(user.id),
-                fetchHistory(user.id),
-                fetchLiveSessions(user.id),
-                fetchClasses(user.id)
-            ]);
+
+            if (!dashboardLoaded) {
+                await Promise.all([
+                    fetchQuizzes(user.id),
+                    fetchHistory(user.id),
+                    fetchLiveSessions(user.id),
+                    fetchClasses(user.id)
+                ]);
+                setDashboardLoaded(true);
+            }
             setLoading(false);
         };
 
         checkUser();
-    }, [router, fetchQuizzes, fetchHistory, fetchLiveSessions, fetchClasses]);
+    }, [router, fetchQuizzes, fetchHistory, fetchLiveSessions, fetchClasses, dashboardLoaded, setDashboardLoaded]);
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
@@ -274,7 +302,7 @@ export default function TeacherDashboard() {
         if (!error) {
             const updatedClasses = classes.map(cls =>
                 cls.id === selectedClassForManagement?.id
-                    ? { ...cls, students: cls.students?.filter(s => s.id !== studentId) }
+                    ? { ...cls, students: cls.students?.filter((s: Student) => s.id !== studentId) }
                     : cls
             );
             setClasses(updatedClasses);
@@ -464,7 +492,7 @@ export default function TeacherDashboard() {
                                                     {classes.find(c => c.id === quiz.class_id)?.name}
                                                 </span>
                                             )}
-                                            {quiz.tags?.map(tag => (
+                                            {quiz.tags?.map((tag: string) => (
                                                 <span key={tag} className="bg-blue-50 px-3 py-1 rounded-full text-[10px] font-black text-blue-400 uppercase tracking-widest">
                                                     #{tag}
                                                 </span>

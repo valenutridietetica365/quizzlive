@@ -11,11 +11,13 @@ import { getTranslation } from "@/lib/i18n";
 import { Question, QuestionSchema, Session, SessionSchema } from "@/lib/schemas";
 import { StudentPlaySkeleton } from "@/components/Skeleton";
 import AudioController, { playSFX } from "@/components/AudioController";
-import FinalPodium from "@/components/FinalPodium";
 import QuestionView from "@/components/game/QuestionView";
 import AnswerWaiting from "@/components/game/AnswerWaiting";
-import ParticipantMarquee from "@/components/game/ParticipantMarquee";
-import ReactionSystem from "@/components/game/ReactionSystem";
+import dynamic from "next/dynamic";
+
+const FinalPodium = dynamic(() => import("@/components/FinalPodium"), { ssr: false });
+const ParticipantMarquee = dynamic(() => import("@/components/game/ParticipantMarquee"), { ssr: false });
+const ReactionSystem = dynamic(() => import("@/components/game/ReactionSystem"), { ssr: false });
 
 export default function StudentPlay() {
     const { id } = useParams();
