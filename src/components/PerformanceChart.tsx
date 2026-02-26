@@ -1,29 +1,15 @@
 "use client";
 
+import { useMemo } from 'react';
 import {
-    Chart as ChartJS,
-    CategoryScale,
-    LinearScale,
-    PointElement,
-    LineElement,
-    Title,
+    AreaChart,
+    Area,
+    XAxis,
+    YAxis,
+    CartesianGrid,
     Tooltip,
-    Legend,
-    Filler,
-    TooltipItem
-} from 'chart.js';
-import { Line } from 'react-chartjs-2';
-
-ChartJS.register(
-    CategoryScale,
-    LinearScale,
-    PointElement,
-    LineElement,
-    Title,
-    Tooltip,
-    Legend,
-    Filler
-);
+    ResponsiveContainer
+} from 'recharts';
 
 interface PerformanceChartProps {
     data: {
@@ -35,64 +21,57 @@ interface PerformanceChartProps {
 }
 
 export default function PerformanceChart({ data, label, t }: PerformanceChartProps) {
-    const chartData = {
-        labels: data.map(d => d.date),
-        datasets: [
-            {
-                label: label,
-                data: data.map(d => d.participation),
-                fill: true,
-                borderColor: 'rgb(59, 130, 246)',
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                tension: 0.4,
-                pointRadius: 6,
-                pointBackgroundColor: 'rgb(59, 130, 246)',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2,
-            },
-        ],
-    };
-
-    const options = {
-        responsive: true,
-        plugins: {
-            legend: {
-                display: false,
-            },
-            tooltip: {
-                backgroundColor: '#1e293b',
-                padding: 12,
-                bodyFont: {
-                    family: 'Inter, sans-serif',
-                    weight: 'bold' as const,
-                },
-                callbacks: {
-                    label: (context: TooltipItem<'line'>) => `${context.parsed.y ?? 0} ${t('dashboard.participants_label') || 'Participantes'}`,
-                }
-            },
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                grid: {
-                    display: true,
-                    color: 'rgba(0, 0, 0, 0.05)',
-                },
-                ticks: {
-                    stepSize: 1,
-                }
-            },
-            x: {
-                grid: {
-                    display: false,
-                },
-            },
-        },
-    };
+    const chartData = useMemo(() => data, [data]);
 
     return (
         <div className="w-full h-[300px] bg-white p-4 rounded-2xl border border-slate-50">
-            <Line data={chartData} options={options} />
+            <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <defs>
+                        <linearGradient id="colorParticipation" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
+                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                        </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
+                    <XAxis
+                        dataKey="date"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: '#64748b', fontSize: 12 }}
+                        dy={10}
+                    />
+                    <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: '#64748b', fontSize: 12 }}
+                        allowDecimals={false}
+                    />
+                    <Tooltip
+                        contentStyle={{
+                            backgroundColor: '#1e293b',
+                            borderRadius: '8px',
+                            border: 'none',
+                            color: '#fff',
+                            fontWeight: 'bold'
+                        }}
+                        itemStyle={{ color: '#fff' }}
+                        // @ts-expect-error - Recharts formatter types are too strict for generic numbers
+                        formatter={(value: number) => [value, t('dashboard.participants_label') || 'Participantes']}
+                        labelStyle={{ color: '#94a3b8', marginBottom: '4px' }}
+                    />
+                    <Area
+                        type="monotone"
+                        dataKey="participation"
+                        name={label}
+                        stroke="#3b82f6"
+                        strokeWidth={2}
+                        fillOpacity={1}
+                        fill="url(#colorParticipation)"
+                        activeDot={{ r: 6, strokeWidth: 0, fill: '#3b82f6' }}
+                    />
+                </AreaChart>
+            </ResponsiveContainer>
         </div>
     );
 }

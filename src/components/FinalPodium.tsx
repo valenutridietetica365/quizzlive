@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { Crown, Medal, Trophy } from "lucide-react";
 import confetti from "canvas-confetti";
@@ -17,7 +17,7 @@ interface FinalPodiumProps {
     highlightId?: string;
 }
 
-export default function FinalPodium({ sessionId, highlightId }: FinalPodiumProps) {
+const FinalPodium = React.memo(function FinalPodium({ sessionId, highlightId }: FinalPodiumProps) {
     const [top3, setTop3] = useState<PodiumEntry[]>([]);
     const [myRank, setMyRank] = useState<PodiumEntry | null>(null);
     const [loading, setLoading] = useState(true);
@@ -147,4 +147,6 @@ export default function FinalPodium({ sessionId, highlightId }: FinalPodiumProps
             )}
         </div>
     );
-}
+});
+
+export default FinalPodium;

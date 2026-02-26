@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell
@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { getTranslation } from "@/lib/i18n";
 import { useQuizStore } from "@/lib/store";
 
-interface AnalyticsProps {
+interface SessionAnalyticsProps {
     sessionId: string;
 }
 
@@ -41,7 +41,7 @@ interface HeatmapRow {
     answers: Record<string, boolean | null>; // question_id -> is_correct
 }
 
-export default function SessionAnalytics({ sessionId }: AnalyticsProps) {
+const SessionAnalytics = React.memo(function SessionAnalytics({ sessionId }: SessionAnalyticsProps) {
     const { language } = useQuizStore();
     const [data, setData] = useState<QuestionStat[]>([]);
     const [heatmapData, setHeatmapData] = useState<{ rows: HeatmapRow[], questions: { id: string, name: string }[] }>({ rows: [], questions: [] });
@@ -327,4 +327,6 @@ export default function SessionAnalytics({ sessionId }: AnalyticsProps) {
             )}
         </div>
     );
-}
+});
+
+export default SessionAnalytics;

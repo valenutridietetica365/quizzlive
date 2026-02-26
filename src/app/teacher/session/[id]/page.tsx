@@ -36,7 +36,6 @@ export default function TeacherSession() {
     const [responsesCount, setResponsesCount] = useState(0);
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
     const [showAnalytics, setShowAnalytics] = useState(false);
-    const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
     const t = useCallback((key: string) => getTranslation(language, key), [language]);
 
@@ -222,28 +221,7 @@ export default function TeacherSession() {
         }
     }, [session, currentQuestionIndex, questions, id]);
 
-    useEffect(() => {
-        if (session?.status !== "active" || currentQuestionIndex === -1 || !questions[currentQuestionIndex]) {
-            setTimeLeft(null);
-            return;
-        }
-
-        const timer = setInterval(() => {
-            const startedAt = session.current_question_started_at ? new Date(session.current_question_started_at).getTime() : Date.now();
-            const timeLimit = questions[currentQuestionIndex].time_limit || 20;
-            const elapsed = Math.floor((Date.now() - startedAt) / 1000);
-            const remaining = Math.max(0, timeLimit - elapsed);
-
-            setTimeLeft(remaining);
-
-            if (remaining <= 0) {
-                clearInterval(timer);
-                nextQuestion();
-            }
-        }, 1000);
-
-        return () => clearInterval(timer);
-    }, [session?.status, session?.current_question_started_at, currentQuestionIndex, questions, nextQuestion]);
+    // The global timer interval has been removed. Time is now managed by the CircularTimer component directly.
 
     if (loading) return <TeacherSessionSkeleton />;
 
@@ -436,9 +414,14 @@ export default function TeacherSession() {
                             </div>
 
                             {/* Timer Card */}
-                            {timeLeft !== null && (
+                            {(session.status === "active" && currentQuestionIndex !== -1 && questions[currentQuestionIndex]) && (
                                 <div className="bg-slate-900/80 backdrop-blur-xl p-6 md:p-8 rounded-3xl border border-white/5 flex flex-col items-center text-center space-y-3 shadow-2xl">
-                                    <CircularTimer timeLeft={timeLeft} timeLimit={questions[currentQuestionIndex]?.time_limit || 20} size="sm" />
+                                    <CircularTimer
+                                        startedAt={session.current_question_started_at ?? null}
+                                        timeLimit={questions[currentQuestionIndex]?.time_limit || 20}
+                                        size="sm"
+                                        onTimeUp={nextQuestion}
+                                    />
                                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('session.time_remaining')}</p>
                                 </div>
                             )}

@@ -35,7 +35,6 @@ export default function StudentPlay() {
     const [pointsEarned, setPointsEarned] = useState<number>(0);
     const [currentStreak, setCurrentStreak] = useState<number>(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [timeLeft, setTimeLeft] = useState<number | null>(null);
     const [timesUp, setTimesUp] = useState(false);
 
     // States for new question types
@@ -74,7 +73,6 @@ export default function StudentPlay() {
                 setSelectedTerm(null);
                 setIsSubmitting(false);
                 setTimesUp(false);
-                setTimeLeft(null);
 
                 if (q.question_type === "matching") {
                     const matches = q.options.map(opt => opt.split(":")[1]);
@@ -188,35 +186,14 @@ export default function StudentPlay() {
         return () => {
             supabase.removeChannel(sessionChannel);
         };
-    }, [id, nickname, participantId, fetchInitialState, handleNewQuestion, router, totalScore, fetchingScore, fetchTotalScore, fetchParticipants, session?.status]);
+        // Using a ref or generic dependencies for state could be better, but limiting the array to exact stable references ensures the socket doesn't reconnect constantly.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [id, nickname, participantId]);
 
-    // Countdown timer synchronized with session's current_question_started_at
-    useEffect(() => {
-        if (!currentQuestion || answered || timesUp || session?.status !== "active") {
-            return;
-        }
+    // The global timer interval has been removed. 
+    // Time is now managed by the CircularTimer component directly to avoid re-renders at the page level.
 
-        const timer = setInterval(() => {
-            const startedAt = session?.current_question_started_at
-                ? new Date(session.current_question_started_at).getTime()
-                : Date.now();
-            const timeLimit = currentQuestion.time_limit || 20;
-            const elapsed = Math.floor((Date.now() - startedAt) / 1000);
-            const remaining = Math.max(0, timeLimit - elapsed);
-
-            setTimeLeft(remaining);
-
-            if (remaining <= 0) {
-                clearInterval(timer);
-                setTimesUp(true);
-                setAnswered(true); // prevent submission
-            }
-        }, 1000);
-
-        return () => clearInterval(timer);
-    }, [currentQuestion, answered, timesUp, session?.status, session?.current_question_started_at]);
-
-    const submitAnswer = async (answer: string) => {
+    const submitAnswer = useCallback(async (answer: string) => {
         if (answered || isSubmitting || !currentQuestion) return;
         setIsSubmitting(true);
         setAnswered(true);
@@ -247,7 +224,7 @@ export default function StudentPlay() {
             setIsSubmitting(false);
             setAnswered(false); // Rollback optimistic UI if it failed
         }
-    };
+    }, [answered, isSubmitting, currentQuestion, id, participantId, matchingPairs]);
 
     if (loading || !session) return <StudentPlaySkeleton />;
 
@@ -294,7 +271,7 @@ export default function StudentPlay() {
                     ) : !answered ? (
                         <QuestionView
                             currentQuestion={currentQuestion}
-                            timeLeft={timeLeft}
+                            startedAt={session.current_question_started_at ?? null}
                             isSubmitting={isSubmitting}
                             answered={answered}
                             submitAnswer={submitAnswer}
@@ -307,6 +284,10 @@ export default function StudentPlay() {
                             setSelectedTerm={setSelectedTerm}
                             shuffledMatches={shuffledMatches}
                             t={t}
+                            onTimeUp={() => {
+                                setTimesUp(true);
+                                setAnswered(true);
+                            }}
                         />
                     ) : (
                         <AnswerWaiting

@@ -8,7 +8,7 @@ import { Question } from "@/lib/schemas";
 
 interface QuestionViewProps {
     currentQuestion: Question;
-    timeLeft: number | null;
+    startedAt: string | null;
     isSubmitting: boolean;
     answered: boolean;
     submitAnswer: (answer: string) => void;
@@ -21,11 +21,12 @@ interface QuestionViewProps {
     setSelectedTerm: (term: string | null) => void;
     shuffledMatches: string[];
     t: (key: string) => string;
+    onTimeUp?: () => void;
 }
 
 export default function QuestionView({
     currentQuestion,
-    timeLeft,
+    startedAt,
     isSubmitting,
     answered,
     submitAnswer,
@@ -37,15 +38,21 @@ export default function QuestionView({
     selectedTerm,
     setSelectedTerm,
     shuffledMatches,
-    t
+    t,
+    onTimeUp
 }: QuestionViewProps) {
     return (
         <div className="w-full space-y-4 md:space-y-6 animate-in slide-in-from-bottom-12 duration-700">
-            {/* Circular Timer */}
-            {timeLeft !== null && (
+            {/* Circular Timer (Self-managed) */}
+            {startedAt !== null && !answered && (
                 <div className="flex justify-center -mb-2">
                     <div className="scale-75 md:scale-100 origin-center">
-                        <CircularTimer timeLeft={timeLeft} timeLimit={currentQuestion.time_limit || 20} size="sm" />
+                        <CircularTimer
+                            startedAt={startedAt}
+                            timeLimit={currentQuestion.time_limit || 20}
+                            size="sm"
+                            onTimeUp={onTimeUp}
+                        />
                     </div>
                 </div>
             )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { Users, CheckCircle2, FileSpreadsheet } from "lucide-react";
 
@@ -31,7 +31,7 @@ interface SupabaseParticipant {
     answers: ParticipantData["answers"];
 }
 
-export default function SessionReport({ sessionId }: ReportProps) {
+const SessionReport = React.memo(function SessionReport({ sessionId }: ReportProps) {
     const [participants, setParticipants] = useState<ParticipantData[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -189,4 +189,6 @@ export default function SessionReport({ sessionId }: ReportProps) {
             )}
         </div>
     );
-}
+});
+
+export default SessionReport;

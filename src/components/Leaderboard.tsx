@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { Trophy, Medal, Crown } from "lucide-react";
 
@@ -17,7 +17,7 @@ interface LeaderboardProps {
     compact?: boolean;
 }
 
-export default function Leaderboard({ sessionId, currentParticipantId, compact = false }: LeaderboardProps) {
+const Leaderboard = React.memo(function Leaderboard({ sessionId, currentParticipantId, compact = false }: LeaderboardProps) {
     const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -124,4 +124,6 @@ export default function Leaderboard({ sessionId, currentParticipantId, compact =
             )}
         </div>
     );
-}
+});
+
+export default Leaderboard;
