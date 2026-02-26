@@ -84,6 +84,9 @@ export default function TeacherDashboard() {
     }, []);
 
     const fetchLiveSessions = useCallback(async (userId: string) => {
+        const yesterday = new Date();
+        yesterday.setHours(yesterday.getHours() - 24);
+
         const { data, error } = await supabase
             .from("sessions")
             .select(`
@@ -92,10 +95,26 @@ export default function TeacherDashboard() {
             `)
             .eq("quiz.teacher_id", userId)
             .in("status", ["waiting", "active"])
+            .gte("created_at", yesterday.toISOString())
             .order("created_at", { ascending: false });
 
         if (!error) setLiveSessions(data as unknown as LiveSession[] || []);
     }, []);
+
+    const finishSession = async (sessionId: string) => {
+        const { error } = await supabase
+            .from("sessions")
+            .update({ status: "finished", finished_at: new Date().toISOString() })
+            .eq("id", sessionId);
+
+        if (!error) {
+            setLiveSessions(prev => prev.filter(s => s.id !== sessionId));
+            toast.success("Sesión finalizada");
+            if (user) fetchHistory(user.id);
+        } else {
+            toast.error("Error al finalizar la sesión");
+        }
+    };
 
     useEffect(() => {
         const checkUser = async () => {
@@ -240,10 +259,22 @@ export default function TeacherDashboard() {
                                         </div>
                                         <div className="flex items-center justify-between pt-4 border-t border-white/5">
                                             <span className="text-xs font-bold text-slate-400">{new Date(session.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                            <button className="bg-blue-600 p-2 rounded-xl group-hover:px-4 transition-all flex items-center gap-2">
-                                                <ChevronRight className="w-5 h-5" />
-                                                <span className="hidden group-hover:inline text-[10px] font-black uppercase">Reanudar</span>
-                                            </button>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        finishSession(session.id);
+                                                    }}
+                                                    className="p-2 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded-xl transition-all"
+                                                    title="Finalizar sesión"
+                                                >
+                                                    <LogOut className="w-4 h-4" />
+                                                </button>
+                                                <button className="bg-blue-600 p-2 rounded-xl group-hover:px-4 transition-all flex items-center gap-2">
+                                                    <ChevronRight className="w-5 h-5" />
+                                                    <span className="hidden group-hover:inline text-[10px] font-black uppercase">Reanudar</span>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
