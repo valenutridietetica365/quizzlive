@@ -9,6 +9,18 @@ import { toast } from "sonner";
 import { getTranslation } from "@/lib/i18n";
 import LanguageSelector from "@/components/LanguageSelector";
 
+interface JoinSessionResponse {
+    id: string;
+    quiz: {
+        class_id: string | null;
+        class: {
+            id: string;
+            name: string;
+            students: { id: string; name: string }[];
+        } | null;
+    } | null;
+}
+
 function JoinContent() {
     const { setParticipantInfo, language, participantId, nickname: storedNickname } = useQuizStore();
     const [pin, setPin] = useState("");
@@ -17,7 +29,7 @@ function JoinContent() {
     const [error, setError] = useState<string | null>(null);
     const [hasPinFromUrl, setHasPinFromUrl] = useState(false);
     const [rejoinSession, setRejoinSession] = useState<{ sessionId: string; pin: string } | null>(null);
-    const [students, setStudents] = useState<any[]>([]);
+    const [students, setStudents] = useState<{ id: string; name: string }[]>([]);
     const [selectedStudentId, setSelectedStudentId] = useState<string>("");
     const [classInfo, setClassInfo] = useState<{ id: string; name: string } | null>(null);
     const router = useRouter();
@@ -65,13 +77,15 @@ function JoinContent() {
             .eq("pin", currentPin)
             .single();
 
-        const s = session as any;
-        if (s?.quiz?.class) {
-            setClassInfo(s.quiz.class);
-            setStudents(s.quiz.class.students || []);
-        } else {
-            setClassInfo(null);
-            setStudents([]);
+        if (session) {
+            const s = session as unknown as JoinSessionResponse;
+            if (s.quiz?.class) {
+                setClassInfo(s.quiz.class);
+                setStudents(s.quiz.class.students || []);
+            } else {
+                setClassInfo(null);
+                setStudents([]);
+            }
         }
     };
 

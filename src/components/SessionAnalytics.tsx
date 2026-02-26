@@ -28,6 +28,16 @@ interface AnswerRow {
     questions: { question_text: string } | null;
 }
 
+interface ExportAnswer {
+    is_correct: boolean;
+    points_awarded: number;
+    questions: { question_text: string } | null;
+    participants: {
+        nickname: string;
+        students: { name: string } | null;
+    } | null;
+}
+
 export default function SessionAnalytics({ sessionId }: AnalyticsProps) {
     const { language } = useQuizStore();
     const [data, setData] = useState<QuestionStat[]>([]);
@@ -51,7 +61,7 @@ export default function SessionAnalytics({ sessionId }: AnalyticsProps) {
         }
 
         const headers = ["Alumno", "Pregunta", "Correcto", "Puntos"];
-        const rows = (answers as any[]).map(a => [
+        const rows = (answers as unknown as ExportAnswer[]).map(a => [
             a.participants?.students?.name || a.participants?.nickname || "Anónimo",
             a.questions?.question_text || "Pregunta",
             a.is_correct ? "SÍ" : "NO",
