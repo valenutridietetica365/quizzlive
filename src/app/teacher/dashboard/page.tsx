@@ -388,10 +388,16 @@ export default function TeacherDashboard() {
                                     </div>
                                     <div>
                                         <h3 className="font-black text-2xl text-slate-900 leading-tight group-hover:text-blue-600 transition-colors">{quiz.title}</h3>
-                                        <div className="flex items-center gap-2 mt-2">
+                                        <div className="flex flex-wrap gap-2 mt-2">
                                             <span className="bg-slate-100 px-3 py-1 rounded-full text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                                 {quiz.questions.length} {t('common.questions')}
                                             </span>
+                                            {quiz.class_id && classes.find(c => c.id === quiz.class_id) && (
+                                                <span className="bg-slate-900 px-3 py-1 rounded-full text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-1">
+                                                    <Users className="w-3 h-3" />
+                                                    {classes.find(c => c.id === quiz.class_id)?.name}
+                                                </span>
+                                            )}
                                             {quiz.tags?.map(tag => (
                                                 <span key={tag} className="bg-blue-50 px-3 py-1 rounded-full text-[10px] font-black text-blue-400 uppercase tracking-widest">
                                                     #{tag}
