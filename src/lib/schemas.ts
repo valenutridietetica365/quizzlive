@@ -51,3 +51,29 @@ export type Question = z.infer<typeof QuestionSchema>;
 export type Quiz = z.infer<typeof QuizSchema>;
 export type Session = z.infer<typeof SessionSchema>;
 export type Participant = z.infer<typeof ParticipantSchema>;
+
+export interface FinishedSession {
+    id: string;
+    pin: string;
+    created_at: string;
+    finished_at: string;
+    quiz: { title: string };
+    _count?: { participants: number };
+}
+
+export interface SupabaseSessionResponse {
+    id: string;
+    pin: string;
+    created_at: string;
+    finished_at: string;
+    quiz: { title: string; teacher_id: string };
+    participants: { count: number }[];
+}
+
+export interface LiveSession {
+    id: string;
+    pin: string;
+    status: "waiting" | "active";
+    quiz: { title: string };
+    created_at: string;
+}

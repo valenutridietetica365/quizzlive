@@ -19,6 +19,7 @@ import CircularTimer from "@/components/CircularTimer";
 import Leaderboard from "@/components/Leaderboard";
 import FinalPodium from "@/components/FinalPodium";
 import ParticipantMarquee from "@/components/game/ParticipantMarquee";
+import ReactionSystem from "@/components/game/ReactionSystem";
 
 import { Quiz, QuizSchema, Question, QuestionSchema, Session, SessionSchema, Participant, ParticipantSchema } from "@/lib/schemas";
 
@@ -498,6 +499,7 @@ export default function TeacherSession() {
                 joinUrl={joinUrl}
             />
             <AudioController type={session.status} />
+            <ReactionSystem sessionId={id as string} isPresenter={true} />
         </div>
     );
 }

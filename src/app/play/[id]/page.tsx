@@ -15,6 +15,7 @@ import FinalPodium from "@/components/FinalPodium";
 import QuestionView from "@/components/game/QuestionView";
 import AnswerWaiting from "@/components/game/AnswerWaiting";
 import ParticipantMarquee from "@/components/game/ParticipantMarquee";
+import ReactionSystem from "@/components/game/ReactionSystem";
 
 export default function StudentPlay() {
     const { id } = useParams();
@@ -349,6 +350,10 @@ export default function StudentPlay() {
                     participants={participants}
                     waitingText={t('session.waiting_participants')}
                 />
+            </div>
+
+            <div className="fixed bottom-12 left-1/2 -translate-x-1/2 z-[100]">
+                <ReactionSystem sessionId={id as string} isPresenter={false} />
             </div>
         </div>
     );

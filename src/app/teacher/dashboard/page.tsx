@@ -10,6 +10,8 @@ import { toast } from "sonner";
 import { useQuizStore } from "@/lib/store";
 import { getTranslation } from "@/lib/i18n";
 import LanguageSelector from "@/components/LanguageSelector";
+import PerformanceChart from "@/components/PerformanceChart";
+import { FinishedSession, SupabaseSessionResponse, LiveSession } from "@/lib/schemas";
 
 interface Quiz {
     id: string;
@@ -17,36 +19,27 @@ interface Quiz {
     questions: { id: string }[];
 }
 
-interface FinishedSession {
-    id: string;
-    pin: string;
-    created_at: string;
-    finished_at: string;
-    quiz: { title: string };
-    _count?: { participants: number };
-}
-
-interface SupabaseSessionResponse {
-    id: string;
-    pin: string;
-    created_at: string;
-    finished_at: string;
-    quiz: { title: string; teacher_id: string };
-    participants: { count: number }[];
-}
-
-interface LiveSession {
-    id: string;
-    pin: string;
-    status: "waiting" | "active";
-    quiz: { title: string };
-    created_at: string;
-}
-
 interface User {
     id: string;
     email?: string;
 }
+
+const StatsHeader = ({ stats, t }: { stats: any, t: any }) => (
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 animate-in fade-in slide-in-from-top-4 duration-1000">
+        <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col gap-1">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('dashboard.total_quizzes')}</span>
+            <span className="text-3xl font-black text-slate-900">{stats.quizzes}</span>
+        </div>
+        <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col gap-1">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('dashboard.total_sessions')}</span>
+            <span className="text-3xl font-black text-slate-900">{stats.sessions}</span>
+        </div>
+        <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col gap-1">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('dashboard.avg_participation')}</span>
+            <span className="text-3xl font-black text-slate-900">{stats.avg}</span>
+        </div>
+    </div>
+);
 
 export default function TeacherDashboard() {
     const { language } = useQuizStore();
@@ -57,7 +50,6 @@ export default function TeacherDashboard() {
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState<User | null>(null);
 
-    // Helpers for translation
     const t = (key: string) => getTranslation(language, key);
 
     const [confirmModal, setConfirmModal] = useState<{
@@ -166,7 +158,6 @@ export default function TeacherDashboard() {
             let unique = false;
             let attempts = 0;
 
-            // PIN Collision check (max 3 attempts for Zero Cost reliability)
             while (!unique && attempts < 3) {
                 pin = Math.floor(100000 + Math.random() * 900000).toString();
                 const { data: existing } = await supabase
@@ -219,6 +210,14 @@ export default function TeacherDashboard() {
         }
     };
 
+    const stats = {
+        quizzes: quizzes.length,
+        sessions: history.length + liveSessions.length,
+        avg: history.length > 0
+            ? Math.round(history.reduce((acc, curr) => acc + (curr._count?.participants || 0), 0) / history.length)
+            : 0
+    };
+
     const renderContent = () => {
         if (loading) {
             return (
@@ -251,7 +250,6 @@ export default function TeacherDashboard() {
                 </div>
             ) : (
                 <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                    {/* Live Sessions Recovery Section */}
                     {liveSessions.length > 0 && (
                         <div className="space-y-6">
                             <div className="flex items-center gap-3">
@@ -489,8 +487,8 @@ export default function TeacherDashboard() {
                     <button
                         onClick={() => setActiveTab("quizzes")}
                         className={`flex-1 md:flex-none flex items-center justify-center md:justify-start gap-3 px-3 md:px-4 py-2.5 md:py-3.5 rounded-xl md:rounded-2xl font-black transition-all text-xs md:text-base ${activeTab === "quizzes"
-                            ? "bg-blue-50 text-blue-600"
-                            : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+                                ? "bg-blue-50 text-blue-600"
+                                : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"
                             }`}
                     >
                         <BookOpen className="w-4 md:w-5 h-4 md:h-5" />
@@ -499,8 +497,8 @@ export default function TeacherDashboard() {
                     <button
                         onClick={() => setActiveTab("history")}
                         className={`flex-1 md:flex-none flex items-center justify-center md:justify-start gap-3 px-3 md:px-4 py-2.5 md:py-3.5 rounded-xl md:rounded-2xl font-black transition-all text-xs md:text-base ${activeTab === "history"
-                            ? "bg-blue-50 text-blue-600"
-                            : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+                                ? "bg-blue-50 text-blue-600"
+                                : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"
                             }`}
                     >
                         <History className="w-4 md:w-5 h-4 md:h-5" />
@@ -552,24 +550,21 @@ export default function TeacherDashboard() {
                     )}
                 </header>
 
-                {activeTab === "quizzes" && !loading && (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 animate-in fade-in slide-in-from-top-4 duration-1000">
-                        <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col gap-1">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('dashboard.total_quizzes')}</span>
-                            <span className="text-3xl font-black text-slate-900">{quizzes.length}</span>
-                        </div>
-                        <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col gap-1">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('dashboard.total_sessions')}</span>
-                            <span className="text-3xl font-black text-slate-900">{history.length + liveSessions.length}</span>
-                        </div>
-                        <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col gap-1">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('dashboard.avg_participation')}</span>
-                            <span className="text-3xl font-black text-slate-900">
-                                {history.length > 0
-                                    ? Math.round(history.reduce((acc, curr) => acc + (curr._count?.participants || 0), 0) / history.length)
-                                    : 0}
-                            </span>
-                        </div>
+                <StatsHeader stats={stats} t={t} />
+
+                {history.length > 0 && activeTab === "history" && (
+                    <div className="space-y-3">
+                        <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest pl-2">
+                            {t('dashboard.stats_trend') || 'Tendencia de Participación'}
+                        </h3>
+                        <PerformanceChart
+                            data={history.slice(0, 7).reverse().map(s => ({
+                                date: new Date(s.finished_at).toLocaleDateString(undefined, { day: '2-digit', month: 'short' }),
+                                participation: s._count?.participants || 0
+                            }))}
+                            label={t('dashboard.participants_label') || 'Participantes'}
+                            t={t}
+                        />
                     </div>
                 )}
 
