@@ -40,7 +40,7 @@ export default function QuestionView({
     t
 }: QuestionViewProps) {
     return (
-        <div className="w-full space-y-8 md:space-y-10 animate-in slide-in-from-bottom-12 duration-700">
+        <div className="w-full space-y-6 md:space-y-8 animate-in slide-in-from-bottom-12 duration-700">
             {/* Circular Timer */}
             {timeLeft !== null && (
                 <div className="flex justify-center">
@@ -69,7 +69,7 @@ export default function QuestionView({
                             disabled={isSubmitting || answered}
                             onClick={() => submitAnswer(opt)}
                             style={{ animationDelay: `${i * 100}ms` }}
-                            className={`group p-8 rounded-[2rem] text-left transition-all active:scale-95 shadow-lg border-b-[8px] flex flex-col justify-between h-48 sm:h-auto overflow-hidden relative animate-in fade-in slide-in-from-bottom-8 fill-mode-both ${(isSubmitting || answered) && selectedOption !== opt ? "opacity-50 grayscale" : ""} ${selectedOption === opt ? "scale-105 brightness-110 z-10 ring-4 ring-white shadow-2xl" : ""
+                            className={`group p-6 rounded-[1.5rem] text-left transition-all active:scale-95 shadow-lg border-b-[6px] flex flex-col justify-between h-40 sm:h-auto overflow-hidden relative animate-in fade-in slide-in-from-bottom-8 fill-mode-both ${(isSubmitting || answered) && selectedOption !== opt ? "opacity-50 grayscale" : ""} ${selectedOption === opt ? "scale-105 brightness-110 z-10 ring-4 ring-white shadow-2xl" : ""
                                 } ${currentQuestion.question_type === "true_false"
                                     ? (opt === "Verdadero" || opt === "True" ? "bg-blue-600 border-blue-800 shadow-blue-200" : "bg-red-600 border-red-800 shadow-red-200")
                                     : (i === 0 ? "bg-red-600 border-red-800 shadow-red-200" :
