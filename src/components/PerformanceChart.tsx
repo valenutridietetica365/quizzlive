@@ -66,7 +66,7 @@ export default function PerformanceChart({ data, label, t }: PerformanceChartPro
                     weight: 'bold' as const,
                 },
                 callbacks: {
-                    label: (context: any) => `${context.parsed.y} ${t('dashboard.participants_label') || 'Participantes'}`,
+                    label: (context: any) => `${context.parsed.y ?? 0} ${t('dashboard.participants_label') || 'Participantes'}`,
                 }
             },
         },

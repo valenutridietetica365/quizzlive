@@ -1,15 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import { Heart, ThumbsUp, Star, Zap, Smile } from "lucide-react";
 
-interface Reaction {
-    id: string;
-    content: string;
-    created_at: string;
-}
+
 
 interface ReactionSystemProps {
     sessionId: string;

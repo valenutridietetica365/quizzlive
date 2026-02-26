@@ -24,7 +24,7 @@ interface User {
     email?: string;
 }
 
-const StatsHeader = ({ stats, t }: { stats: any, t: any }) => (
+const StatsHeader = ({ stats, t }: { stats: { quizzes: number; sessions: number; avg: number }, t: (key: string) => string }) => (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 animate-in fade-in slide-in-from-top-4 duration-1000">
         <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col gap-1">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('dashboard.total_quizzes')}</span>
@@ -487,8 +487,8 @@ export default function TeacherDashboard() {
                     <button
                         onClick={() => setActiveTab("quizzes")}
                         className={`flex-1 md:flex-none flex items-center justify-center md:justify-start gap-3 px-3 md:px-4 py-2.5 md:py-3.5 rounded-xl md:rounded-2xl font-black transition-all text-xs md:text-base ${activeTab === "quizzes"
-                                ? "bg-blue-50 text-blue-600"
-                                : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+                            ? "bg-blue-50 text-blue-600"
+                            : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"
                             }`}
                     >
                         <BookOpen className="w-4 md:w-5 h-4 md:h-5" />
@@ -497,8 +497,8 @@ export default function TeacherDashboard() {
                     <button
                         onClick={() => setActiveTab("history")}
                         className={`flex-1 md:flex-none flex items-center justify-center md:justify-start gap-3 px-3 md:px-4 py-2.5 md:py-3.5 rounded-xl md:rounded-2xl font-black transition-all text-xs md:text-base ${activeTab === "history"
-                                ? "bg-blue-50 text-blue-600"
-                                : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+                            ? "bg-blue-50 text-blue-600"
+                            : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"
                             }`}
                     >
                         <History className="w-4 md:w-5 h-4 md:h-5" />
