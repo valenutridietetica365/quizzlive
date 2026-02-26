@@ -26,6 +26,15 @@ interface FinishedSession {
     _count?: { participants: number };
 }
 
+interface SupabaseSessionResponse {
+    id: string;
+    pin: string;
+    created_at: string;
+    finished_at: string;
+    quiz: { title: string; teacher_id: string };
+    participants: { count: number }[];
+}
+
 interface LiveSession {
     id: string;
     pin: string;
@@ -82,8 +91,12 @@ export default function TeacherDashboard() {
             .order("finished_at", { ascending: false });
 
         if (!error && data) {
-            const formatted = (data as any[]).map(s => ({
-                ...s,
+            const formatted: FinishedSession[] = (data as unknown as SupabaseSessionResponse[]).map(s => ({
+                id: s.id,
+                pin: s.pin,
+                created_at: s.created_at,
+                finished_at: s.finished_at,
+                quiz: { title: s.quiz.title },
                 _count: { participants: s.participants?.[0]?.count || 0 }
             }));
             setHistory(formatted);
