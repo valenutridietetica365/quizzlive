@@ -74,7 +74,6 @@ interface QuizState {
     dashboardClasses: unknown[]
     dashboardHistory: unknown[]
     dashboardLiveSessions: unknown[]
-    dashboardLiveSessions: unknown[] // Note: this was duplicate in original too, cleaning it up
     dashboardFolders: unknown[]
     setDashboardLoaded: (loaded: boolean) => void
     setDashboardData: (data: { dashboardUserId?: string | null, dashboardQuizzes?: unknown[], dashboardClasses?: unknown[], dashboardHistory?: unknown[], dashboardLiveSessions?: unknown[], dashboardFolders?: unknown[] }) => void
