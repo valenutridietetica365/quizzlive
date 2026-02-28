@@ -306,6 +306,7 @@ export default function StudentPlay() {
                                 setAnswered(true);
                             }}
                             config={session.config}
+                            gameMode={session.game_mode}
                         />
                     ) : (
                         <AnswerWaiting

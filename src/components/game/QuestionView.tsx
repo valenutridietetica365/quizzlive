@@ -24,6 +24,7 @@ interface QuestionViewProps {
     t: (key: string) => string;
     onTimeUp?: () => void;
     config?: GameModeConfig;
+    gameMode?: string;
 }
 
 export default function QuestionView({
@@ -42,7 +43,8 @@ export default function QuestionView({
     shuffledMatches,
     t,
     onTimeUp,
-    config
+    config,
+    gameMode
 }: QuestionViewProps) {
     return (
         <div className="w-full space-y-4 md:space-y-6 animate-in slide-in-from-bottom-12 duration-700">
@@ -73,7 +75,14 @@ export default function QuestionView({
                 </div>
             )}
 
-            {currentQuestion.question_type === "multiple_choice" || currentQuestion.question_type === "true_false" ? (
+            {gameMode === "hangman" || currentQuestion.question_type === "hangman" ? (
+                <HangmanView
+                    word={currentQuestion.correct_answer || ""}
+                    onComplete={submitAnswer}
+                    isSubmitting={isSubmitting}
+                    config={config}
+                />
+            ) : currentQuestion.question_type === "multiple_choice" || currentQuestion.question_type === "true_false" ? (
                 <div className={`grid gap-3 w-full ${currentQuestion.question_type === "true_false" ? "grid-cols-2" : "grid-cols-1 sm:grid-cols-2"}`}>
                     {currentQuestion.options.map((opt: string, i: number) => (
                         <button
@@ -187,13 +196,6 @@ export default function QuestionView({
                         </button>
                     )}
                 </div>
-            ) : currentQuestion.question_type === "hangman" ? (
-                <HangmanView
-                    word={currentQuestion.correct_answer || ""}
-                    onComplete={submitAnswer}
-                    isSubmitting={isSubmitting}
-                    config={config}
-                />
             ) : null}
         </div>
     );
