@@ -109,6 +109,12 @@ export default function TeacherDashboard() {
         folderId: null
     });
 
+    const [modeModal, setModeModal] = useState<{ open: boolean, quizId: string | null }>({
+        open: false,
+        quizId: null
+    });
+    const [selectedMode, setSelectedMode] = useState<"classic" | "survival" | "teams" | "hangman">("classic");
+
     const router = useRouter();
 
     const fetchClasses = useCallback(async (userId: string) => {
@@ -254,7 +260,8 @@ export default function TeacherDashboard() {
                 .insert({
                     quiz_id: quizId,
                     pin: pin,
-                    status: "waiting"
+                    status: "waiting",
+                    game_mode: selectedMode
                 })
                 .select()
                 .single();
@@ -622,7 +629,7 @@ export default function TeacherDashboard() {
 
                                     <div className="flex items-center gap-3 pt-6 border-t border-slate-50 relative z-10">
                                         <button
-                                            onClick={() => startSession(quiz.id)}
+                                            onClick={() => setModeModal({ open: true, quizId: quiz.id })}
                                             className="flex-1 flex items-center justify-center gap-2 bg-slate-900 text-white font-black py-4 rounded-2xl hover:bg-blue-600 transition-all active:scale-95 shadow-xl shadow-slate-200"
                                         >
                                             <Play className="w-5 h-5 fill-white" />
@@ -1070,6 +1077,62 @@ export default function TeacherDashboard() {
                     onSubmit={createFolder}
                     t={t}
                 />
+            )}
+            {modeModal.open && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white w-full max-w-xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+                        <div className="p-8 md:p-12 space-y-8">
+                            <div className="text-center space-y-2">
+                                <h3 className="text-3xl font-black text-slate-900 tracking-tight">Selecciona un Modo de Juego</h3>
+                                <p className="text-slate-500 font-medium">Personaliza cómo van a competir tus alumnos hoy.</p>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {[
+                                    { id: 'classic', icon: Play, name: 'Clásico', desc: 'Todos contra todos por puntos.' },
+                                    { id: 'survival', icon: Users, name: 'Supervivencia', desc: 'Un fallo y quedas fuera del podio.' },
+                                    { id: 'teams', icon: Users, name: 'Equipos', desc: 'Competición grupal (2-4 equipos).' },
+                                    { id: 'hangman', icon: BookOpen, name: 'Ahorcado', desc: 'Adivina la palabra letra por letra.' }
+                                ].map((mode) => (
+                                    <button
+                                        key={mode.id}
+                                        onClick={() => setSelectedMode(mode.id as any)}
+                                        className={`p-6 rounded-[2rem] border-2 text-left transition-all space-y-3 ${selectedMode === mode.id
+                                            ? "border-blue-600 bg-blue-50/50 ring-4 ring-blue-50"
+                                            : "border-slate-100 bg-white hover:border-slate-200"
+                                            }`}
+                                    >
+                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${selectedMode === mode.id ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-500"}`}>
+                                            <mode.icon className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <p className="font-black text-slate-900">{mode.name}</p>
+                                            <p className="text-xs text-slate-500 font-medium">{mode.desc}</p>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+
+                            <div className="flex gap-4 pt-4">
+                                <button
+                                    onClick={() => setModeModal({ open: false, quizId: null })}
+                                    className="px-8 py-4 rounded-2xl font-black text-slate-400 hover:bg-slate-50 transition-all"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        if (modeModal.quizId) startSession(modeModal.quizId);
+                                        setModeModal({ open: false, quizId: null });
+                                    }}
+                                    className="flex-1 px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black shadow-xl shadow-blue-200 transition-all transform active:scale-95"
+                                >
+                                    ¡Comenzar Juego!
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

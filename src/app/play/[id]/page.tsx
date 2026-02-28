@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useQuizStore } from "@/lib/store";
-import { Loader2, Clock, Sparkles, ArrowRight } from "lucide-react";
+import { Loader2, Clock, Sparkles, ArrowRight, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { getTranslation } from "@/lib/i18n";
 
@@ -25,7 +25,7 @@ export default function StudentPlay() {
     const { participantId, nickname, language } = useQuizStore();
 
     const [session, setSession] = useState<Session | null>(null);
-    const [participants, setParticipants] = useState<{ id: string; nickname: string; current_streak?: number }[]>([]);
+    const [participants, setParticipants] = useState<{ id: string; nickname: string; current_streak?: number; is_eliminated?: boolean; team?: string | null }[]>([]);
     const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
     const [answered, setAnswered] = useState(false);
     const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
@@ -177,7 +177,12 @@ export default function StudentPlay() {
             .on(
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'participants', filter: `session_id=eq.${id}` },
-                () => {
+                (payload) => {
+                    if (payload.new && (payload.new as any).id === participantId) {
+                        const p = payload.new as any;
+                        useQuizStore.getState().setIsEliminated(p.is_eliminated);
+                        if (p.team) useQuizStore.getState().setTeam(p.team);
+                    }
                     fetchParticipants();
                 }
             )
@@ -255,7 +260,17 @@ export default function StudentPlay() {
 
             {session.status === "active" && (
                 <div className="w-full max-w-2xl flex flex-col items-center">
-                    {!currentQuestion ? (
+                    {useQuizStore.getState().isEliminated ? (
+                        <div className="w-full text-center space-y-6 animate-in zoom-in duration-700">
+                            <div className="p-12 rounded-[4rem] bg-red-900/20 border-b-[12px] border-red-900/40 flex flex-col items-center gap-6 shadow-xl backdrop-blur-md">
+                                <div className="w-24 h-24 bg-red-600 rounded-[2rem] flex items-center justify-center text-white shadow-xl shadow-red-900/20 animate-bounce">
+                                    <LogOut className="w-12 h-12 rotate-90" />
+                                </div>
+                                <h1 className="text-4xl font-black text-red-600">¡ELIMINADO!</h1>
+                                <p className="text-slate-500 font-bold max-w-xs text-balance">Has fallado en el modo supervivencia. Puedes seguir viendo el resto de la clase.</p>
+                            </div>
+                        </div>
+                    ) : !currentQuestion ? (
                         <div className="flex flex-col items-center gap-6 animate-pulse">
                             <div className="w-20 h-20 bg-blue-100 rounded-3xl flex items-center justify-center text-blue-500">
                                 <Loader2 className="w-10 h-10 animate-spin" />

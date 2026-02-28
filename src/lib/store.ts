@@ -21,6 +21,8 @@ export type ParticipantData = {
     session_id: string
     nickname: string
     score: number // From the scores table
+    team: string | null
+    is_eliminated: boolean
 }
 
 interface QuizState {
@@ -45,6 +47,14 @@ interface QuizState {
     participantId: string | null
     nickname: string | null
     setParticipantInfo: (id: string, nickname: string) => void
+    isEliminated: boolean
+    setIsEliminated: (isEliminated: boolean) => void
+    team: string | null
+    setTeam: (team: string | null) => void
+    lastPoints: number
+    setLastPoints: (points: number) => void
+    lastCorrect: boolean | null
+    setLastCorrect: (isCorrect: boolean | null) => void
 
     // i18n
     language: Language
@@ -64,6 +74,7 @@ interface QuizState {
     dashboardClasses: unknown[]
     dashboardHistory: unknown[]
     dashboardLiveSessions: unknown[]
+    dashboardLiveSessions: unknown[] // Note: this was duplicate in original too, cleaning it up
     dashboardFolders: unknown[]
     setDashboardLoaded: (loaded: boolean) => void
     setDashboardData: (data: { dashboardUserId?: string | null, dashboardQuizzes?: unknown[], dashboardClasses?: unknown[], dashboardHistory?: unknown[], dashboardLiveSessions?: unknown[], dashboardFolders?: unknown[] }) => void
@@ -97,6 +108,14 @@ export const useQuizStore = create<QuizState>()(
             participantId: null,
             nickname: null,
             setParticipantInfo: (id, nickname) => set({ participantId: id, nickname }),
+            isEliminated: false,
+            setIsEliminated: (isEliminated) => set({ isEliminated }),
+            team: null,
+            setTeam: (team) => set({ team }),
+            lastPoints: 0,
+            setLastPoints: (lastPoints) => set({ lastPoints }),
+            lastCorrect: null,
+            setLastCorrect: (lastCorrect) => set({ lastCorrect }),
 
             language: 'es',
             setLanguage: (lang) => set({ language: lang }),
@@ -135,7 +154,7 @@ export const useQuizStore = create<QuizState>()(
             setDashboardData: (data) => set((state) => ({ ...state, ...data }))
         }),
         {
-            name: 'quizzlive-storage-v2', // Incrementing version to avoid conflicts
+            name: 'quizzlive-storage-v3', // Incrementing version
         }
     )
 )

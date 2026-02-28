@@ -28,6 +28,8 @@ export const quizSchema = z.object({
     folder_id: z.string().nullable().optional(),
     tags: z.array(z.string()).optional().default([]),
     created_at: z.string().optional(),
+    game_mode: z.enum(["classic", "survival", "teams", "hangman"]).optional().default("classic"),
+    config: z.record(z.string(), z.any()).optional().default({}),
 });
 
 export const classSchema = z.object({
@@ -54,6 +56,8 @@ export const SessionSchema = z.object({
     current_question_started_at: z.string().nullable().optional(),
     started_at: z.string().nullable().optional(),
     finished_at: z.string().nullable().optional(),
+    game_mode: z.enum(["classic", "survival", "teams", "hangman"]).optional().default("classic"),
+    config: z.record(z.string(), z.any()).optional().default({}),
 });
 
 export const ParticipantSchema = z.object({
@@ -63,6 +67,8 @@ export const ParticipantSchema = z.object({
     joined_at: z.string().optional(),
     current_streak: z.number().default(0),
     max_streak: z.number().default(0),
+    team: z.string().nullable().optional(),
+    is_eliminated: z.boolean().optional().default(false),
 });
 
 export const studentSchema = z.object({

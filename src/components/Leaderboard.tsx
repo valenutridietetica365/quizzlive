@@ -5,10 +5,11 @@ import { supabase } from "@/lib/supabase";
 import { Trophy, Medal, Crown } from "lucide-react";
 
 interface LeaderboardEntry {
-    participant_id: string;
+    id: string;
     nickname: string;
-    total_points: number;
-    rank: number;
+    score: number;
+    team: string | null;
+    is_eliminated: boolean;
 }
 
 interface LeaderboardProps {
@@ -20,36 +21,54 @@ interface LeaderboardProps {
 const Leaderboard = React.memo(function Leaderboard({ sessionId, currentParticipantId, compact = false }: LeaderboardProps) {
     const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
     const [loading, setLoading] = useState(true);
+    const [sessionMode, setSessionMode] = useState<string>('classic');
+    const [teamScores, setTeamScores] = useState<Record<string, number>>({});
 
     const fetchLeaderboard = useCallback(async () => {
-        const { data, error } = await supabase
-            .from("scores")
-            .select("participant_id, total_points, participants(nickname)")
-            .eq("session_id", sessionId)
-            .order("total_points", { ascending: false })
-            .limit(compact ? 5 : 15);
+        try {
+            // Fetch session mode
+            const { data: sessionData } = await supabase
+                .from("sessions")
+                .select("game_mode")
+                .eq("id", sessionId)
+                .single();
+            if (sessionData) setSessionMode(sessionData.game_mode);
 
-        if (error || !data) return;
+            // Fetch participants directly from participants table (where score is kept)
+            const { data, error } = await supabase
+                .from("participants")
+                .select("*")
+                .eq("session_id", sessionId)
+                .order("score", { ascending: false });
 
-        const ranked = data.map((row, index) => ({
-            participant_id: row.participant_id,
-            nickname: (row.participants as unknown as { nickname: string })?.nickname || "???",
-            total_points: row.total_points,
-            rank: index + 1,
-        }));
+            if (error || !data) return;
 
-        setEntries(ranked);
-        setLoading(false);
-    }, [sessionId, compact]);
+            const participants = data as LeaderboardEntry[];
+            setEntries(participants);
+
+            // Team Scores calculation
+            if (sessionData?.game_mode === 'teams') {
+                const scores: Record<string, number> = {};
+                participants.forEach(p => {
+                    if (p.team) {
+                        scores[p.team] = (scores[p.team] || 0) + (p.score || 0);
+                    }
+                });
+                setTeamScores(scores);
+            }
+        } finally {
+            setLoading(false);
+        }
+    }, [sessionId]);
 
     useEffect(() => {
         fetchLeaderboard();
 
         const channel = supabase
-            .channel(`leaderboard_${sessionId}`)
+            .channel(`leaderboard_realtime_${sessionId}`)
             .on(
                 "postgres_changes",
-                { event: "*", schema: "public", table: "scores", filter: `session_id=eq.${sessionId}` },
+                { event: "*", schema: "public", table: "participants", filter: `session_id=eq.${sessionId}` },
                 () => fetchLeaderboard()
             )
             .subscribe();
@@ -79,47 +98,76 @@ const Leaderboard = React.memo(function Leaderboard({ sessionId, currentParticip
 
     if (entries.length === 0) return (
         <div className="text-center py-6 text-slate-500 font-black text-xs uppercase tracking-widest">
-            Nadie ha respondido aún...
+            Sin participantes aún...
         </div>
     );
 
-    const myEntry = entries.find(e => e.participant_id === currentParticipantId);
+    const myEntry = entries.find(e => e.id === currentParticipantId);
+    const myRank = entries.findIndex(e => e.id === currentParticipantId) + 1;
 
     return (
-        <div className="w-full space-y-2">
+        <div className="w-full space-y-4">
             {!compact && (
                 <div className="flex items-center gap-2 mb-4">
                     <Trophy className="w-5 h-5 text-amber-400" />
-                    <h3 className="font-black text-white uppercase tracking-widest text-xs">Ranking</h3>
+                    <h3 className="font-black text-white uppercase tracking-widest text-xs">
+                        {sessionMode === 'teams' ? 'Ranking de Equipos' : 'Ranking'}
+                    </h3>
                 </div>
             )}
-            {entries.map((entry) => {
-                const isMe = entry.participant_id === currentParticipantId;
-                return (
-                    <div
-                        key={entry.participant_id}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all ${rankBg(entry.rank)} ${isMe ? "ring-2 ring-blue-500 scale-[1.02]" : ""}`}
-                    >
-                        <div className="flex items-center justify-center w-6 h-6 flex-shrink-0">
-                            {rankIcon(entry.rank)}
-                        </div>
-                        <span className={`flex-1 font-black truncate text-sm ${isMe ? "text-blue-400" : "text-white"}`}>
-                            {entry.nickname}
-                            {isMe && <span className="ml-2 text-[10px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 px-2 py-0.5 rounded-full">Tú</span>}
-                        </span>
-                        <span className="font-black text-sm text-slate-300 tabular-nums">
-                            {entry.total_points.toLocaleString()}
-                        </span>
-                    </div>
-                );
-            })}
+
+            {sessionMode === 'teams' ? (
+                <div className="space-y-6">
+                    {Object.entries(teamScores)
+                        .sort(([, a], [, b]) => b - a)
+                        .map(([team, score]) => (
+                            <div key={team} className="space-y-2">
+                                <div className="flex justify-between items-end">
+                                    <span className="font-black text-white uppercase tracking-widest text-[10px]">{team}</span>
+                                    <span className="font-black text-blue-400 text-lg">{score.toLocaleString()}</span>
+                                </div>
+                                <div className="h-3 bg-slate-950 rounded-full border border-white/5 overflow-hidden">
+                                    <div
+                                        className={`h-full transition-all duration-1000 ${team.includes('Azul') ? 'bg-blue-600' : 'bg-red-600'}`}
+                                        style={{ width: `${Math.min((score / (Math.max(...Object.values(teamScores)) || 1)) * 100, 100)}%` }}
+                                    />
+                                </div>
+                            </div>
+                        ))}
+                </div>
+            ) : (
+                <div className="space-y-2">
+                    {entries.slice(0, compact ? 5 : 15).map((entry, index) => {
+                        const isMe = entry.id === currentParticipantId;
+                        const rank = index + 1;
+                        return (
+                            <div
+                                key={entry.id}
+                                className={`flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all ${rankBg(rank)} ${isMe ? "ring-2 ring-blue-500 scale-[1.02]" : ""}`}
+                            >
+                                <div className="flex items-center justify-center w-6 h-6 flex-shrink-0">
+                                    {rankIcon(rank)}
+                                </div>
+                                <span className={`flex-1 font-black truncate text-sm ${isMe ? "text-blue-400" : "text-white"} ${entry.is_eliminated ? 'text-slate-600 line-through' : ''}`}>
+                                    {entry.nickname}
+                                    {isMe && <span className="ml-2 text-[10px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 px-2 py-0.5 rounded-full">Tú</span>}
+                                    {entry.is_eliminated && <span className="ml-2">💀</span>}
+                                </span>
+                                <span className="font-black text-sm text-slate-300 tabular-nums">
+                                    {entry.score.toLocaleString()}
+                                </span>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
 
             {/* Show my position if not in top list */}
-            {myEntry && myEntry.rank > (compact ? 5 : 15) && (
+            {myEntry && myRank > (compact ? 5 : 15) && (
                 <div className="flex items-center gap-3 px-4 py-3 rounded-2xl border bg-blue-500/10 border-blue-500/20 ring-2 ring-blue-500 mt-2">
-                    <span className="text-xs font-black text-blue-400 w-6 text-center">{myEntry.rank}</span>
+                    <span className="text-xs font-black text-blue-400 w-6 text-center">{myRank}</span>
                     <span className="flex-1 font-black text-blue-400 truncate text-sm">{myEntry.nickname} (Tú)</span>
-                    <span className="font-black text-sm text-blue-300 tabular-nums">{myEntry.total_points.toLocaleString()}</span>
+                    <span className="font-black text-sm text-blue-300 tabular-nums">{myEntry.score.toLocaleString()}</span>
                 </div>
             )}
         </div>

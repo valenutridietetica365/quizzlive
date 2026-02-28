@@ -243,6 +243,11 @@ export default function TeacherSession() {
                     <div className="hidden lg:flex items-center gap-2 px-4 py-2 bg-blue-500/10 rounded-full border border-blue-500/20">
                         <span className="text-xs font-black text-blue-400 uppercase tracking-widest">{quiz.title}</span>
                     </div>
+                    {session.game_mode !== 'classic' && (
+                        <div className="hidden lg:flex items-center gap-2 px-4 py-2 bg-amber-500/10 rounded-full border border-amber-500/20">
+                            <span className="text-xs font-black text-amber-500 uppercase tracking-widest">Modo: {session.game_mode}</span>
+                        </div>
+                    )}
                     <div className="flex items-center gap-3">
                         <Users className="w-5 h-5 text-slate-500" />
                         <span className="text-lg font-black text-white">{participants.length} <span className="text-slate-500 font-bold ml-1">{t('session.participants')}</span></span>
@@ -320,6 +325,18 @@ export default function TeacherSession() {
                                     <p className="font-black text-sm uppercase tracking-widest opacity-30 group-hover:opacity-100 transition-opacity">{t('session.join_now')}</p>
                                 </div>
                             </div>
+                            {session.game_mode === 'teams' && (
+                                <div className="bg-slate-900/50 p-6 rounded-3xl border border-white/5 text-center w-full">
+                                    <p className="text-xs font-black text-blue-400 uppercase tracking-widest mb-2">Configuración de Equipos</p>
+                                    <p className="text-slate-400 text-sm">Los alumnos serán asignados a equipos automáticamente al entrar.</p>
+                                </div>
+                            )}
+                            {session.game_mode === 'survival' && (
+                                <div className="bg-red-500/10 p-6 rounded-3xl border border-red-500/20 text-center w-full">
+                                    <p className="text-xs font-black text-red-400 uppercase tracking-widest mb-2">Modo Supervivencia</p>
+                                    <p className="text-red-400/60 text-sm">¡Un fallo y estás fuera!</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}

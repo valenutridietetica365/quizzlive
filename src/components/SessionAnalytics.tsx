@@ -31,6 +31,7 @@ interface ExportAnswer {
     participants: {
         id: string;
         nickname: string;
+        team: string | null;
     } | null;
 }
 
@@ -87,7 +88,7 @@ const SessionAnalytics = React.memo(function SessionAnalytics({ sessionId }: Ses
         const fetchAnalytics = async () => {
             const { data: answers } = await supabase
                 .from("answers")
-                .select("is_correct, question_id, questions(question_text), participants(id, nickname)")
+                .select("is_correct, question_id, questions(question_text), participants(id, nickname, team)")
                 .eq("session_id", sessionId);
 
             if (answers) {

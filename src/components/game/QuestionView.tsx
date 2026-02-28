@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import CircularTimer from "@/components/CircularTimer";
+import HangmanView from "@/components/game/HangmanView";
 
 import { Question } from "@/lib/schemas";
 
@@ -117,7 +118,7 @@ export default function QuestionView({
                         {t('play.submit_answer')} <ArrowRight className="w-8 h-8" />
                     </button>
                 </div>
-            ) : (
+            ) : currentQuestion.question_type === "matching" ? (
                 <div className="w-full space-y-8">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                         <div className="space-y-3">
@@ -184,7 +185,14 @@ export default function QuestionView({
                         </button>
                     )}
                 </div>
-            )}
+            ) : currentQuestion.question_type === "hangman" ? (
+                <HangmanView
+                    word={currentQuestion.correct_answer || ""}
+                    onComplete={submitAnswer}
+                    isSubmitting={isSubmitting}
+                    t={t}
+                />
+            ) : null}
         </div>
     );
 }
