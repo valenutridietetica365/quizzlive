@@ -171,6 +171,16 @@ export default function QuizEditor() {
         }
 
         try {
+            const currentNewTag = newTag.trim();
+            const tagsToSave = currentNewTag && !tags.includes(currentNewTag)
+                ? [...tags, currentNewTag]
+                : tags;
+
+            if (currentNewTag && !tags.includes(currentNewTag)) {
+                setTags(tagsToSave);
+                setNewTag("");
+            }
+
             let quizId = id as string;
 
             if (!isNew) {
@@ -191,7 +201,7 @@ export default function QuizEditor() {
 
                 const { error: quizError } = await supabase
                     .from("quizzes")
-                    .update({ title, tags, class_id: selectedClassId || null })
+                    .update({ title, tags: tagsToSave, class_id: selectedClassId || null })
                     .eq("id", id);
 
                 if (quizError) throw new Error(t('common.error'));
@@ -201,7 +211,7 @@ export default function QuizEditor() {
             } else {
                 const { data: newQuiz, error: quizError } = await supabase
                     .from("quizzes")
-                    .insert({ title, tags, class_id: selectedClassId || null, teacher_id: user.id })
+                    .insert({ title, tags: tagsToSave, class_id: selectedClassId || null, teacher_id: user.id })
                     .select()
                     .single();
 
@@ -282,9 +292,11 @@ export default function QuizEditor() {
                             value={newTag}
                             onChange={(e) => setNewTag(e.target.value)}
                             onKeyDown={(e) => {
-                                if (e.key === 'Enter' && newTag.trim()) {
-                                    if (!tags.includes(newTag.trim())) {
-                                        setTags([...tags, newTag.trim()]);
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    const trimmed = newTag.trim();
+                                    if (trimmed && !tags.includes(trimmed)) {
+                                        setTags([...tags, trimmed]);
                                     }
                                     setNewTag("");
                                 }
