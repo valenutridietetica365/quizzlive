@@ -21,7 +21,6 @@ const SessionReport = dynamic(() => import("@/components/SessionReport"), { ssr:
 const FinalPodium = dynamic(() => import("@/components/FinalPodium"), { ssr: false });
 const Leaderboard = dynamic(() => import("@/components/Leaderboard"), { ssr: false });
 const ParticipantMarquee = dynamic(() => import("@/components/game/ParticipantMarquee"), { ssr: false });
-const ReactionSystem = dynamic(() => import("@/components/game/ReactionSystem"), { ssr: false });
 
 import { Quiz, quizSchema, Question, QuestionSchema, Session, SessionSchema, Participant, ParticipantSchema } from "@/lib/schemas";
 
@@ -501,7 +500,6 @@ export default function TeacherSession() {
                 joinUrl={joinUrl}
             />
             <AudioController type={session.status} />
-            <ReactionSystem sessionId={id as string} isPresenter={true} />
         </div>
     );
 }

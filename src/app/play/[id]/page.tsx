@@ -18,7 +18,6 @@ import dynamic from "next/dynamic";
 const FinalPodium = dynamic(() => import("@/components/FinalPodium"), { ssr: false });
 const Leaderboard = dynamic(() => import("@/components/Leaderboard"), { ssr: false });
 const ParticipantMarquee = dynamic(() => import("@/components/game/ParticipantMarquee"), { ssr: false });
-const ReactionSystem = dynamic(() => import("@/components/game/ReactionSystem"), { ssr: false });
 
 export default function StudentPlay() {
     const { id } = useParams();
@@ -370,9 +369,6 @@ export default function StudentPlay() {
                 />
             </div>
 
-            <div className="fixed bottom-12 left-1/2 -translate-x-1/2 z-[100]">
-                <ReactionSystem sessionId={id as string} isPresenter={false} />
-            </div>
         </div>
     );
 }
