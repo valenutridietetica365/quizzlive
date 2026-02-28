@@ -35,7 +35,7 @@ export default function HangmanView({ word, onComplete, isSubmitting, config }: 
         })
         .join("");
 
-    const isWinner = !displayWord.includes("_");
+    const isWinner = targetWord.length > 0 && !displayWord.includes("_");
     const isGameOver = wrongCounter >= maxMistakes;
 
     useEffect(() => {

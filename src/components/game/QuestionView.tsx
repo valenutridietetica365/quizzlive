@@ -77,6 +77,7 @@ export default function QuestionView({
 
             {gameMode === "hangman" || currentQuestion.question_type === "hangman" ? (
                 <HangmanView
+                    key={currentQuestion.id}
                     word={currentQuestion.correct_answer || ""}
                     onComplete={submitAnswer}
                     isSubmitting={isSubmitting}
