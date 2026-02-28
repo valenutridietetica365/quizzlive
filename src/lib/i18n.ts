@@ -94,7 +94,9 @@ export const translations = {
             reset_pairs: "Reiniciar parejas",
             concepts: "Conceptos",
             pairs: "Parejas",
-            time_left: "Tiempo restante"
+            time_left: "Tiempo restante",
+            joined_late_title: "¡Llegaste justo a tiempo!",
+            joined_late_subtitle: "La pregunta ya terminó, pero prepárate para la siguiente."
         },
         analytics: {
             avg_success: "Promedio de Acierto",
@@ -315,7 +317,9 @@ export const translations = {
             reset_pairs: "Reset pairs",
             concepts: "Concepts",
             pairs: "Pairs",
-            time_left: "Time left"
+            time_left: "Time left",
+            joined_late_title: "Just in time!",
+            joined_late_subtitle: "The question already ended, but get ready for the next one."
         },
         analytics: {
             avg_success: "Avg. Success",
