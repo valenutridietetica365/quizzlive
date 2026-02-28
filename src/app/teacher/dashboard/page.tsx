@@ -2,22 +2,24 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { Plus, BookOpen, Play, Trash2, LogOut, History, Calendar, Pencil, LayoutDashboard, ChevronRight, Users } from "lucide-react";
+import { Plus, BookOpen, Play, Trash2, LogOut, History, Calendar, Pencil, LayoutDashboard, ChevronRight, Users, Folder, FolderPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { QuizCardSkeleton } from "@/components/Skeleton";
 import ConfirmModal from "@/components/ConfirmModal";
+import CreateFolderModal from "@/components/CreateFolderModal";
 import { toast } from "sonner";
 import { useQuizStore } from "@/lib/store";
 import { getTranslation } from "@/lib/i18n";
 import LanguageSelector from "@/components/LanguageSelector";
 import PerformanceChart from "@/components/PerformanceChart";
-import { FinishedSession, SupabaseSessionResponse, LiveSession } from "@/lib/schemas";
+import { FinishedSession, SupabaseSessionResponse, LiveSession, Folder as FolderType } from "@/lib/schemas";
 
 interface Quiz {
     id: string;
     title: string;
     tags: string[];
     class_id?: string | null;
+    folder_id?: string | null;
     questions: { id: string }[];
 }
 
@@ -29,7 +31,7 @@ interface Class {
     students?: Student[];
 }
 
-import { Student } from "@/lib/schemas";
+import { StudentParams as Student } from "@/lib/schemas";
 
 interface User {
     id: string;
@@ -61,6 +63,7 @@ export default function TeacherDashboard() {
         dashboardClasses,
         dashboardHistory,
         dashboardLiveSessions,
+        dashboardFolders,
         setDashboardLoaded,
         setDashboardData
     } = useQuizStore();
@@ -69,9 +72,12 @@ export default function TeacherDashboard() {
     const classes = dashboardClasses as Class[];
     const history = dashboardHistory as FinishedSession[];
     const liveSessions = dashboardLiveSessions as LiveSession[];
+    const folders = dashboardFolders as FolderType[];
 
     const [activeTab, setActiveTab] = useState<"quizzes" | "history" | "classes">("quizzes");
     const [selectedQuizTag, setSelectedQuizTag] = useState<string>("All");
+    const [selectedFolderId, setSelectedFolderId] = useState<string>("All");
+    const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
     const [selectedHistoryTag, setSelectedHistoryTag] = useState<string>("All");
     const [selectedGlobalClassId, setSelectedGlobalClassId] = useState<string>("All");
 
@@ -79,6 +85,7 @@ export default function TeacherDashboard() {
     const setQuizzes = useCallback((newQuizzes: Quiz[]) => setDashboardData({ dashboardQuizzes: newQuizzes }), [setDashboardData]);
     const setClasses = useCallback((newClasses: Class[]) => setDashboardData({ dashboardClasses: newClasses }), [setDashboardData]);
     const setHistory = useCallback((newHistory: FinishedSession[]) => setDashboardData({ dashboardHistory: newHistory }), [setDashboardData]);
+    const setFolders = useCallback((newFolders: FolderType[]) => setDashboardData({ dashboardFolders: newFolders }), [setDashboardData]);
     const setLiveSessions = useCallback((newLive: LiveSession[] | ((prev: LiveSession[]) => LiveSession[])) => {
         if (typeof newLive === 'function') {
             setDashboardData({ dashboardLiveSessions: newLive(liveSessions) });
@@ -95,11 +102,12 @@ export default function TeacherDashboard() {
 
     const t = (key: string) => getTranslation(language, key);
 
-    const [confirmModal, setConfirmModal] = useState<{
-        open: boolean;
-        quizId: string | null;
-        historyId: string | null;
-    }>({ open: false, quizId: null, historyId: null });
+    const [confirmModal, setConfirmModal] = useState<{ open: boolean, quizId: string | null, historyId: string | null, folderId: string | null }>({
+        open: false,
+        quizId: null,
+        historyId: null,
+        folderId: null
+    });
 
     const router = useRouter();
 
@@ -112,6 +120,16 @@ export default function TeacherDashboard() {
 
         if (!error) setClasses(data || []);
     }, [setClasses]);
+
+    const fetchFolders = useCallback(async (userId: string) => {
+        const { data, error } = await supabase
+            .from("folders")
+            .select("*")
+            .eq("teacher_id", userId)
+            .order("created_at", { ascending: false });
+
+        if (!error) setFolders(data || []);
+    }, [setFolders]);
 
     const fetchQuizzes = useCallback(async (userId: string) => {
         const { data, error } = await supabase
@@ -193,6 +211,7 @@ export default function TeacherDashboard() {
             if (!dashboardLoaded || useQuizStore.getState().dashboardUserId !== user.id) {
                 await Promise.all([
                     fetchQuizzes(user.id),
+                    fetchFolders(user.id),
                     fetchHistory(user.id),
                     fetchLiveSessions(user.id),
                     fetchClasses(user.id)
@@ -299,6 +318,34 @@ export default function TeacherDashboard() {
         }
     };
 
+    const createFolder = async (name: string, color: string) => {
+        if (!user) return;
+        const { data, error } = await supabase
+            .from("folders")
+            .insert({ name, color, teacher_id: user.id })
+            .select()
+            .single();
+
+        if (!error && data) {
+            setFolders([data as FolderType, ...folders]);
+            toast.success("Carpeta creada");
+        } else {
+            toast.error("Error al crear carpeta");
+        }
+    };
+
+    const deleteFolder = async (id: string) => {
+        const { error } = await supabase.from("folders").delete().eq("id", id);
+        if (!error) {
+            setFolders(folders.filter(f => f.id !== id));
+            // Reset filter if deleted folder was selected
+            if (selectedFolderId === id) setSelectedFolderId("All");
+            toast.success("Carpeta eliminada");
+        } else {
+            toast.error("Error al eliminar la carpeta");
+        }
+    };
+
     const removeStudent = async (studentId: string) => {
         const { error } = await supabase.from("students").delete().eq("id", studentId);
         if (!error) {
@@ -362,7 +409,8 @@ export default function TeacherDashboard() {
     const filteredQuizzes = quizzes.filter(q => {
         const matchesTag = selectedQuizTag === "All" || q.tags?.includes(selectedQuizTag);
         const matchesClass = selectedGlobalClassId === "All" || q.class_id === selectedGlobalClassId;
-        return matchesTag && matchesClass;
+        const matchesFolder = selectedFolderId === "All" || q.folder_id === selectedFolderId || (selectedFolderId === "Uncategorized" && !q.folder_id);
+        return matchesTag && matchesClass && matchesFolder;
     });
 
     const allHistoryTags = ["All", ...Array.from(new Set(history.flatMap(h => h.quiz.tags || [])))];
@@ -388,26 +436,76 @@ export default function TeacherDashboard() {
         }
 
         if (activeTab === "quizzes") {
-            return quizzes.length === 0 ? (
-                <div className="bg-white rounded-[3rem] border-4 border-dashed border-slate-100 p-20 text-center space-y-6">
-                    <div className="bg-blue-50 w-24 h-24 rounded-[2rem] flex items-center justify-center mx-auto text-blue-500">
-                        <BookOpen className="w-12 h-12" />
-                    </div>
-                    <div className="space-y-2">
-                        <h3 className="text-2xl font-black text-slate-900">{t('dashboard.empty_title')}</h3>
-                        <p className="text-slate-400 font-medium max-w-sm mx-auto text-lg leading-relaxed">
-                            {t('dashboard.empty_subtitle')}
-                        </p>
-                    </div>
-                    <button
-                        onClick={() => router.push("/teacher/editor/new")}
-                        className="inline-flex items-center gap-2 text-blue-600 font-black text-lg hover:gap-3 transition-all"
-                    >
-                        {t('dashboard.empty_button')} <ChevronRight className="w-5 h-5" />
-                    </button>
-                </div>
-            ) : (
+            return (
                 <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                    {/* Folders List */}
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-xl font-black text-slate-900 uppercase tracking-widest">{t('dashboard.folders') || "Mis Carpetas"}</h2>
+                            <button
+                                onClick={() => setIsFolderModalOpen(true)}
+                                className="flex items-center gap-2 text-sm font-black text-blue-600 hover:text-blue-700 bg-blue-50 px-4 py-2 rounded-xl transition-colors"
+                            >
+                                <FolderPlus className="w-4 h-4" />
+                                {t('dashboard.new_folder') || "Nueva Carpeta"}
+                            </button>
+                        </div>
+                        <div className="flex bg-white p-2 rounded-2xl border border-slate-100 overflow-x-auto no-scrollbar gap-3 max-w-full">
+                            <button
+                                onClick={() => setSelectedFolderId("All")}
+                                className={`flex items-center gap-2 px-6 py-4 rounded-xl font-black whitespace-nowrap transition-all border-2 ${selectedFolderId === "All"
+                                    ? "bg-slate-900 border-slate-900 text-white shadow-lg"
+                                    : "bg-white border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-600"
+                                    }`}
+                            >
+                                <LayoutDashboard className="w-5 h-5" />
+                                {t('dashboard.all_folders') || "Todos"}
+                            </button>
+                            <button
+                                onClick={() => setSelectedFolderId("Uncategorized")}
+                                className={`flex items-center gap-2 px-6 py-4 rounded-xl font-black whitespace-nowrap transition-all border-2 ${selectedFolderId === "Uncategorized"
+                                    ? "bg-slate-900 border-slate-900 text-white shadow-lg"
+                                    : "bg-white border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-600"
+                                    }`}
+                            >
+                                <BookOpen className="w-5 h-5" />
+                                {t('dashboard.uncategorized') || "Sin Carpeta"}
+                            </button>
+                            {folders.map(folder => (
+                                <div key={folder.id} className="relative group/folder shrink-0">
+                                    <button
+                                        onClick={() => setSelectedFolderId(folder.id!)}
+                                        className={`flex items-center gap-2 px-6 py-4 rounded-xl font-black whitespace-nowrap transition-all border-2 ${selectedFolderId === folder.id
+                                            ? "text-white shadow-lg ring-4 ring-offset-2 pr-12"
+                                            : "bg-white text-slate-600 hover:bg-slate-50 pr-12"
+                                            }`}
+                                        style={{
+                                            backgroundColor: selectedFolderId === folder.id ? folder.color : "white",
+                                            borderColor: selectedFolderId === folder.id ? folder.color : `${folder.color}40`,
+                                            "--tw-ring-color": `${folder.color}50`
+                                        } as React.CSSProperties}
+                                    >
+                                        <Folder className="w-5 h-5" style={{ color: selectedFolderId === folder.id ? "white" : folder.color }} />
+                                        {folder.name}
+                                    </button>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setConfirmModal({ open: true, quizId: null, historyId: null, folderId: folder.id! });
+                                        }}
+                                        className={`absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-all ${selectedFolderId === folder.id
+                                            ? "text-white/60 hover:text-white hover:bg-white/20"
+                                            : "text-slate-300 hover:text-red-500 hover:bg-red-50"
+                                            }`}
+                                        title={t('common.delete')}
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
                     <div className="flex bg-white p-1.5 rounded-2xl border border-slate-100 overflow-x-auto no-scrollbar gap-2 max-w-full">
                         {allTags.map(tag => (
                             <button
@@ -474,62 +572,82 @@ export default function TeacherDashboard() {
                     )}
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                        {filteredQuizzes.map((quiz) => (
-                            <div key={quiz.id} className="bg-white rounded-2xl p-4 shadow-sm border border-slate-50 transition-all hover:shadow-2xl hover:shadow-slate-200/50 flex flex-col justify-between space-y-4 relative group overflow-hidden">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50/50 rounded-bl-[4rem] -mr-8 -mt-8 -z-0 transition-all group-hover:scale-110" />
+                        {filteredQuizzes.length === 0 ? (
+                            <div className="col-span-full bg-white rounded-[3rem] border-4 border-dashed border-slate-100 p-20 text-center space-y-6">
+                                <div className="bg-blue-50 w-24 h-24 rounded-[2rem] flex items-center justify-center mx-auto text-blue-500">
+                                    <BookOpen className="w-12 h-12" />
+                                </div>
+                                <div className="space-y-2">
+                                    <h3 className="text-2xl font-black text-slate-900">{t('dashboard.empty_title') || "No hay cuestionarios aquí"}</h3>
+                                    <p className="text-slate-400 font-medium max-w-sm mx-auto text-lg leading-relaxed">
+                                        {t('dashboard.empty_subtitle') || "Crea uno nuevo para empezar a usar QuizzLive."}
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => router.push("/teacher/editor/new")}
+                                    className="inline-flex items-center gap-2 text-blue-600 font-black text-lg hover:gap-3 transition-all"
+                                >
+                                    {t('dashboard.empty_button')} <ChevronRight className="w-5 h-5" />
+                                </button>
+                            </div>
+                        ) : (
+                            filteredQuizzes.map((quiz) => (
+                                <div key={quiz.id} className="bg-white rounded-2xl p-4 shadow-sm border border-slate-50 transition-all hover:shadow-2xl hover:shadow-slate-200/50 flex flex-col justify-between space-y-4 relative group overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50/50 rounded-bl-[4rem] -mr-8 -mt-8 -z-0 transition-all group-hover:scale-110" />
 
-                                <div className="space-y-4 relative z-10">
-                                    <div className="w-14 h-14 bg-white shadow-lg rounded-2xl flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500">
-                                        <BookOpen className="w-7 h-7" />
+                                    <div className="space-y-4 relative z-10">
+                                        <div className="w-14 h-14 bg-white shadow-lg rounded-2xl flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500">
+                                            <BookOpen className="w-7 h-7" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-black text-2xl text-slate-900 leading-tight group-hover:text-blue-600 transition-colors">{quiz.title}</h3>
+                                            <div className="flex flex-wrap gap-2 mt-2">
+                                                <span className="bg-slate-100 px-3 py-1 rounded-full text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                                    {quiz.questions.length} {t('common.questions')}
+                                                </span>
+                                                {quiz.class_id && classes.find(c => c.id === quiz.class_id) && (
+                                                    <span className="bg-slate-900 px-3 py-1 rounded-full text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-1">
+                                                        <Users className="w-3 h-3" />
+                                                        {classes.find(c => c.id === quiz.class_id)?.name}
+                                                    </span>
+                                                )}
+                                                {quiz.tags?.map((tag: string) => (
+                                                    <span key={tag} className="bg-blue-50 px-3 py-1 rounded-full text-[10px] font-black text-blue-400 uppercase tracking-widest">
+                                                        #{tag}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h3 className="font-black text-2xl text-slate-900 leading-tight group-hover:text-blue-600 transition-colors">{quiz.title}</h3>
-                                        <div className="flex flex-wrap gap-2 mt-2">
-                                            <span className="bg-slate-100 px-3 py-1 rounded-full text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                                {quiz.questions.length} {t('common.questions')}
-                                            </span>
-                                            {quiz.class_id && classes.find(c => c.id === quiz.class_id) && (
-                                                <span className="bg-slate-900 px-3 py-1 rounded-full text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-1">
-                                                    <Users className="w-3 h-3" />
-                                                    {classes.find(c => c.id === quiz.class_id)?.name}
-                                                </span>
-                                            )}
-                                            {quiz.tags?.map((tag: string) => (
-                                                <span key={tag} className="bg-blue-50 px-3 py-1 rounded-full text-[10px] font-black text-blue-400 uppercase tracking-widest">
-                                                    #{tag}
-                                                </span>
-                                            ))}
+
+                                    <div className="flex items-center gap-3 pt-6 border-t border-slate-50 relative z-10">
+                                        <button
+                                            onClick={() => startSession(quiz.id)}
+                                            className="flex-1 flex items-center justify-center gap-2 bg-slate-900 text-white font-black py-4 rounded-2xl hover:bg-blue-600 transition-all active:scale-95 shadow-xl shadow-slate-200"
+                                        >
+                                            <Play className="w-5 h-5 fill-white" />
+                                            {t('dashboard.present')}
+                                        </button>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => router.push(`/teacher/editor/${quiz.id}`)}
+                                                className="p-4 bg-slate-50 rounded-2xl text-slate-400 hover:text-blue-600 hover:bg-white hover:shadow-lg transition-all"
+                                                title={t('dashboard.edit')}
+                                            >
+                                                <Pencil className="w-5 h-5" />
+                                            </button>
+                                            <button
+                                                onClick={() => setConfirmModal({ open: true, quizId: quiz.id, historyId: null, folderId: null })}
+                                                className="p-4 bg-slate-50 rounded-2xl text-slate-400 hover:text-red-500 hover:bg-white hover:shadow-lg transition-all"
+                                                title={t('common.delete')}
+                                            >
+                                                <Trash2 className="w-5 h-5" />
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
-
-                                <div className="flex items-center gap-3 pt-6 border-t border-slate-50 relative z-10">
-                                    <button
-                                        onClick={() => startSession(quiz.id)}
-                                        className="flex-1 flex items-center justify-center gap-2 bg-slate-900 text-white font-black py-4 rounded-2xl hover:bg-blue-600 transition-all active:scale-95 shadow-xl shadow-slate-200"
-                                    >
-                                        <Play className="w-5 h-5 fill-white" />
-                                        {t('dashboard.present')}
-                                    </button>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => router.push(`/teacher/editor/${quiz.id}`)}
-                                            className="p-4 bg-slate-50 rounded-2xl text-slate-400 hover:text-blue-600 hover:bg-white hover:shadow-lg transition-all"
-                                            title={t('dashboard.edit')}
-                                        >
-                                            <Pencil className="w-5 h-5" />
-                                        </button>
-                                        <button
-                                            onClick={() => setConfirmModal({ open: true, quizId: quiz.id, historyId: null })}
-                                            className="p-4 bg-slate-50 rounded-2xl text-slate-400 hover:text-red-500 hover:bg-white hover:shadow-lg transition-all"
-                                            title={t('common.delete')}
-                                        >
-                                            <Trash2 className="w-5 h-5" />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
+                            ))
+                        )}
                     </div>
                 </div>
             );
@@ -718,7 +836,7 @@ export default function TeacherDashboard() {
                                                     <ChevronRight className="w-4 h-4" />
                                                 </button>
                                                 <button
-                                                    onClick={() => setConfirmModal({ open: true, quizId: null, historyId: session.id })}
+                                                    onClick={() => setConfirmModal({ open: true, quizId: null, historyId: session.id, folderId: null })}
                                                     className="p-3 bg-slate-50 rounded-xl text-slate-400 hover:text-red-500 hover:bg-white transition-all shadow-sm group-hover:shadow-md"
                                                     title={t('common.delete')}
                                                 >
@@ -765,7 +883,7 @@ export default function TeacherDashboard() {
                                         <ChevronRight className="w-4 h-4" />
                                     </button>
                                     <button
-                                        onClick={() => setConfirmModal({ open: true, quizId: null, historyId: session.id })}
+                                        onClick={() => setConfirmModal({ open: true, quizId: null, historyId: session.id, folderId: null })}
                                         className="p-4 bg-slate-50 rounded-xl text-slate-400 active:text-red-500 active:bg-white transition-all"
                                     >
                                         <Trash2 className="w-5 h-5" />
@@ -933,17 +1051,26 @@ export default function TeacherDashboard() {
 
             <ConfirmModal
                 isOpen={confirmModal.open}
-                onClose={() => setConfirmModal({ open: false, quizId: null, historyId: null })}
+                onClose={() => setConfirmModal({ open: false, quizId: null, historyId: null, folderId: null })}
                 onConfirm={() => {
                     if (confirmModal.quizId) deleteQuiz(confirmModal.quizId);
                     else if (confirmModal.historyId) deleteHistory(confirmModal.historyId);
-                    setConfirmModal({ open: false, quizId: null, historyId: null });
+                    else if (confirmModal.folderId) deleteFolder(confirmModal.folderId);
+                    setConfirmModal({ open: false, quizId: null, historyId: null, folderId: null });
                 }}
-                title={t('dashboard.delete_confirm')}
-                message={t('dashboard.delete_confirm_desc')}
+                title={confirmModal.folderId ? t('dashboard.delete_folder_confirm') : t('dashboard.delete_confirm')}
+                message={confirmModal.folderId ? t('dashboard.delete_folder_desc') : t('dashboard.delete_confirm_desc')}
                 confirmText={t('common.delete')}
                 isDanger
             />
+            {isFolderModalOpen && (
+                <CreateFolderModal
+                    isOpen={isFolderModalOpen}
+                    onClose={() => setIsFolderModalOpen(false)}
+                    onSubmit={createFolder}
+                    t={t}
+                />
+            )}
         </div>
     );
 }

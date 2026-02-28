@@ -46,7 +46,13 @@ export const translations = {
             total_quizzes: "Quizzes Totales",
             total_sessions: "Sesiones Totales",
             avg_participation: "Participación Promedio",
-            all_tags: "Todos"
+            all_tags: "Todos",
+            folders: "Mis Carpetas",
+            new_folder: "Nueva Carpeta",
+            all_folders: "Todos",
+            uncategorized: "Sin Carpeta",
+            delete_folder_confirm: "¿Eliminar carpeta?",
+            delete_folder_desc: "Los cuestionarios dentro no se borrarán, solo se quedarán sin carpeta."
         },
         sidebar: {
             my_quizzes: "Mis Quizzes",
@@ -261,7 +267,13 @@ export const translations = {
             total_quizzes: "Total Quizzes",
             total_sessions: "Total Sessions",
             avg_participation: "Average Participation",
-            all_tags: "All"
+            all_tags: "All",
+            folders: "My Folders",
+            new_folder: "New Folder",
+            all_folders: "All",
+            uncategorized: "Uncategorized",
+            delete_folder_confirm: "Delete folder?",
+            delete_folder_desc: "Quizzes inside will not be deleted, they will just move to Uncategorized."
         },
         sidebar: {
             my_quizzes: "My Quizzes",

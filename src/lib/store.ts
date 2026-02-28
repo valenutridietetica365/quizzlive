@@ -64,8 +64,9 @@ interface QuizState {
     dashboardClasses: unknown[]
     dashboardHistory: unknown[]
     dashboardLiveSessions: unknown[]
+    dashboardFolders: unknown[]
     setDashboardLoaded: (loaded: boolean) => void
-    setDashboardData: (data: { dashboardUserId?: string | null, dashboardQuizzes?: unknown[], dashboardClasses?: unknown[], dashboardHistory?: unknown[], dashboardLiveSessions?: unknown[] }) => void
+    setDashboardData: (data: { dashboardUserId?: string | null, dashboardQuizzes?: unknown[], dashboardClasses?: unknown[], dashboardHistory?: unknown[], dashboardLiveSessions?: unknown[], dashboardFolders?: unknown[] }) => void
 }
 
 export const useQuizStore = create<QuizState>()(
@@ -118,7 +119,8 @@ export const useQuizStore = create<QuizState>()(
                     dashboardQuizzes: [],
                     dashboardClasses: [],
                     dashboardHistory: [],
-                    dashboardLiveSessions: []
+                    dashboardLiveSessions: [],
+                    dashboardFolders: []
                 })
             },
 
@@ -128,6 +130,7 @@ export const useQuizStore = create<QuizState>()(
             dashboardClasses: [],
             dashboardHistory: [],
             dashboardLiveSessions: [],
+            dashboardFolders: [],
             setDashboardLoaded: (loaded) => set({ dashboardLoaded: loaded }),
             setDashboardData: (data) => set((state) => ({ ...state, ...data }))
         }),

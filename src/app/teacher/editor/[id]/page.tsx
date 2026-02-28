@@ -3,10 +3,10 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { Question, QuestionSchema, Class } from "@/lib/schemas";
+import { Question, QuestionSchema, ClassModel as Class } from "@/lib/schemas";
 import { useQuizStore } from "@/lib/store";
 import { getTranslation } from "@/lib/i18n";
-import { Plus, Trash2, Save, ArrowLeft, Loader2, Check, ToggleLeft, ListChecks, Image as ImageIcon, Share2, Type, FileUp, Users } from "lucide-react";
+import { Plus, Trash2, Save, ArrowLeft, Loader2, Check, ToggleLeft, ListChecks, Image as ImageIcon, Share2, Type, FileUp, Users, Folder } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
 import ImportModal from "@/components/ImportModal";
@@ -19,7 +19,9 @@ export default function QuizEditor() {
     const [tags, setTags] = useState<string[]>([]);
     const [newTag, setNewTag] = useState("");
     const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+    const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
     const [classes, setClasses] = useState<Class[]>([]);
+    const folders = useQuizStore((state) => state.dashboardFolders) as { id: string, name: string }[];
     const [questions, setQuestions] = useState<Question[]>([
         { question_text: "", question_type: "multiple_choice", options: ["", "", "", ""], correct_answer: "", time_limit: 20, points: 1000 }
     ]);
@@ -43,7 +45,7 @@ export default function QuizEditor() {
 
         const { data: quiz, error: quizError } = await supabase
             .from("quizzes")
-            .select("title, tags, class_id, questions(*)")
+            .select("title, tags, class_id, folder_id, questions(*)")
             .eq("id", id)
             .single();
 
@@ -55,6 +57,7 @@ export default function QuizEditor() {
         setTitle(quiz.title);
         setTags(quiz.tags || []);
         setSelectedClassId(quiz.class_id);
+        setSelectedFolderId(quiz.folder_id);
         const validQuestions = (quiz.questions as unknown[]).map((q) => {
             try {
                 return QuestionSchema.parse(q);
@@ -201,7 +204,7 @@ export default function QuizEditor() {
 
                 const { error: quizError } = await supabase
                     .from("quizzes")
-                    .update({ title, tags: tagsToSave, class_id: selectedClassId || null })
+                    .update({ title, tags: tagsToSave, class_id: selectedClassId || null, folder_id: selectedFolderId || null })
                     .eq("id", id);
 
                 if (quizError) throw new Error(t('common.error'));
@@ -211,7 +214,7 @@ export default function QuizEditor() {
             } else {
                 const { data: newQuiz, error: quizError } = await supabase
                     .from("quizzes")
-                    .insert({ title, tags: tagsToSave, class_id: selectedClassId || null, teacher_id: user.id })
+                    .insert({ title, tags: tagsToSave, class_id: selectedClassId || null, folder_id: selectedFolderId || null, teacher_id: user.id })
                     .select()
                     .single();
 
@@ -314,6 +317,20 @@ export default function QuizEditor() {
                             <option value="">{t('editor.no_class')}</option>
                             {classes.map(cls => (
                                 <option key={cls.id} value={cls.id}>{cls.name}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="hidden xl:flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-2xl border border-slate-100">
+                        <Folder className="w-4 h-4 text-slate-400" />
+                        <select
+                            value={selectedFolderId || ""}
+                            onChange={(e) => setSelectedFolderId(e.target.value || null)}
+                            className="bg-transparent border-none focus:ring-0 text-[10px] font-black uppercase tracking-widest text-slate-600 p-0 pr-8 min-w-[100px]"
+                        >
+                            <option value="">{t('dashboard.uncategorized') || "Sin Carpeta"}</option>
+                            {folders?.map((folder) => (
+                                <option key={folder.id} value={folder.id}>{folder.name}</option>
                             ))}
                         </select>
                     </div>

@@ -20,21 +20,29 @@ export const QuestionSchema = z.object({
     sort_order: z.number().nullable().optional(),
 });
 
-export const QuizSchema = z.object({
+export const quizSchema = z.object({
     id: z.string().optional(),
-    title: z.string().min(1, "El título es obligatorio"),
-    tags: z.array(z.string()).optional().default([]),
-    class_id: z.string().nullable().optional(),
     teacher_id: z.string().optional(),
+    title: z.string().min(1, "El título es requerido"),
+    class_id: z.string().nullable().optional(),
+    folder_id: z.string().nullable().optional(),
+    tags: z.array(z.string()).optional().default([]),
     created_at: z.string().optional(),
 });
 
-export const ClassSchema = z.object({
+export const classSchema = z.object({
     id: z.string().optional(),
     teacher_id: z.string().optional(),
-    name: z.string().min(1, "El nombre de la clase es obligatorio"),
+    name: z.string().min(1, "El nombre de la clase es requerido"),
     description: z.string().nullable().optional(),
     created_at: z.string().optional(),
+    students: z.array(z.object({
+        id: z.string().optional(),
+        class_id: z.string(),
+        name: z.string().min(1, "El nombre es obligatorio"),
+        email: z.string().email().optional().nullable(),
+        created_at: z.string().optional(),
+    })).optional(),
 });
 
 export const SessionSchema = z.object({
@@ -57,7 +65,7 @@ export const ParticipantSchema = z.object({
     max_streak: z.number().default(0),
 });
 
-export const StudentSchema = z.object({
+export const studentSchema = z.object({
     id: z.string().optional(),
     class_id: z.string(),
     name: z.string().min(1, "El nombre es obligatorio"),
@@ -65,12 +73,21 @@ export const StudentSchema = z.object({
     created_at: z.string().optional(),
 });
 
+export const folderSchema = z.object({
+    id: z.string().optional(),
+    teacher_id: z.string().optional(),
+    name: z.string().min(1, "El nombre es requerido"),
+    color: z.string().optional().default('#3b82f6'),
+    created_at: z.string().optional(),
+});
+
 export type Question = z.infer<typeof QuestionSchema>;
-export type Quiz = z.infer<typeof QuizSchema>;
+export type Quiz = z.infer<typeof quizSchema>;
 export type Session = z.infer<typeof SessionSchema>;
 export type Participant = z.infer<typeof ParticipantSchema>;
-export type Class = z.infer<typeof ClassSchema>;
-export type Student = z.infer<typeof StudentSchema>;
+export type ClassModel = z.infer<typeof classSchema>;
+export type StudentParams = z.infer<typeof studentSchema>;
+export type Folder = z.infer<typeof folderSchema>;
 
 export interface FinishedSession {
     id: string;
