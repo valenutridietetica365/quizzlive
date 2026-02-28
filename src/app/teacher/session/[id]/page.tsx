@@ -23,7 +23,7 @@ const Leaderboard = dynamic(() => import("@/components/Leaderboard"), { ssr: fal
 const ParticipantMarquee = dynamic(() => import("@/components/game/ParticipantMarquee"), { ssr: false });
 const ReactionSystem = dynamic(() => import("@/components/game/ReactionSystem"), { ssr: false });
 
-import { Quiz, QuizSchema, Question, QuestionSchema, Session, SessionSchema, Participant, ParticipantSchema } from "@/lib/schemas";
+import { Quiz, quizSchema, Question, QuestionSchema, Session, SessionSchema, Participant, ParticipantSchema } from "@/lib/schemas";
 
 export default function TeacherSession() {
     const { id } = useParams();
@@ -74,7 +74,7 @@ export default function TeacherSession() {
                 try {
                     const s = SessionSchema.parse(sessionData);
                     setSession(s as Session);
-                    setQuiz(QuizSchema.parse(sessionData.quiz));
+                    setQuiz(quizSchema.parse(sessionData.quiz));
                 } catch {
                     console.error("Error validando sesión");
                 }
