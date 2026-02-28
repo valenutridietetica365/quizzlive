@@ -30,6 +30,11 @@ export default function HangmanView({ word, onComplete, isSubmitting, config }: 
         .map((char) => {
             if (char === " ") return " ";
             const normalizedChar = normalizeChar(char);
+
+            // If it's not a letter from the alphabet, reveal it automatically
+            const isLetter = /[A-ZÑÁÉÍÓÚÜ]/.test(normalizedChar);
+            if (!isLetter) return char;
+
             const isGuessed = guessedLetters.some(g => normalizeChar(g) === normalizedChar);
             return isGuessed ? char : "_";
         })
