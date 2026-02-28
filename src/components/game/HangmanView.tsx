@@ -22,17 +22,26 @@ export default function HangmanView({ word, onComplete, isSubmitting, config }: 
     const ignoreAccents = config?.hangmanIgnoreAccents ?? true;
 
     const normalizeChar = (char: string) => {
-        if (!ignoreAccents) return char;
-        // Basic normalization: remove accents, to uppercase
+        if (!ignoreAccents) return char.toUpperCase();
         return char.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
     };
 
-    // Automatically reveal characters at the start of the word if they are like "A. ", "1. ", etc.
+    // Detect technical prefixes like "A. ", "1)", "(B) ", "B - "
     useEffect(() => {
-        const prefixMatch = targetWord.match(/^([A-Z0-9][.)\s]+)/);
-        if (prefixMatch) {
-            const prefixLetters = prefixMatch[1].split("").filter(c => /[A-Z0-9]/.test(c));
-            setGuessedLetters(prev => Array.from(new Set([...prev, ...prefixLetters])));
+        if (!targetWord) return;
+        const prefixes = [
+            /^([A-Z0-9][.)\-:]+\s*)/, // A. or 1. or B:
+            /^(\([A-Z0-9]\)\s*)/,     // (A)
+            /^([A-Z0-9]\s+-\s*)/      // A - 
+        ];
+
+        for (const regex of prefixes) {
+            const match = targetWord.match(regex);
+            if (match) {
+                const letters = match[1].split("").filter(c => /[A-Z0-9]/.test(c));
+                setGuessedLetters(prev => Array.from(new Set([...prev, ...letters])));
+                break;
+            }
         }
     }, [targetWord]);
 
@@ -42,7 +51,8 @@ export default function HangmanView({ word, onComplete, isSubmitting, config }: 
             if (char === " ") return " ";
             const normalizedChar = normalizeChar(char);
 
-            // If it's not a letter from the alphabet, reveal it automatically
+            // Auto-reveal: Spaces, Numbers, Punctuation, etc. (Anything not a letter)
+            // Note: We only expect students to guess LETTERS (A-Z)
             const isLetter = /[A-ZÑÁÉÍÓÚÜ]/.test(normalizedChar);
             if (!isLetter) return char;
 
@@ -103,7 +113,12 @@ export default function HangmanView({ word, onComplete, isSubmitting, config }: 
             </div>
 
             <div className="text-center space-y-4">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">Adivina la palabra</p>
+                <div className="space-y-1">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">Adivina la palabra</p>
+                    <p className="text-[10px] font-bold text-blue-500/60 uppercase tracking-widest">
+                        ¡Debe ser una de las opciones de abajo!
+                    </p>
+                </div>
                 <div className="flex flex-wrap justify-center gap-3 md:gap-4">
                     {displayWord.split("").map((char, i) => (
                         <div

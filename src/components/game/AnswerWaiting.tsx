@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, Frown, Sparkles } from "lucide-react";
+import { CheckCircle2, Frown, Sparkles, Clock } from "lucide-react";
 import Leaderboard from "@/components/Leaderboard";
 
 interface AnswerWaitingProps {
@@ -10,6 +10,7 @@ interface AnswerWaitingProps {
     sessionId: string;
     participantId?: string;
     t: (key: string) => string;
+    wasLate?: boolean;
 }
 
 export default function AnswerWaiting({
@@ -18,8 +19,36 @@ export default function AnswerWaiting({
     currentStreak,
     sessionId,
     participantId,
-    t
+    t,
+    wasLate
 }: AnswerWaitingProps) {
+    if (wasLate) {
+        return (
+            <div className="w-full text-center space-y-10 animate-in zoom-in duration-700">
+                <div className="p-16 rounded-[4rem] shadow-2xl border-b-[16px] bg-slate-100 border-slate-300 flex flex-col items-center gap-6">
+                    <Clock className="w-32 h-32 text-slate-400 animate-in zoom-in-50" />
+                    <h1 className="text-4xl font-black text-slate-800 tracking-tighter">
+                        {t('play.joined_late_title') || "¡Llegaste justo a tiempo!"}
+                    </h1>
+                    <p className="text-slate-500 font-bold max-w-xs mx-auto">
+                        {t('play.joined_late_subtitle') || "La pregunta ya terminó, pero prepárate para la siguiente."}
+                    </p>
+                </div>
+                <div className="flex flex-col items-center gap-3">
+                    <div className="h-2 w-48 bg-slate-200 rounded-full overflow-hidden">
+                        <div className="h-full bg-blue-600 animate-pulse w-1/2" />
+                    </div>
+                    <p className="text-slate-400 font-black text-xs uppercase tracking-[0.3em]">
+                        {t('play.next_question_coming')}
+                    </p>
+                </div>
+                <div className="w-full bg-slate-950 rounded-[2rem] p-6 shadow-2xl">
+                    <Leaderboard sessionId={sessionId} currentParticipantId={participantId} compact />
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="w-full text-center space-y-10 animate-in zoom-in duration-700">
             <div className={`p-16 rounded-[4rem] shadow-2xl border-b-[16px] flex flex-col items-center gap-6 ${isCorrect

@@ -75,7 +75,7 @@ export default function QuestionView({
                 </div>
             )}
 
-            {gameMode === "hangman" || currentQuestion.question_type === "hangman" ? (
+            {(gameMode === "hangman" || currentQuestion.question_type === "hangman") && currentQuestion.question_type !== "matching" ? (
                 <div className="space-y-6">
                     <HangmanView
                         key={currentQuestion.id}

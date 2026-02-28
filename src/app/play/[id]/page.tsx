@@ -29,6 +29,7 @@ export default function StudentPlay() {
     const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
     const [answered, setAnswered] = useState(false);
     const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+    const [isLate, setIsLate] = useState(false);
     const [loading, setLoading] = useState(true);
     const [selectedOption, setSelectedOption] = useState<string | null>(null);
     const [totalScore, setTotalScore] = useState<number | null>(null);
@@ -75,6 +76,7 @@ export default function StudentPlay() {
                 setSelectedTerm(null);
                 setIsSubmitting(false);
                 setTimesUp(false);
+                setIsLate(false);
 
                 if (q.question_type === "matching") {
                     const matches = q.options.map(opt => opt.split(":")[1]);
@@ -302,6 +304,9 @@ export default function StudentPlay() {
                             shuffledMatches={shuffledMatches}
                             t={t}
                             onTimeUp={() => {
+                                if (!answered && !isSubmitting) {
+                                    setIsLate(true);
+                                }
                                 setTimesUp(true);
                                 setAnswered(true);
                             }}
@@ -316,6 +321,7 @@ export default function StudentPlay() {
                             sessionId={id as string}
                             participantId={participantId ?? undefined}
                             t={t}
+                            wasLate={isLate}
                         />
                     )}
                 </div>
