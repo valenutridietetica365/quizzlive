@@ -207,6 +207,7 @@ export default function TeacherDashboard() {
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
+        useQuizStore.getState().resetStore();
         router.push("/");
     };
 

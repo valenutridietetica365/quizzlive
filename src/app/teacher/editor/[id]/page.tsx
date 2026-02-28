@@ -191,7 +191,7 @@ export default function QuizEditor() {
 
                 const { error: quizError } = await supabase
                     .from("quizzes")
-                    .update({ title, tags, class_id: selectedClassId })
+                    .update({ title, tags, class_id: selectedClassId || null })
                     .eq("id", id);
 
                 if (quizError) throw new Error(t('common.error'));
@@ -201,7 +201,7 @@ export default function QuizEditor() {
             } else {
                 const { data: newQuiz, error: quizError } = await supabase
                     .from("quizzes")
-                    .insert({ title, tags, class_id: selectedClassId, teacher_id: user.id })
+                    .insert({ title, tags, class_id: selectedClassId || null, teacher_id: user.id })
                     .select()
                     .single();
 
