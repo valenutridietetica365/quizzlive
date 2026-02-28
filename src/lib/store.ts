@@ -59,12 +59,13 @@ interface QuizState {
 
     // Dashboard Caching
     dashboardLoaded: boolean
+    dashboardUserId: string | null
     dashboardQuizzes: unknown[]
     dashboardClasses: unknown[]
     dashboardHistory: unknown[]
     dashboardLiveSessions: unknown[]
     setDashboardLoaded: (loaded: boolean) => void
-    setDashboardData: (data: { dashboardQuizzes?: unknown[], dashboardClasses?: unknown[], dashboardHistory?: unknown[], dashboardLiveSessions?: unknown[] }) => void
+    setDashboardData: (data: { dashboardUserId?: string | null, dashboardQuizzes?: unknown[], dashboardClasses?: unknown[], dashboardHistory?: unknown[], dashboardLiveSessions?: unknown[] }) => void
 }
 
 export const useQuizStore = create<QuizState>()(
@@ -113,6 +114,7 @@ export const useQuizStore = create<QuizState>()(
                     participantId: current.participantId,
                     nickname: current.nickname,
                     dashboardLoaded: false,
+                    dashboardUserId: null,
                     dashboardQuizzes: [],
                     dashboardClasses: [],
                     dashboardHistory: [],
@@ -121,6 +123,7 @@ export const useQuizStore = create<QuizState>()(
             },
 
             dashboardLoaded: false,
+            dashboardUserId: null,
             dashboardQuizzes: [],
             dashboardClasses: [],
             dashboardHistory: [],

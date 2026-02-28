@@ -190,7 +190,7 @@ export default function TeacherDashboard() {
             }
             setUser(user);
 
-            if (!dashboardLoaded) {
+            if (!dashboardLoaded || useQuizStore.getState().dashboardUserId !== user.id) {
                 await Promise.all([
                     fetchQuizzes(user.id),
                     fetchHistory(user.id),
@@ -198,6 +198,7 @@ export default function TeacherDashboard() {
                     fetchClasses(user.id)
                 ]);
                 setDashboardLoaded(true);
+                useQuizStore.getState().setDashboardData({ dashboardUserId: user.id });
             }
             setLoading(false);
         };
