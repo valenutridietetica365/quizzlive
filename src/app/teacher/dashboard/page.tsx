@@ -12,7 +12,7 @@ import { useQuizStore } from "@/lib/store";
 import { getTranslation } from "@/lib/i18n";
 import LanguageSelector from "@/components/LanguageSelector";
 import PerformanceChart from "@/components/PerformanceChart";
-import { FinishedSession, SupabaseSessionResponse, LiveSession, Folder as FolderType } from "@/lib/schemas";
+import { FinishedSession, SupabaseSessionResponse, LiveSession, Folder as FolderType, GameModeConfig } from "@/lib/schemas";
 
 interface Quiz {
     id: string;
@@ -114,7 +114,7 @@ export default function TeacherDashboard() {
         quizId: null
     });
     const [selectedMode, setSelectedMode] = useState<"classic" | "survival" | "teams" | "hangman">("classic");
-    const [modeConfig, setModeConfig] = useState<any>({
+    const [modeConfig, setModeConfig] = useState<GameModeConfig>({
         hangmanLives: 6,
         hangmanIgnoreAccents: true,
         teamsCount: 2,

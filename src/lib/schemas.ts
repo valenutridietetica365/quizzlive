@@ -5,7 +5,15 @@ export const QuestionTypeSchema = z.enum([
     "true_false",
     "fill_in_the_blank",
     "matching",
+    "hangman",
 ]);
+
+export const GameModeConfigSchema = z.object({
+    hangmanLives: z.number().optional().default(6),
+    hangmanIgnoreAccents: z.boolean().optional().default(true),
+    teamsCount: z.number().optional().default(2),
+    survivalLives: z.number().optional().default(1),
+});
 
 export const QuestionSchema = z.object({
     id: z.string().nullable().optional(),
@@ -29,7 +37,12 @@ export const quizSchema = z.object({
     tags: z.array(z.string()).optional().default([]),
     created_at: z.string().optional(),
     game_mode: z.enum(["classic", "survival", "teams", "hangman"]).optional().default("classic"),
-    config: z.record(z.string(), z.any()).optional().default({}),
+    config: GameModeConfigSchema.optional().default({
+        hangmanLives: 6,
+        hangmanIgnoreAccents: true,
+        teamsCount: 2,
+        survivalLives: 1
+    }),
 });
 
 export const classSchema = z.object({
@@ -57,7 +70,12 @@ export const SessionSchema = z.object({
     started_at: z.string().nullable().optional(),
     finished_at: z.string().nullable().optional(),
     game_mode: z.enum(["classic", "survival", "teams", "hangman"]).optional().default("classic"),
-    config: z.record(z.string(), z.any()).optional().default({}),
+    config: GameModeConfigSchema.optional().default({
+        hangmanLives: 6,
+        hangmanIgnoreAccents: true,
+        teamsCount: 2,
+        survivalLives: 1
+    }),
 });
 
 export const ParticipantSchema = z.object({
@@ -94,6 +112,7 @@ export type Participant = z.infer<typeof ParticipantSchema>;
 export type ClassModel = z.infer<typeof classSchema>;
 export type StudentParams = z.infer<typeof studentSchema>;
 export type Folder = z.infer<typeof folderSchema>;
+export type GameModeConfig = z.infer<typeof GameModeConfigSchema>;
 
 export interface FinishedSession {
     id: string;

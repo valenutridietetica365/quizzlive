@@ -5,7 +5,7 @@ import { ArrowRight, CheckCircle2 } from "lucide-react";
 import CircularTimer from "@/components/CircularTimer";
 import HangmanView from "@/components/game/HangmanView";
 
-import { Question } from "@/lib/schemas";
+import { Question, GameModeConfig } from "@/lib/schemas";
 
 interface QuestionViewProps {
     currentQuestion: Question;
@@ -23,7 +23,7 @@ interface QuestionViewProps {
     shuffledMatches: string[];
     t: (key: string) => string;
     onTimeUp?: () => void;
-    config?: any;
+    config?: GameModeConfig;
 }
 
 export default function QuestionView({
