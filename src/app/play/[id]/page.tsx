@@ -16,6 +16,7 @@ import AnswerWaiting from "@/components/game/AnswerWaiting";
 import dynamic from "next/dynamic";
 
 const FinalPodium = dynamic(() => import("@/components/FinalPodium"), { ssr: false });
+const Leaderboard = dynamic(() => import("@/components/Leaderboard"), { ssr: false });
 const ParticipantMarquee = dynamic(() => import("@/components/game/ParticipantMarquee"), { ssr: false });
 const ReactionSystem = dynamic(() => import("@/components/game/ReactionSystem"), { ssr: false });
 
@@ -262,6 +263,17 @@ export default function StudentPlay() {
 
             {session.status === "active" && (
                 <div className="w-full max-w-2xl flex flex-col items-center">
+                    {/* Mini ranking in real time */}
+                    {!useQuizStore.getState().isEliminated && (
+                        <div className="mb-8 scale-90 sm:scale-100">
+                            <Leaderboard
+                                sessionId={id as string}
+                                currentParticipantId={participantId ?? undefined}
+                                variant="minimal"
+                            />
+                        </div>
+                    )}
+
                     {useQuizStore.getState().isEliminated ? (
                         <div className="w-full text-center space-y-6 animate-in zoom-in duration-700">
                             <div className="p-12 rounded-[4rem] bg-red-900/20 border-b-[12px] border-red-900/40 flex flex-col items-center gap-6 shadow-xl backdrop-blur-md">

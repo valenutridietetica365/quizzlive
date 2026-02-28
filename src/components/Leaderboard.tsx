@@ -16,9 +16,15 @@ interface LeaderboardProps {
     sessionId: string;
     currentParticipantId?: string;
     compact?: boolean;
+    variant?: 'full' | 'compact' | 'minimal';
 }
 
-const Leaderboard = React.memo(function Leaderboard({ sessionId, currentParticipantId, compact = false }: LeaderboardProps) {
+const Leaderboard = React.memo(function Leaderboard({
+    sessionId,
+    currentParticipantId,
+    compact = false,
+    variant = 'full'
+}: LeaderboardProps) {
     const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [sessionMode, setSessionMode] = useState<string>('classic');
@@ -90,11 +96,34 @@ const Leaderboard = React.memo(function Leaderboard({ sessionId, currentParticip
         return "bg-slate-900/50 border-white/5";
     };
 
-    if (loading) return (
-        <div className="flex items-center justify-center p-6">
-            <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-        </div>
-    );
+    if (loading) return null; // Invisible while loading if minimal
+
+    if (variant === 'minimal') {
+        const top3 = entries.slice(0, 3);
+        if (top3.length === 0) return null;
+
+        return (
+            <div className="flex items-center gap-4 bg-white/40 backdrop-blur-md px-6 py-2 rounded-full border border-white/20 shadow-sm animate-in fade-in slide-in-from-top-4 duration-700">
+                <div className="flex items-center gap-1.5 border-r border-slate-200 pr-4 mr-2">
+                    <Trophy className="w-3 h-3 text-amber-500" />
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Top 3</span>
+                </div>
+                <div className="flex items-center gap-6">
+                    {top3.map((entry, i) => (
+                        <div key={entry.id} className="flex items-center gap-2">
+                            <span className="text-[10px] font-black text-slate-300">{i + 1}</span>
+                            <span className={`text-[11px] font-black truncate max-w-[80px] ${entry.id === currentParticipantId ? 'text-blue-600' : 'text-slate-600'}`}>
+                                {entry.nickname}
+                            </span>
+                            <span className="text-[10px] font-bold text-slate-400 tabular-nums">
+                                {entry.score.toLocaleString()}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
 
     if (entries.length === 0) return (
         <div className="text-center py-6 text-slate-500 font-black text-xs uppercase tracking-widest">
