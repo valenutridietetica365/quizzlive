@@ -229,7 +229,7 @@ export default function TeacherDashboard() {
         };
 
         checkUser();
-    }, [router, fetchQuizzes, fetchHistory, fetchLiveSessions, fetchClasses, dashboardLoaded, setDashboardLoaded]);
+    }, [router, fetchQuizzes, fetchHistory, fetchFolders, fetchLiveSessions, fetchClasses, dashboardLoaded, setDashboardLoaded]);
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
@@ -1096,7 +1096,7 @@ export default function TeacherDashboard() {
                                 ].map((mode) => (
                                     <button
                                         key={mode.id}
-                                        onClick={() => setSelectedMode(mode.id as any)}
+                                        onClick={() => setSelectedMode(mode.id as 'classic' | 'survival' | 'teams' | 'hangman')}
                                         className={`p-6 rounded-[2rem] border-2 text-left transition-all space-y-3 ${selectedMode === mode.id
                                             ? "border-blue-600 bg-blue-50/50 ring-4 ring-blue-50"
                                             : "border-slate-100 bg-white hover:border-slate-200"

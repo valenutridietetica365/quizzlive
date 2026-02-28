@@ -7,10 +7,9 @@ interface HangmanViewProps {
     word: string;
     onComplete: (answer: string) => void;
     isSubmitting: boolean;
-    t: (key: string) => string;
 }
 
-export default function HangmanView({ word, onComplete, isSubmitting, t }: HangmanViewProps) {
+export default function HangmanView({ word, onComplete, isSubmitting }: HangmanViewProps) {
     const targetWord = word.trim().toUpperCase();
     const [guessedLetters, setGuessedLetters] = useState<string[]>([]);
     const [wrongCounter, setWrongCounter] = useState(0);
@@ -88,8 +87,8 @@ export default function HangmanView({ word, onComplete, isSubmitting, t }: Hangm
                             onClick={() => handleGuess(letter)}
                             disabled={isGuessed || isWinner || isGameOver || isSubmitting}
                             className={`aspect-square flex items-center justify-center rounded-xl font-black transition-all ${isCorrectGuess ? "bg-emerald-500 text-white" :
-                                    isWrong ? "bg-red-500 text-white opacity-50" :
-                                        "bg-white text-slate-900 shadow-xl border-b-4 border-slate-200 active:translate-y-1 active:border-b-0"
+                                isWrong ? "bg-red-500 text-white opacity-50" :
+                                    "bg-white text-slate-900 shadow-xl border-b-4 border-slate-200 active:translate-y-1 active:border-b-0"
                                 } disabled:cursor-not-allowed`}
                         >
                             {letter}

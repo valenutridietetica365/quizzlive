@@ -190,7 +190,6 @@ export default function QuestionView({
                     word={currentQuestion.correct_answer || ""}
                     onComplete={submitAnswer}
                     isSubmitting={isSubmitting}
-                    t={t}
                 />
             ) : null}
         </div>

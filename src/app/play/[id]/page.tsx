@@ -8,7 +8,7 @@ import { Loader2, Clock, Sparkles, ArrowRight, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { getTranslation } from "@/lib/i18n";
 
-import { Question, QuestionSchema, Session, SessionSchema } from "@/lib/schemas";
+import { Question, QuestionSchema, Session, SessionSchema, Participant } from "@/lib/schemas";
 import { StudentPlaySkeleton } from "@/components/Skeleton";
 import AudioController, { playSFX } from "@/components/AudioController";
 import QuestionView from "@/components/game/QuestionView";
@@ -178,10 +178,10 @@ export default function StudentPlay() {
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'participants', filter: `session_id=eq.${id}` },
                 (payload) => {
-                    if (payload.new && (payload.new as any).id === participantId) {
-                        const p = payload.new as any;
-                        useQuizStore.getState().setIsEliminated(p.is_eliminated);
-                        if (p.team) useQuizStore.getState().setTeam(p.team);
+                    const typedPayload = payload.new as Participant;
+                    if (typedPayload && typedPayload.id === participantId) {
+                        useQuizStore.getState().setIsEliminated(typedPayload.is_eliminated || false);
+                        if (typedPayload.team) useQuizStore.getState().setTeam(typedPayload.team);
                     }
                     fetchParticipants();
                 }
