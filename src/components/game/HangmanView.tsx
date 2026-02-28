@@ -17,13 +17,24 @@ export default function HangmanView({ word, onComplete, isSubmitting, config }: 
     const targetWord = word.trim().toUpperCase();
     const [guessedLetters, setGuessedLetters] = useState<string[]>([]);
     const [wrongCounter, setWrongCounter] = useState(0);
+    const [status, setStatus] = useState<"playing" | "won" | "lost">("playing");
     const maxMistakes = config?.hangmanLives || 6;
     const ignoreAccents = config?.hangmanIgnoreAccents ?? true;
 
     const normalizeChar = (char: string) => {
         if (!ignoreAccents) return char;
+        // Basic normalization: remove accents, to uppercase
         return char.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
     };
+
+    // Automatically reveal characters at the start of the word if they are like "A. ", "1. ", etc.
+    useEffect(() => {
+        const prefixMatch = targetWord.match(/^([A-Z0-9][.)\s]+)/);
+        if (prefixMatch) {
+            const prefixLetters = prefixMatch[1].split("").filter(c => /[A-Z0-9]/.test(c));
+            setGuessedLetters(prev => Array.from(new Set([...prev, ...prefixLetters])));
+        }
+    }, [targetWord]);
 
     const displayWord = targetWord
         .split("")
@@ -44,10 +55,24 @@ export default function HangmanView({ word, onComplete, isSubmitting, config }: 
     const isGameOver = wrongCounter >= maxMistakes;
 
     useEffect(() => {
-        if (isWinner) {
-            onComplete(targetWord);
+        if (isWinner && status === "playing") {
+            setStatus("won");
+            const timer = setTimeout(() => {
+                onComplete(targetWord);
+            }, 1500);
+            return () => clearTimeout(timer);
         }
-    }, [isWinner, onComplete, targetWord]);
+    }, [isWinner, onComplete, targetWord, status]);
+
+    useEffect(() => {
+        if (isGameOver && status === "playing") {
+            setStatus("lost");
+            const timer = setTimeout(() => {
+                onComplete(""); // Fail
+            }, 2500); // More time to see the correct word
+            return () => clearTimeout(timer);
+        }
+    }, [isGameOver, onComplete, status]);
 
     const handleGuess = (letter: string) => {
         if (guessedLetters.includes(letter) || isWinner || isGameOver || isSubmitting) return;
@@ -92,10 +117,17 @@ export default function HangmanView({ word, onComplete, isSubmitting, config }: 
                 </div>
             </div>
 
-            {isGameOver && (
-                <div className="p-6 bg-red-100 text-red-600 rounded-3xl font-black animate-in zoom-in duration-300 text-center space-y-2">
-                    <p className="animate-bounce">¡DEMASIADOS ERRORES!</p>
-                    <p className="text-xs uppercase tracking-widest opacity-70">La palabra era: <span className="text-slate-900">{targetWord}</span></p>
+            {status === "lost" && (
+                <div className="p-6 bg-red-100/80 border-2 border-red-200 text-red-600 rounded-3xl font-black animate-in zoom-in duration-300 text-center space-y-2 shadow-xl backdrop-blur-sm">
+                    <p className="animate-bounce text-xl">¡DEMASIADOS ERRORES!</p>
+                    <p className="text-sm uppercase tracking-widest opacity-70">La palabra era: <span className="text-slate-900 bg-white px-2 py-1 rounded-md">{targetWord}</span></p>
+                </div>
+            )}
+
+            {status === "won" && (
+                <div className="p-6 bg-emerald-100/80 border-2 border-emerald-200 text-emerald-600 rounded-3xl font-black animate-in zoom-in duration-300 text-center space-y-2 shadow-xl backdrop-blur-sm">
+                    <p className="animate-bounce text-xl">¡EXCELENTE!</p>
+                    <p className="text-sm uppercase tracking-widest opacity-70">¡Has descubierto la palabra!</p>
                 </div>
             )}
 
