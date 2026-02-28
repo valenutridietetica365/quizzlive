@@ -114,6 +114,12 @@ export default function TeacherDashboard() {
         quizId: null
     });
     const [selectedMode, setSelectedMode] = useState<"classic" | "survival" | "teams" | "hangman">("classic");
+    const [modeConfig, setModeConfig] = useState<any>({
+        hangmanLives: 6,
+        hangmanIgnoreAccents: true,
+        teamsCount: 2,
+        survivalLives: 1
+    });
 
     const router = useRouter();
 
@@ -261,7 +267,8 @@ export default function TeacherDashboard() {
                     quiz_id: quizId,
                     pin: pin,
                     status: "waiting",
-                    game_mode: selectedMode
+                    game_mode: selectedMode,
+                    config: modeConfig
                 })
                 .select()
                 .single();
@@ -1111,6 +1118,77 @@ export default function TeacherDashboard() {
                                         </div>
                                     </button>
                                 ))}
+                            </div>
+
+                            {/* Mode Specific Config */}
+                            <div className="bg-slate-50 p-6 rounded-[2rem] space-y-4 border border-slate-100">
+                                <p className="text-xs font-black text-slate-400 uppercase tracking-widest pl-2">Configuración del Modo</p>
+
+                                {selectedMode === 'hangman' && (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <div className="space-y-0.5">
+                                                <p className="font-bold text-slate-800 text-sm">Intentos (Vidas)</p>
+                                                <p className="text-xs text-slate-500">Número de fallos permitidos.</p>
+                                            </div>
+                                            <div className="flex items-center gap-4 bg-white px-4 py-2 rounded-xl border border-slate-200">
+                                                <button onClick={() => setModeConfig({ ...modeConfig, hangmanLives: Math.max(3, modeConfig.hangmanLives - 1) })} className="text-blue-600 font-bold">-</button>
+                                                <span className="font-black text-slate-900 w-4 text-center">{modeConfig.hangmanLives}</span>
+                                                <button onClick={() => setModeConfig({ ...modeConfig, hangmanLives: Math.min(10, modeConfig.hangmanLives + 1) })} className="text-blue-600 font-bold">+</button>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <div className="space-y-0.5">
+                                                <p className="font-bold text-slate-800 text-sm">Ignorar Acentos</p>
+                                                <p className="text-xs text-slate-500">Tratar Á como A, É como E, etc.</p>
+                                            </div>
+                                            <button
+                                                onClick={() => setModeConfig({ ...modeConfig, hangmanIgnoreAccents: !modeConfig.hangmanIgnoreAccents })}
+                                                className={`w-12 h-6 rounded-full transition-all relative ${modeConfig.hangmanIgnoreAccents ? 'bg-blue-600' : 'bg-slate-300'}`}
+                                            >
+                                                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${modeConfig.hangmanIgnoreAccents ? 'left-7' : 'left-1'}`} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {selectedMode === 'teams' && (
+                                    <div className="flex items-center justify-between">
+                                        <div className="space-y-0.5">
+                                            <p className="font-bold text-slate-800 text-sm">Número de Equipos</p>
+                                            <p className="text-xs text-slate-500">Dividir a los alumnos en grupos.</p>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            {[2, 3, 4].map(n => (
+                                                <button
+                                                    key={n}
+                                                    onClick={() => setModeConfig({ ...modeConfig, teamsCount: n })}
+                                                    className={`w-10 h-10 rounded-xl font-black text-sm transition-all ${modeConfig.teamsCount === n ? 'bg-blue-600 text-white' : 'bg-white border border-slate-200 text-slate-50'}`}
+                                                >
+                                                    {n}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {selectedMode === 'survival' && (
+                                    <div className="flex items-center justify-between">
+                                        <div className="space-y-0.5">
+                                            <p className="font-bold text-slate-800 text-sm">Vidas Iniciales</p>
+                                            <p className="text-xs text-slate-500">¿Cuántos fallos antes de eliminar?</p>
+                                        </div>
+                                        <div className="flex items-center gap-4 bg-white px-4 py-2 rounded-xl border border-slate-200">
+                                            <button onClick={() => setModeConfig({ ...modeConfig, survivalLives: Math.max(1, modeConfig.survivalLives - 1) })} className="text-blue-600 font-bold">-</button>
+                                            <span className="font-black text-slate-900 w-4 text-center">{modeConfig.survivalLives}</span>
+                                            <button onClick={() => setModeConfig({ ...modeConfig, survivalLives: Math.min(5, modeConfig.survivalLives + 1) })} className="text-blue-600 font-bold">+</button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {selectedMode === 'classic' && (
+                                    <p className="text-xs text-slate-400 font-medium italic">Sin configuraciones adicionales para este modo.</p>
+                                )}
                             </div>
 
                             <div className="flex gap-4 pt-4">

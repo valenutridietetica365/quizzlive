@@ -122,16 +122,24 @@ CREATE OR REPLACE FUNCTION public.assign_participant_team()
 RETURNS TRIGGER AS $$
 DECLARE
     v_game_mode public.game_mode_type;
+    v_config JSONB;
+    v_teams_count INT;
     v_total_participants INT;
+    v_team_index INT;
 BEGIN
-    SELECT game_mode INTO v_game_mode FROM public.sessions WHERE id = NEW.session_id;
+    SELECT game_mode, config INTO v_game_mode, v_config FROM public.sessions WHERE id = NEW.session_id;
     
     IF v_game_mode = 'teams' THEN
+        v_teams_count := (v_config->>'teamsCount')::INT;
+        IF v_teams_count IS NULL THEN v_teams_count := 2; END IF;
+        
         SELECT COUNT(*) INTO v_total_participants FROM public.participants WHERE session_id = NEW.session_id;
-        IF (v_total_participants % 2) = 0 THEN
-            NEW.team := 'Equipo Azul';
-        ELSE
-            NEW.team := 'Equipo Rojo';
+        v_team_index := (v_total_participants % v_teams_count) + 1;
+        
+        IF v_team_index = 1 THEN NEW.team := 'Equipo Azul';
+        ELSIF v_team_index = 2 THEN NEW.team := 'Equipo Rojo';
+        ELSIF v_team_index = 3 THEN NEW.team := 'Equipo Verde';
+        ELSE NEW.team := 'Equipo Amarillo';
         END IF;
     END IF;
     

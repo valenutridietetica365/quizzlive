@@ -305,6 +305,7 @@ export default function StudentPlay() {
                                 setTimesUp(true);
                                 setAnswered(true);
                             }}
+                            config={session.config}
                         />
                     ) : (
                         <AnswerWaiting

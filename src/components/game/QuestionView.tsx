@@ -23,6 +23,7 @@ interface QuestionViewProps {
     shuffledMatches: string[];
     t: (key: string) => string;
     onTimeUp?: () => void;
+    config?: any;
 }
 
 export default function QuestionView({
@@ -40,7 +41,8 @@ export default function QuestionView({
     setSelectedTerm,
     shuffledMatches,
     t,
-    onTimeUp
+    onTimeUp,
+    config
 }: QuestionViewProps) {
     return (
         <div className="w-full space-y-4 md:space-y-6 animate-in slide-in-from-bottom-12 duration-700">
@@ -190,6 +192,7 @@ export default function QuestionView({
                     word={currentQuestion.correct_answer || ""}
                     onComplete={submitAnswer}
                     isSubmitting={isSubmitting}
+                    config={config}
                 />
             ) : null}
         </div>

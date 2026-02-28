@@ -7,17 +7,32 @@ interface HangmanViewProps {
     word: string;
     onComplete: (answer: string) => void;
     isSubmitting: boolean;
+    config?: {
+        hangmanLives?: number;
+        hangmanIgnoreAccents?: boolean;
+    };
 }
 
-export default function HangmanView({ word, onComplete, isSubmitting }: HangmanViewProps) {
+export default function HangmanView({ word, onComplete, isSubmitting, config }: HangmanViewProps) {
     const targetWord = word.trim().toUpperCase();
     const [guessedLetters, setGuessedLetters] = useState<string[]>([]);
     const [wrongCounter, setWrongCounter] = useState(0);
-    const maxMistakes = 6;
+    const maxMistakes = config?.hangmanLives || 6;
+    const ignoreAccents = config?.hangmanIgnoreAccents ?? true;
+
+    const normalizeChar = (char: string) => {
+        if (!ignoreAccents) return char;
+        return char.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+    };
 
     const displayWord = targetWord
         .split("")
-        .map((char) => (char === " " ? " " : guessedLetters.includes(char) ? char : "_"))
+        .map((char) => {
+            if (char === " ") return " ";
+            const normalizedChar = normalizeChar(char);
+            const isGuessed = guessedLetters.some(g => normalizeChar(g) === normalizedChar);
+            return isGuessed ? char : "_";
+        })
         .join("");
 
     const isWinner = !displayWord.includes("_");
@@ -34,7 +49,10 @@ export default function HangmanView({ word, onComplete, isSubmitting }: HangmanV
 
         setGuessedLetters((prev) => [...prev, letter]);
 
-        if (!targetWord.includes(letter)) {
+        const normalizedGuess = normalizeChar(letter);
+        const isMatch = targetWord.split("").some(char => normalizeChar(char) === normalizedGuess);
+
+        if (!isMatch) {
             setWrongCounter((prev) => prev + 1);
             playSFX("wrong");
         } else {
@@ -49,8 +67,8 @@ export default function HangmanView({ word, onComplete, isSubmitting }: HangmanV
             {/* Visual Health / Hangman Indicator */}
             <div className="w-full max-w-sm h-4 bg-slate-200 rounded-full overflow-hidden shadow-inner border border-slate-300">
                 <div
-                    className={`h-full transition-all duration-500 ${wrongCounter > 4 ? 'bg-red-500' : 'bg-blue-600'}`}
-                    style={{ width: `${((maxMistakes - wrongCounter) / maxMistakes) * 100}%` }}
+                    className={`h-full transition-all duration-500 ${wrongCounter > (maxMistakes * 0.7) ? 'bg-red-500' : 'bg-blue-600'}`}
+                    style={{ width: `${Math.max(0, ((maxMistakes - wrongCounter) / maxMistakes) * 100)}%` }}
                 />
             </div>
 
@@ -70,16 +88,20 @@ export default function HangmanView({ word, onComplete, isSubmitting }: HangmanV
             </div>
 
             {isGameOver && (
-                <div className="p-6 bg-red-100 text-red-600 rounded-3xl font-black animate-bounce">
-                    ¡DEMASIADOS ERRORES!
+                <div className="p-6 bg-red-100 text-red-600 rounded-3xl font-black animate-in zoom-in duration-300 text-center space-y-2">
+                    <p className="animate-bounce">¡DEMASIADOS ERRORES!</p>
+                    <p className="text-xs uppercase tracking-widest opacity-70">La palabra era: <span className="text-slate-900">{targetWord}</span></p>
                 </div>
             )}
 
             <div className="grid grid-cols-7 sm:grid-cols-9 gap-2 w-full max-w-xl">
                 {alphabet.map((letter) => {
+                    const normalizedLetter = normalizeChar(letter);
                     const isGuessed = guessedLetters.includes(letter);
-                    const isWrong = isGuessed && !targetWord.includes(letter);
-                    const isCorrectGuess = isGuessed && targetWord.includes(letter);
+                    const isMatch = targetWord.split("").some(char => normalizeChar(char) === normalizedLetter);
+
+                    const isWrong = isGuessed && !isMatch;
+                    const isCorrectGuess = isGuessed && isMatch;
 
                     return (
                         <button
@@ -98,7 +120,7 @@ export default function HangmanView({ word, onComplete, isSubmitting }: HangmanV
             </div>
 
             <div className="text-slate-400 font-bold uppercase tracking-widest text-xs">
-                {maxMistakes - wrongCounter} intentos restantes
+                {Math.max(0, maxMistakes - wrongCounter)} intentos restantes
             </div>
         </div>
     );
