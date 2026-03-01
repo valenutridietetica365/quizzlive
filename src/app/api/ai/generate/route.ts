@@ -5,7 +5,6 @@ export async function POST(req: Request) {
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
-        console.error("AI Generation Error: GEMINI_API_KEY is not defined in environment variables.");
         return NextResponse.json({
             error: "Configuracion incompleta: Falta la clave de API en el servidor (Vercel).",
             details: "Asegúrate de haber agregado GEMINI_API_KEY en las variables de entorno de Vercel."
@@ -21,58 +20,70 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Topic and count are required" }, { status: 400 });
         }
 
-        const model = genAI.getGenerativeModel({
-            model: "gemini-1.5-flash",
-            generationConfig: {
-                responseMimeType: "application/json",
+        // List of models to try in case of 404 errors
+        const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-pro"];
+        let lastError = null;
+
+        for (const modelName of modelsToTry) {
+            try {
+                const model = genAI.getGenerativeModel({
+                    model: modelName,
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                    }
+                });
+
+                const prompt = `Act as an expert educator. Generate ${count} quiz questions about "${topic}" for "${grade}" students in ${language === 'es' ? 'Spanish' : 'English'}.
+                
+                The output MUST be a JSON array of objects following this exact schema:
+                [
+                  {
+                    "question_text": "The question string",
+                    "question_type": "multiple_choice",
+                    "options": ["Option A", "Option B", "Option C", "Option D"],
+                    "correct_answer": "The exact string of the correct option",
+                    "time_limit": 20,
+                    "points": 1000
+                  }
+                ]
+
+                Important rules:
+                - Return ONLY the JSON array.
+                - All multiple choice questions must have exactly 4 options.
+                - The correct_answer must be identical to one of the strings in the options array.
+                - Use clear and appropriate language for the specified grade level.
+                - Avoid accents in correct_answer if they might cause comparison issues, or ensure they match exactly.`;
+
+                const result = await model.generateContent(prompt);
+                const response = await result.response;
+                const text = response.text();
+
+                const questions = JSON.parse(text);
+                return NextResponse.json(questions);
+
+            } catch (error: any) {
+                console.warn(`Failed with model ${modelName}:`, error.message);
+                lastError = error;
+                // If it's not a 404 (model not found), don't keep trying other models
+                if (!error.message?.includes("404") && !error.message?.includes("not found")) {
+                    break;
+                }
             }
-        });
-
-        const prompt = `Act as an expert educator. Generate ${count} quiz questions about "${topic}" for "${grade}" students in ${language === 'es' ? 'Spanish' : 'English'}.
-    
-    The output MUST be a JSON array of objects following this exact schema:
-    [
-      {
-        "question_text": "The question string",
-        "question_type": "multiple_choice",
-        "options": ["Option A", "Option B", "Option C", "Option D"],
-        "correct_answer": "The exact string of the correct option",
-        "time_limit": 20,
-        "points": 1000
-      }
-    ]
-
-    Important rules:
-    - Return ONLY the JSON array.
-    - All multiple choice questions must have exactly 4 options.
-    - The correct_answer must be identical to one of the strings in the options array.
-    - Use clear and appropriate language for the specified grade level.
-    - Avoid accents in correct_answer if they might cause comparison issues, or ensure they match exactly.`;
-
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text();
-
-        try {
-            const questions = JSON.parse(text);
-            return NextResponse.json(questions);
-        } catch {
-            console.error("Error parsing Gemini response:", text);
-            return NextResponse.json({
-                error: "Error al procesar la respuesta de la IA",
-                details: "La IA devolvió un formato no válido."
-            }, { status: 500 });
         }
 
-    } catch (error) {
-        console.error("AI Generation Error:", error);
-
-        // Handle specific Gemini errors if possible
-        const errorMessage = error instanceof Error ? error.message : "Error desconocido en la generación";
+        // If we reach here, all models failed
+        const details = lastError?.message || "Error desconocido en la generación";
 
         return NextResponse.json({
             error: "Error en el servicio de IA",
-            details: errorMessage
+            details: details + ". Verifica que la 'Generative Language API' esté activada en tu proyecto de Google Cloud Console si estás usando un proyecto de GCP."
+        }, { status: 500 });
+
+    } catch (error: any) {
+        console.error("AI Generation Critical Error:", error);
+        return NextResponse.json({
+            error: "Error interno",
+            details: error.message
         }, { status: 500 });
     }
 }
