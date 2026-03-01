@@ -85,21 +85,6 @@ export default function QuestionView({
                         isSubmitting={isSubmitting}
                         config={config}
                     />
-
-                    {(currentQuestion.question_type === "multiple_choice" || currentQuestion.question_type === "true_false") && (
-                        <div className="bg-slate-50/50 p-4 rounded-3xl border-2 border-dashed border-slate-200 animate-in fade-in zoom-in duration-1000">
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center mb-4">
-                                Posibles opciones:
-                            </p>
-                            <div className="flex flex-wrap justify-center gap-3">
-                                {currentQuestion.options.map((opt, i) => (
-                                    <div key={i} className="px-4 py-2 bg-white rounded-xl shadow-sm border border-slate-100 text-slate-600 font-bold text-sm">
-                                        {opt}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
                 </div>
             ) : currentQuestion.question_type === "multiple_choice" || currentQuestion.question_type === "true_false" ? (
                 <MultipleChoiceRenderer
