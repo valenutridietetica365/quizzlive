@@ -6,8 +6,8 @@ export async function POST(req: Request) {
 
     if (!apiKey) {
         return NextResponse.json({
-            error: "Configuracion incompleta: Falta la clave de API.",
-            details: "Agrega GEMINI_API_KEY en Vercel."
+            error: "Falta la GEMINI_API_KEY",
+            details: "Configúrala en Vercel."
         }, { status: 500 });
     }
 
@@ -16,59 +16,57 @@ export async function POST(req: Request) {
     try {
         const { topic, count, grade, language } = await req.json();
 
-        if (!topic || !count) {
-            return NextResponse.json({ error: "Faltan datos (tema o cantidad)" }, { status: 400 });
-        }
+        // 1. Usar el modelo base gemini-1.5-flash (el más gratuito y compatible)
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-        // Standard try for gemini-1.5-flash
+        const prompt = `Act as an expert educator. Topic: "${topic}", Grade: "${grade}", Language: ${language === 'es' ? 'Spanish' : 'English'}.
+        
+        Generate ${count} multiple choice questions.
+        Return ONLY a JSON array, no preamble.
+        Format:
+        [
+          {
+            "question_text": "text",
+            "question_type": "multiple_choice",
+            "options": ["a", "b", "c", "d"],
+            "correct_answer": "the_matching_option_text",
+            "time_limit": 20,
+            "points": 1000
+          }
+        ]`;
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text();
+
+        // Limpiamos la respuesta en caso de que incluya markdown (vuelvan quites)
+        const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
+
         try {
-            const model = genAI.getGenerativeModel({
-                model: "gemini-1.5-flash",
-                generationConfig: {
-                    responseMimeType: "application/json",
-                }
-            });
-
-            const prompt = `Act as an expert educator. Generate ${count} quiz questions about "${topic}" for "${grade}" students in ${language === 'es' ? 'Spanish' : 'English'}.
-            
-            Return ONLY a JSON array:
-            [
-              {
-                "question_text": "string",
-                "question_type": "multiple_choice",
-                "options": ["string", "string", "string", "string"],
-                "correct_answer": "string matching one of the options",
-                "time_limit": 20,
-                "points": 1000
-              }
-            ]`;
-
-            const result = await model.generateContent(prompt);
-            const response = await result.response;
-            const text = response.text();
-
-            const questions = JSON.parse(text);
+            const questions = JSON.parse(cleanedText);
             return NextResponse.json(questions);
-
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            console.error("Gemini Model Error:", errorMessage);
-
-            if (errorMessage.includes("404") || errorMessage.includes("not found")) {
-                return NextResponse.json({
-                    error: "Modelo de IA no encontrado (ERROR 404)",
-                    details: "Tu clave de API pertenece a un proyecto de Google Cloud, pero la 'Generative Language API' no está ACTIVADA. \n\nPasos: \n1. Ve a https://console.cloud.google.com/ \n2. Busca el proyecto: 228307201666 \n3. Busca y ACTIVA la 'Generative Language API'. \n\nSi ya la activaste, espera 1 minuto y vuelve a intentar."
-                }, { status: 404 });
-            }
-
-            throw error; // Re-throw to main handler if it's another error
+        } catch (parseError) {
+            console.error("JSON Parse Error:", cleanedText);
+            return NextResponse.json({
+                error: "Dificultades técnicas",
+                details: "La IA respondió pero con un formato no válido. Inténtalo de nuevo."
+            }, { status: 500 });
         }
 
-    } catch (error) {
-        console.error("AI Generation Critical Error:", error);
+    } catch (error: any) {
+        console.error("AI Route Error:", error.message);
+
+        // Error descriptivo para el usuario si es un 404
+        if (error.message?.includes("404") || error.message?.includes("not found")) {
+            return NextResponse.json({
+                error: "Modelo no reconocido por tu clave (404)",
+                details: "CONSEJO FINAL:\n1. Ve a AI STUDIO.\n2. Haz clic en 'Create API Key'.\n3. Elige 'Create API key in a NEW project' (¡No el que ya tienes!).\n4. Reemplaza la clave en Vercel."
+            }, { status: 404 });
+        }
+
         return NextResponse.json({
             error: "Error en el servicio de IA",
-            details: error instanceof Error ? error.message : "Error desconocido"
+            details: error.message
         }, { status: 500 });
     }
 }
