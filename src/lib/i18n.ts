@@ -191,7 +191,20 @@ export const translations = {
             import_select_file: "Seleccionar Archivo",
             import_template: "Descargar Plantilla",
             import_success: "¡{count} preguntas importadas con éxito!",
-            import_error: "Hubo errores al procesar el archivo"
+            import_error: "Hubo errores al procesar el archivo",
+            ai_button: "✨ GENERAR CON IA"
+        },
+        ai: {
+            generate_button: "GENERAR PREGUNTAS",
+            modal_title: "Asistente de Creación IA",
+            topic_label: "TEMA DEL CUESTIONARIO",
+            topic_placeholder: "Ej: Fotosíntesis, Imperio Romano, Fracciones...",
+            grade_label: "NIVEL EDUCATIVO",
+            grade_placeholder: "Ej: 5to Primaria, Secundaria, Universidad...",
+            count_label: "CANTIDAD",
+            generating: "La IA está pensando...",
+            success: "¡Preguntas mágicas añadidas!",
+            error: "La IA tuvo un tropiezo, intenta de nuevo."
         },
         reports: {
             title: "Informe de Sesión",
@@ -414,7 +427,20 @@ export const translations = {
             import_select_file: "Select File",
             import_template: "Download Template",
             import_success: "{count} questions imported successfully!",
-            import_error: "There were errors processing the file"
+            import_error: "There were errors processing the file",
+            ai_button: "✨ GENERATE WITH AI"
+        },
+        ai: {
+            generate_button: "GENERATE QUESTIONS",
+            modal_title: "AI Creation Assistant",
+            topic_label: "QUIZ TOPIC",
+            topic_placeholder: "E.g.: Photosynthesis, Roman Empire, Fractions...",
+            grade_label: "EDUCATIONAL LEVEL",
+            grade_placeholder: "E.g.: 5th Grade, High School, University...",
+            count_label: "QUANTITY",
+            generating: "AI is thinking...",
+            success: "Magical questions added!",
+            error: "AI stumbled, please try again."
         },
         reports: {
             title: "Session Report",

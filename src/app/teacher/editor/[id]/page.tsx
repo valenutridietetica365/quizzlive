@@ -6,10 +6,11 @@ import { toast } from "sonner";
 import { Question, QuestionSchema, ClassModel as Class } from "@/lib/schemas";
 import { useQuizStore } from "@/lib/store";
 import { getTranslation } from "@/lib/i18n";
-import { Plus, Trash2, Save, ArrowLeft, Loader2, Check, ToggleLeft, ListChecks, Image as ImageIcon, Share2, Type, FileUp, Users, Folder } from "lucide-react";
+import { Plus, Trash2, Save, ArrowLeft, Loader2, Check, ToggleLeft, ListChecks, Image as ImageIcon, Share2, Type, FileUp, Users, Folder, Sparkles } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
 import ImportModal from "@/components/ImportModal";
+import AIGeneratorModal from "@/components/AIGeneratorModal";
 
 export default function QuizEditor() {
     const { id } = useParams();
@@ -28,6 +29,7 @@ export default function QuizEditor() {
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(!isNew);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [isAIModalOpen, setIsAIModalOpen] = useState(false);
     const router = useRouter();
 
     const t = useCallback((key: string, params?: Record<string, string | number>) => {
@@ -99,6 +101,11 @@ export default function QuizEditor() {
         // Remove the first empty question if it's there
         const filteredExisting = questions.filter(q => q.question_text.trim() !== "" || q.options.some(o => o.trim() !== ""));
         setQuestions([...filteredExisting, ...imported]);
+    };
+
+    const handleAIGenerated = (generated: Question[]) => {
+        const filteredExisting = questions.filter(q => q.question_text.trim() !== "" || q.options.some(o => o.trim() !== ""));
+        setQuestions([...filteredExisting, ...generated]);
     };
 
     const updateQuestion = (index: number, field: keyof Question, value: string | number | string[]) => {
@@ -338,11 +345,19 @@ export default function QuizEditor() {
                     <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
                         <button
                             onClick={() => setIsImportModalOpen(true)}
-                            className="p-2.5 md:px-6 md:py-3 bg-blue-50 text-blue-600 rounded-xl md:rounded-[1.25rem] font-black transition-all active:scale-95 flex items-center gap-2"
+                            className="p-2.5 md:px-6 md:py-3 bg-slate-50 text-slate-600 rounded-xl md:rounded-[1.25rem] font-black transition-all active:scale-95 flex items-center gap-2 border border-slate-100"
                             title={t('editor.import')}
                         >
                             <FileUp className="w-5 md:w-6 h-5 md:h-6" />
                             <span className="hidden md:inline">{t('editor.import_button')}</span>
+                        </button>
+                        <button
+                            onClick={() => setIsAIModalOpen(true)}
+                            className="p-2.5 md:px-6 md:py-3 bg-blue-600 text-white rounded-xl md:rounded-[1.25rem] font-black transition-all active:scale-95 flex items-center gap-2 shadow-lg shadow-blue-100"
+                            title={t('editor.ai_button')}
+                        >
+                            <Sparkles className="w-5 md:w-6 h-5 md:h-6" />
+                            <span className="hidden md:inline">{t('editor.ai_button')}</span>
                         </button>
                         <button
                             onClick={handleSave}
@@ -537,6 +552,11 @@ export default function QuizEditor() {
                 isOpen={isImportModalOpen}
                 onClose={() => setIsImportModalOpen(false)}
                 onImport={handleImportQuestions}
+            />
+            <AIGeneratorModal
+                isOpen={isAIModalOpen}
+                onClose={() => setIsAIModalOpen(false)}
+                onGenerate={handleAIGenerated}
             />
         </div>
     );
