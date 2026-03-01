@@ -22,7 +22,7 @@ export async function POST(req: Request) {
 
         // List of models to try in case of 404 errors
         const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-pro"];
-        let lastError = null;
+        let lastError: Error | null = null;
 
         for (const modelName of modelsToTry) {
             try {
@@ -61,11 +61,12 @@ export async function POST(req: Request) {
                 const questions = JSON.parse(text);
                 return NextResponse.json(questions);
 
-            } catch (error: any) {
-                console.warn(`Failed with model ${modelName}:`, error.message);
-                lastError = error;
+            } catch (error) {
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                console.warn(`Failed with model ${modelName}:`, errorMessage);
+                lastError = error instanceof Error ? error : new Error(errorMessage);
                 // If it's not a 404 (model not found), don't keep trying other models
-                if (!error.message?.includes("404") && !error.message?.includes("not found")) {
+                if (!errorMessage.includes("404") && !errorMessage.includes("not found")) {
                     break;
                 }
             }
@@ -79,11 +80,11 @@ export async function POST(req: Request) {
             details: details + ". Verifica que la 'Generative Language API' esté activada en tu proyecto de Google Cloud Console si estás usando un proyecto de GCP."
         }, { status: 500 });
 
-    } catch (error: any) {
+    } catch (error) {
         console.error("AI Generation Critical Error:", error);
         return NextResponse.json({
             error: "Error interno",
-            details: error.message
+            details: error instanceof Error ? error.message : String(error)
         }, { status: 500 });
     }
 }
