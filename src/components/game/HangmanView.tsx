@@ -6,6 +6,7 @@ import { Sparkles, Heart } from "lucide-react";
 
 interface HangmanViewProps {
     word: string;
+    options?: string[];
     onComplete: (answer: string) => void;
     isSubmitting: boolean;
     config?: {
@@ -14,7 +15,7 @@ interface HangmanViewProps {
     };
 }
 
-export default function HangmanView({ word, onComplete, isSubmitting, config }: HangmanViewProps) {
+export default function HangmanView({ word, options, onComplete, isSubmitting, config }: HangmanViewProps) {
     // 1. Clean the word from prefixes/suffixes like "A) ", "1. ", "(B) ", or trailing "."
     const cleanWord = useMemo(() => {
         let raw = word.trim().toUpperCase();
@@ -70,11 +71,18 @@ export default function HangmanView({ word, onComplete, isSubmitting, config }: 
         if (isWinner && status === "playing") {
             setStatus("won");
             const timer = setTimeout(() => {
-                onComplete(cleanWord);
+                // Return original option if found, otherwise return cleanWord
+                const originalOption = options?.find(opt => {
+                    let oRaw = opt.trim().toUpperCase();
+                    const prefixes = [/^(?:[A-Z0-9][.)\-:]+\s*)/, /^(?:\([A-Z0-9]\)\s*)/, /^(?:[A-Z0-9]\s+-\s*)/];
+                    for (const r of prefixes) { if (r.test(oRaw)) { oRaw = oRaw.replace(r, ""); break; } }
+                    return oRaw.replace(/[.;,!?]$/, "") === cleanWord;
+                });
+                onComplete(originalOption || cleanWord);
             }, 1500);
             return () => clearTimeout(timer);
         }
-    }, [isWinner, onComplete, cleanWord, status]);
+    }, [isWinner, onComplete, cleanWord, status, options]);
 
     useEffect(() => {
         if (isGameOver && status === "playing") {

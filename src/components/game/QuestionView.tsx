@@ -81,6 +81,7 @@ export default function QuestionView({
                     <HangmanView
                         key={currentQuestion.id}
                         word={currentQuestion.correct_answer || ""}
+                        options={currentQuestion.options}
                         onComplete={submitAnswer}
                         isSubmitting={isSubmitting}
                         config={config}

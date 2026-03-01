@@ -33,9 +33,20 @@ export function usePlaySession(id: string) {
     const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
     const [shuffledMatches, setShuffledMatches] = useState<string[]>([]);
 
-    const handleNewQuestion = useCallback(async (questionId: string) => {
-        const { data, error } = await supabase.from("questions").select("id, quiz_id, question_text, question_type, options, image_url, time_limit, points, sort_order").eq("id", questionId).single();
-        if (error) { console.error("No question data found for ID:", questionId, error); toast.error("Error: No se pudo encontrar la pregunta"); return; }
+    const handleNewQuestion = useCallback(async (questionId: string, isHangmanMode?: boolean) => {
+        // We include correct_answer for hangman mode so the client can manage the guessing logic
+        const selectFields = `id, quiz_id, question_text, question_type, options, image_url, time_limit, points, sort_order${isHangmanMode ? ", correct_answer" : ""}`;
+
+        const { data, error } = await supabase.from("questions")
+            .select(selectFields)
+            .eq("id", questionId)
+            .single();
+
+        if (error) {
+            console.error("No question data found for ID:", questionId, error);
+            toast.error("Error: No se pudo encontrar la pregunta");
+            return;
+        }
 
         if (data) {
             try {
@@ -56,7 +67,10 @@ export function usePlaySession(id: string) {
                     const matches = q.options.map(opt => opt.split(":")[1]);
                     setShuffledMatches([...matches].sort(() => Math.random() - 0.5));
                 }
-            } catch (e) { console.error("Error validando pregunta:", e); toast.error("Error al cargar los datos de la pregunta"); }
+            } catch (e) {
+                console.error("Error validando pregunta:", e);
+                toast.error("Error al cargar los datos de la pregunta");
+            }
         }
     }, []);
 
@@ -66,8 +80,13 @@ export function usePlaySession(id: string) {
             try {
                 const s = SessionSchema.parse(sessionData);
                 setSession(s);
-                if (s.current_question_id) handleNewQuestion(s.current_question_id);
-            } catch (e) { console.error("Error validando sesión:", e); toast.error("Error al conectar con la sesión"); }
+                if (s.current_question_id) {
+                    handleNewQuestion(s.current_question_id, s.game_mode === "hangman");
+                }
+            } catch (e) {
+                console.error("Error validando sesión:", e);
+                toast.error("Error al conectar con la sesión");
+            }
         }
         setLoading(false);
     }, [id, handleNewQuestion]);
@@ -96,7 +115,7 @@ export function usePlaySession(id: string) {
                     const newData = SessionSchema.parse(payload.new);
                     setSession(prevSession => {
                         if (newData.current_question_id !== prevSession?.current_question_id && newData.current_question_id) {
-                            handleNewQuestion(newData.current_question_id);
+                            handleNewQuestion(newData.current_question_id, newData.game_mode === "hangman");
                         }
                         if (newData.status === "finished" && prevSession?.status !== "finished") fetchTotalScore();
                         return newData;
