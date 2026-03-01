@@ -50,10 +50,11 @@ export async function POST(req: Request) {
             const questions = JSON.parse(text);
             return NextResponse.json(questions);
 
-        } catch (error: any) {
-            console.error("Gemini Model Error:", error.message);
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            console.error("Gemini Model Error:", errorMessage);
 
-            if (error.message?.includes("404") || error.message?.includes("not found")) {
+            if (errorMessage.includes("404") || errorMessage.includes("not found")) {
                 return NextResponse.json({
                     error: "Modelo de IA no encontrado (ERROR 404)",
                     details: "Tu clave de API pertenece a un proyecto de Google Cloud, pero la 'Generative Language API' no está ACTIVADA. \n\nPasos: \n1. Ve a https://console.cloud.google.com/ \n2. Busca el proyecto: 228307201666 \n3. Busca y ACTIVA la 'Generative Language API'. \n\nSi ya la activaste, espera 1 minuto y vuelve a intentar."
@@ -63,11 +64,11 @@ export async function POST(req: Request) {
             throw error; // Re-throw to main handler if it's another error
         }
 
-    } catch (error: any) {
+    } catch (error) {
         console.error("AI Generation Critical Error:", error);
         return NextResponse.json({
             error: "Error en el servicio de IA",
-            details: error.message || "Error desconocido"
+            details: error instanceof Error ? error.message : "Error desconocido"
         }, { status: 500 });
     }
 }
