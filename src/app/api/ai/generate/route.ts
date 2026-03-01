@@ -19,14 +19,12 @@ export async function POST(req: Request) {
     try {
         const { topic, count, grade, language } = await req.json();
 
-        // Lista de modelos para intentar en orden. 
-        // 1.5-flash es el mejor para estos casos gratuitos.
+        // Lista de modelos para intentar en orden.
         const models = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-pro"];
         let lastError = "";
 
         for (const modelName of models) {
             try {
-                console.log(`Intentando con modelo: ${modelName}`);
                 const model = genAI.getGenerativeModel({ model: modelName });
 
                 const prompt = `Act as an expert educator. Topic: "${topic}", Grade: "${grade}", Language: ${language === 'es' ? 'Spanish' : 'English'}.
@@ -54,7 +52,6 @@ export async function POST(req: Request) {
                 return NextResponse.json(questions);
             } catch (err) {
                 lastError = err instanceof Error ? err.message : String(err);
-                console.error(`Fallo con ${modelName}:`, lastError);
 
                 // Si no es un error de "modelo no encontrado (404)", paramos de intentar
                 if (!lastError.toLowerCase().includes("404") && !lastError.toLowerCase().includes("not found")) {
@@ -66,7 +63,7 @@ export async function POST(req: Request) {
         // Si todos fallan
         return NextResponse.json({
             error: `Error de Google (${version})`,
-            details: `Intentamos varios modelos pero falló: "${lastRawError || lastError}". \n\nPASO OBLIGATORIO: Ve a Vercel > Deployments y confirma que este despliegue se ha completado. Si el error sigue diciendo 'gemini-pro', NO estás viendo la versión actual.`
+            details: `Intentamos varios modelos pero falló. Último error: "${lastError}". \n\nPASO OBLIGATORIO: Ve a Vercel > Deployments y confirma que este despliegue se ha completado. Si el error sigue diciendo 'gemini-pro' sin decir '${version}', NO estás viendo la versión actual.`
         }, { status: 500 });
 
     } catch (error) {
