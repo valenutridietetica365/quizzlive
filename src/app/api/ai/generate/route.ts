@@ -47,8 +47,9 @@ export async function POST(req: Request) {
                 const questions = JSON.parse(cleanedText);
 
                 return NextResponse.json(questions);
-            } catch (err: any) {
-                lastRawError = err.message || "Error desconocido";
+            } catch (err) {
+                const errorMessage = err instanceof Error ? err.message : String(err);
+                lastRawError = errorMessage;
                 console.warn(`Failed with model ${modelName}:`, lastRawError);
 
                 // Si no es un 404, no seguimos intentando otros modelos (ej: cuota excedida)
@@ -64,10 +65,11 @@ export async function POST(req: Request) {
             details: `ERROR DE GOOGLE: "${lastRawError}"\n\nPASOS PARA ARREGLAR:\n1. Ve a Vercel > Deployments.\n2. Pulsa "..." en el último y dale a "Redeploy".\n3. Si sigue fallando, crea una clave NUEVA en AI Studio con 'New Project'.`
         }, { status: 404 });
 
-    } catch (error: any) {
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
         return NextResponse.json({
             error: "Error crítico en el servidor",
-            details: error.message
+            details: errorMessage
         }, { status: 500 });
     }
 }
