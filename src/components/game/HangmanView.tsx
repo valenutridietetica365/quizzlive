@@ -15,28 +15,31 @@ interface HangmanViewProps {
 }
 
 export default function HangmanView({ word, onComplete, isSubmitting, config }: HangmanViewProps) {
-    // 1. Clean the word from prefixes like "A) ", "1. ", "(B) "
+    // 1. Clean the word from prefixes/suffixes like "A) ", "1. ", "(B) ", or trailing "."
     const cleanWord = useMemo(() => {
-        const raw = word.trim().toUpperCase();
+        let raw = word.trim().toUpperCase();
+
+        // Remove common MCQ prefixes
         const prefixes = [
-            /^([A-Z0-9][.)\-:]+\s*)/, // A. or 1. or B:
-            /^(\([A-Z0-9]\)\s*)/,     // (A)
-            /^([A-Z0-9]\s+-\s*)/      // A - 
+            /^([A-Z0-9][.)\-:]+\s*)/,
+            /^(\([A-Z0-9]\)\s*)/,
+            /^([A-Z0-9]\s+-\s*)/
         ];
-        let cleaned = raw;
         for (const regex of prefixes) {
             if (regex.test(raw)) {
-                cleaned = raw.replace(regex, "");
+                raw = raw.replace(regex, "");
                 break;
             }
         }
-        return cleaned;
-    }, [word]);
 
+        // Remove trailing punctuation that isn't usually part of the answer
+        return raw.replace(/[.;,!?]$/, "");
+    }, [word]);
 
     const [guessedLetters, setGuessedLetters] = useState<string[]>([]);
     const [wrongCounter, setWrongCounter] = useState(0);
     const [status, setStatus] = useState<"playing" | "won" | "lost">("playing");
+
     const maxMistakes = config?.hangmanLives || 6;
     const ignoreAccents = config?.hangmanIgnoreAccents ?? true;
 
@@ -57,6 +60,8 @@ export default function HangmanView({ word, onComplete, isSubmitting, config }: 
             return isGuessed ? char : "_";
         })
         .join("");
+
+    const words = displayWord.split(" ");
 
     const isWinner = cleanWord.length > 0 && !displayWord.includes("_");
     const isGameOver = wrongCounter >= maxMistakes;
@@ -181,19 +186,21 @@ export default function HangmanView({ word, onComplete, isSubmitting, config }: 
                 </div>
             </div>
 
-            {/* Word Display */}
-            <div className="text-center w-full overflow-hidden py-4">
-                <div className="flex flex-wrap justify-center gap-2 md:gap-3">
-                    {displayWord.split("").map((char, i) => (
-                        <div
-                            key={i}
-                            className={`w-6 h-10 md:w-10 md:h-14 flex items-center justify-center text-xl md:text-3xl font-black border-b-4 transition-all ${char === "_" ? "border-slate-300 text-slate-300" : "border-blue-600 text-slate-900"
-                                } ${char === " " ? "border-transparent w-4 md:w-6" : ""}`}
-                        >
-                            {char !== "_" ? char : ""}
-                        </div>
-                    ))}
-                </div>
+            {/* Word Display - Improved for wrapping */}
+            <div className="w-full flex flex-wrap justify-center gap-x-8 gap-y-6 py-4 px-2">
+                {words.map((wordStr, wordIdx) => (
+                    <div key={wordIdx} className="flex gap-1 md:gap-2 whitespace-nowrap">
+                        {wordStr.split("").map((char, charIdx) => (
+                            <div
+                                key={`${wordIdx}-${charIdx}`}
+                                className={`w-6 h-9 md:w-10 md:h-14 flex items-center justify-center text-xl md:text-3xl font-black border-b-4 transition-all ${char === "_" ? "border-slate-300 text-slate-300" : "border-blue-600 text-slate-900"
+                                    }`}
+                            >
+                                {char !== "_" ? char : ""}
+                            </div>
+                        ))}
+                    </div>
+                ))}
             </div>
 
             {/* Messages */}
