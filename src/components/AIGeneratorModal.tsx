@@ -38,18 +38,22 @@ export default function AIGeneratorModal({ isOpen, onClose, onGenerate }: AIGene
                 body: JSON.stringify({ topic, count, grade, language }),
             });
 
-            if (!response.ok) throw new Error("Failed to generate");
-
             const data = await response.json();
+
+            if (!response.ok) {
+                const errorMsg = data.details || data.error || "Failed to generate";
+                throw new Error(errorMsg);
+            }
+
             onGenerate(data);
             toast.success(t('ai.success'));
             onClose();
             // Reset fields
             setTopic("");
             setGrade("");
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            toast.error(t('ai.error'));
+            toast.error(error.message || t('ai.error'));
         } finally {
             setLoading(false);
         }
