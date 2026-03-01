@@ -125,19 +125,23 @@ export default function TeacherSession() {
             .channel(`session_participants_${id}`)
             .on(
                 'postgres_changes',
-                { event: 'INSERT', schema: 'public', table: 'participants' },
+                { event: '*', schema: 'public', table: 'participants', filter: `session_id=eq.${id}` },
                 (payload) => {
-                    if (payload.new.session_id === id) {
-                        try {
-                            const p = ParticipantSchema.parse(payload.new);
-                            setParticipants((prev) => {
-                                const exists = prev.some(p_prev => p_prev.id === p.id);
-                                if (exists) return prev;
-                                return [...prev, p];
-                            });
-                        } catch {
-                            console.error("Error validando nuevo participante");
-                        }
+                    try {
+                        const p = ParticipantSchema.parse(payload.new);
+                        setParticipants((prev) => {
+                            const index = prev.findIndex(p_prev => p_prev.id === p.id);
+                            if (index !== -1) {
+                                // Update existing
+                                const next = [...prev];
+                                next[index] = p;
+                                return next;
+                            }
+                            // Add new
+                            return [...prev, p];
+                        });
+                    } catch {
+                        console.error("Error validando datos de participante");
                     }
                 }
             )
@@ -221,6 +225,21 @@ export default function TeacherSession() {
             setSession(prev => prev ? { ...prev, status: "finished" } : prev);
         }
     }, [session, currentQuestionIndex, questions, id]);
+
+    // Auto-advance logic: When everyone has answered, move to next question/results
+    useEffect(() => {
+        if (session?.status !== "active" || currentQuestionIndex === -1) return;
+
+        const activeParticipants = participants.filter(p => !p.is_eliminated);
+        if (activeParticipants.length > 0 && responsesCount >= activeParticipants.length) {
+            // Everyone has answered! 
+            // We wait a tiny bit to let the last person see their result before the teacher advances
+            const timer = setTimeout(() => {
+                nextQuestion();
+            }, 1500);
+            return () => clearTimeout(timer);
+        }
+    }, [responsesCount, participants, session?.status, currentQuestionIndex, nextQuestion]);
 
     // The global timer interval has been removed. Time is now managed by the CircularTimer component directly.
 

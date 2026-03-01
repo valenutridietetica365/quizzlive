@@ -103,23 +103,34 @@ const Leaderboard = React.memo(function Leaderboard({
         if (top3.length === 0) return null;
 
         return (
-            <div className="flex items-center gap-4 bg-white/40 backdrop-blur-md px-6 py-2 rounded-full border border-white/20 shadow-sm animate-in fade-in slide-in-from-top-4 duration-700">
-                <div className="flex items-center gap-1.5 border-r border-slate-200 pr-4 mr-2">
-                    <Trophy className="w-3 h-3 text-amber-500" />
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Top 3</span>
-                </div>
-                <div className="flex items-center gap-6">
-                    {top3.map((entry, i) => (
-                        <div key={entry.id} className="flex items-center gap-2">
-                            <span className="text-[10px] font-black text-slate-300">{i + 1}</span>
-                            <span className={`text-[11px] font-black truncate max-w-[80px] ${entry.id === currentParticipantId ? 'text-blue-600' : 'text-slate-600'}`}>
-                                {entry.nickname}
-                            </span>
-                            <span className="text-[10px] font-bold text-slate-400 tabular-nums">
-                                {entry.score.toLocaleString()}
-                            </span>
-                        </div>
-                    ))}
+            <div className="flex flex-col items-center gap-2 animate-in fade-in slide-in-from-top-4 duration-700">
+                <div className="flex items-center gap-3 bg-slate-900/90 backdrop-blur-xl px-5 py-2.5 rounded-2xl border border-white/10 shadow-2xl ring-1 ring-white/5">
+                    <div className="flex items-center gap-2 border-r border-white/10 pr-4 mr-1">
+                        <Trophy className="w-4 h-4 text-amber-400 animate-pulse" />
+                        <span className="text-[10px] font-black text-amber-500/80 uppercase tracking-[0.2em]">Live Top 3</span>
+                    </div>
+                    <div className="flex items-center gap-6">
+                        {top3.map((entry, i) => {
+                            const isMe = entry.id === currentParticipantId;
+                            const rank = i + 1;
+                            return (
+                                <div key={entry.id} className="flex items-center gap-2.5 group">
+                                    <div className="flex items-center justify-center">
+                                        {rankIcon(rank)}
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className={`text-[11px] font-black truncate max-w-[90px] transition-colors ${isMe ? 'text-blue-400' : 'text-slate-200'}`}>
+                                            {entry.nickname}
+                                            {isMe && <span className="ml-1 text-[8px] text-blue-500">★</span>}
+                                        </span>
+                                        <span className="text-[9px] font-bold text-slate-500 mt-[-2px] tabular-nums tracking-wider uppercase">
+                                            {entry.score.toLocaleString()} pts
+                                        </span>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
         );

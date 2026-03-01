@@ -22,7 +22,7 @@ const ParticipantMarquee = dynamic(() => import("@/components/game/ParticipantMa
 export default function StudentPlay() {
     const { id } = useParams();
     const router = useRouter();
-    const { participantId, nickname, language } = useQuizStore();
+    const { participantId, nickname, language, isEliminated } = useQuizStore();
 
     const [session, setSession] = useState<Session | null>(null);
     const [participants, setParticipants] = useState<{ id: string; nickname: string; current_streak?: number; is_eliminated?: boolean; team?: string | null }[]>([]);
@@ -239,8 +239,19 @@ export default function StudentPlay() {
 
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col p-3 md:p-8 items-center justify-center selection:bg-blue-100">
+            {/* Mini ranking in real time - Visible in Waiting and Active states */}
+            {(session.status === "active" || session.status === "waiting") && !isEliminated && (
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[60] scale-90 sm:scale-100">
+                    <Leaderboard
+                        sessionId={id as string}
+                        currentParticipantId={participantId ?? undefined}
+                        variant="minimal"
+                    />
+                </div>
+            )}
+
             {session.status === "waiting" && (
-                <div className="max-w-md w-full text-center space-y-10 animate-in zoom-in duration-700">
+                <div className="max-w-md w-full text-center space-y-10 animate-in zoom-in duration-700 mt-16 md:mt-0">
                     <div className="bg-white p-12 rounded-[3.5rem] shadow-xl border border-slate-100 flex flex-col items-center gap-8 relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50/50 rounded-bl-full -mr-8 -mt-8" />
                         <div className="w-24 h-24 bg-blue-600 rounded-[2rem] flex items-center justify-center text-white shadow-xl shadow-blue-200 animate-bounce">
@@ -261,19 +272,8 @@ export default function StudentPlay() {
             )}
 
             {session.status === "active" && (
-                <div className="w-full max-w-2xl flex flex-col items-center">
-                    {/* Mini ranking in real time */}
-                    {!useQuizStore.getState().isEliminated && (
-                        <div className="mb-8 scale-90 sm:scale-100">
-                            <Leaderboard
-                                sessionId={id as string}
-                                currentParticipantId={participantId ?? undefined}
-                                variant="minimal"
-                            />
-                        </div>
-                    )}
-
-                    {useQuizStore.getState().isEliminated ? (
+                <div className="w-full max-w-2xl flex flex-col items-center mt-16 md:mt-0">
+                    {isEliminated ? (
                         <div className="w-full text-center space-y-6 animate-in zoom-in duration-700">
                             <div className="p-12 rounded-[4rem] bg-red-900/20 border-b-[12px] border-red-900/40 flex flex-col items-center gap-6 shadow-xl backdrop-blur-md">
                                 <div className="w-24 h-24 bg-red-600 rounded-[2rem] flex items-center justify-center text-white shadow-xl shadow-red-900/20 animate-bounce">
