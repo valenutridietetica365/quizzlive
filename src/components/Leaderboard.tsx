@@ -55,7 +55,13 @@ const Leaderboard = React.memo(function Leaderboard({
             if (error || !data) return;
 
             // Map data to LeaderboardEntry format
-            const participants: LeaderboardEntry[] = (data as any[]).map(p => ({
+            const participants: LeaderboardEntry[] = (data as unknown as {
+                id: string;
+                nickname: string;
+                team: string | null;
+                is_eliminated: boolean;
+                scores: { total_points: number }[]
+            }[]).map(p => ({
                 id: p.id,
                 nickname: p.nickname,
                 team: p.team,
