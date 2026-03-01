@@ -45,7 +45,7 @@ export async function POST(req: Request) {
         try {
             const questions = JSON.parse(cleanedText);
             return NextResponse.json(questions);
-        } catch (parseError) {
+        } catch {
             console.error("JSON Parse Error:", cleanedText);
             return NextResponse.json({
                 error: "Dificultades técnicas",
@@ -53,11 +53,12 @@ export async function POST(req: Request) {
             }, { status: 500 });
         }
 
-    } catch (error: any) {
-        console.error("AI Route Error:", error.message);
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Error desconocido";
+        console.error("AI Route Error:", errorMessage);
 
         // Error descriptivo para el usuario si es un 404
-        if (error.message?.includes("404") || error.message?.includes("not found")) {
+        if (errorMessage.includes("404") || errorMessage.includes("not found")) {
             return NextResponse.json({
                 error: "Modelo no reconocido por tu clave (404)",
                 details: "CONSEJO FINAL:\n1. Ve a AI STUDIO.\n2. Haz clic en 'Create API Key'.\n3. Elige 'Create API key in a NEW project' (¡No el que ya tienes!).\n4. Reemplaza la clave en Vercel."
@@ -66,7 +67,7 @@ export async function POST(req: Request) {
 
         return NextResponse.json({
             error: "Error en el servicio de IA",
-            details: error.message
+            details: errorMessage
         }, { status: 500 });
     }
 }
