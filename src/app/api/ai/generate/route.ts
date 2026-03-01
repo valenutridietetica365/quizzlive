@@ -50,11 +50,12 @@ export async function POST(req: Request) {
 
             return NextResponse.json(questions);
 
-        } catch (apiError: any) {
-            console.error("Gemini API Error:", apiError.message);
+        } catch (apiError) {
+            const errorMessage = apiError instanceof Error ? apiError.message : String(apiError);
+            console.error("Gemini API Error:", errorMessage);
 
             // Tratamiento específico del error 404 para claves de AI Studio
-            if (apiError.message?.includes("404") || apiError.message?.includes("not found")) {
+            if (errorMessage.includes("404") || errorMessage.includes("not found")) {
                 return NextResponse.json({
                     error: "Error de conexión con Google (404)",
                     details: `ESTADO DE LA CLAVE: Tu servidor detectó una clave que empieza por "${apiKey.substring(0, 4)}...". \n\nSI ESTA NO ES TU CLAVE NUEVA, significa que Vercel no se ha actualizado. \n\nSOLUCIÓN:\n1. Ve a Vercel.\n2. Haz clic en "REDDEPLOY" (es un botón azul en la lista de despliegues).\n3. Si ya hiciste redeploy, intenta crear la clave en AI Studio eligiendo "NEW project".`
@@ -64,11 +65,12 @@ export async function POST(req: Request) {
             throw apiError;
         }
 
-    } catch (error: any) {
-        console.error("AI Route Error:", error);
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error("AI Route Error:", errorMessage);
         return NextResponse.json({
             error: "Error técnico en la IA",
-            details: error.message || "Error desconocido"
+            details: errorMessage
         }, { status: 500 });
     }
 }
