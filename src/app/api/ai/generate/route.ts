@@ -1,11 +1,10 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
     const apiKey = process.env.GEMINI_API_KEY;
-    const version = "v1.5-stable";
+    const version = "REST-final-v1";
 
     if (!apiKey || apiKey.trim().length < 20) {
         return NextResponse.json({
@@ -14,19 +13,18 @@ export async function POST(req: Request) {
         }, { status: 500 });
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-
     try {
         const { topic, count, grade, language } = await req.json();
 
-        // 1.5-flash es el modelo más compatible.
-        const models = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-pro"];
+        // 1. Probamos con gemini-1.5-flash (el estándar actual)
+        // 2. Probamos con gemini-pro (el clásico) 
+        const models = ["gemini-1.5-flash", "gemini-pro"];
         let lastError = "";
 
         for (const modelName of models) {
-            // Probamos primero con la API estable (v1)
             try {
-                const model = genAI.getGenerativeModel({ model: modelName }, { apiVersion: "v1" });
+                // Usamos fetch directo (como en tu snippet) para evitar errores del SDK
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
                 const prompt = `Act as an expert educator. Topic: "${topic}", Grade: "${grade}", Language: ${language === 'es' ? 'Spanish' : 'English'}.
                 Generate ${count} multiple choice questions.
@@ -43,37 +41,46 @@ export async function POST(req: Request) {
                   }
                 ]`;
 
-                const result = await model.generateContent(prompt);
-                const response = await result.response;
-                const text = response.text();
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }]
+                    })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    lastError = data.error?.message || "Error desconocido de Google";
+                    console.error(`Fallo con ${modelName}:`, lastError);
+                    continue; // Sigue al siguiente modelo
+                }
+
+                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!text) throw new Error("Google no devolvió texto");
 
                 const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
                 const questions = JSON.parse(cleanedText);
 
                 return NextResponse.json(questions);
-            } catch (err) {
-                const currentErrorMessage = err instanceof Error ? err.message : String(err);
-                lastError = currentErrorMessage;
 
-                // Si falla v1, el loop seguirá o intentará con el siguiente modelo.
-                // Registramos el error pero no nos detenemos si es un 404.
-                if (!lastError.toLowerCase().includes("404") && !lastError.toLowerCase().includes("not found")) {
-                    break;
-                }
+            } catch (err: any) {
+                lastError = err.message || String(err);
+                console.warn(`Error en catch de ${modelName}:`, lastError);
             }
         }
 
-        // Si llegamos aquí con errores, devolvemos diagnóstico
+        // Si todos fallan
         return NextResponse.json({
-            error: `Error de Configuración (${version})`,
-            details: `Google dice: "${lastError}". \n\nDIAGNÓSTICO:\n- Clave detectada empieza por: "${apiKey.substring(0, 5)}..."\n- Si esta NO es tu clave nueva, haz REDEPLOY en Vercel.\n- Si SÍ es tu clave, revisa que la 'Generative Language API' esté activa en Google Cloud y que tu zona geográfica esté admitida.`
+            error: `Error de Google (${version})`,
+            details: `Google rechazó la petición: "${lastError}". \n\nTIP: Si dice 404, es la región o la clave. Tu clave empieza por: "${apiKey.substring(0, 5)}...".`
         }, { status: 500 });
 
-    } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
+    } catch (error: any) {
         return NextResponse.json({
             error: `Error crítico (${version})`,
-            details: errorMessage
+            details: error.message || "Error desconocido"
         }, { status: 500 });
     }
 }
