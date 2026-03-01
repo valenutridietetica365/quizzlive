@@ -40,16 +40,31 @@ const Leaderboard = React.memo(function Leaderboard({
                 .single();
             if (sessionData) setSessionMode(sessionData.game_mode);
 
-            // Fetch participants directly from participants table (where score is kept)
+            // Fetch participants joining with scores
             const { data, error } = await supabase
                 .from("participants")
-                .select("*")
-                .eq("session_id", sessionId)
-                .order("score", { ascending: false });
+                .select(`
+                    id, 
+                    nickname, 
+                    team, 
+                    is_eliminated,
+                    scores:scores(total_points)
+                `)
+                .eq("session_id", sessionId);
 
             if (error || !data) return;
 
-            const participants = data as LeaderboardEntry[];
+            // Map data to LeaderboardEntry format
+            const participants: LeaderboardEntry[] = (data as any[]).map(p => ({
+                id: p.id,
+                nickname: p.nickname,
+                team: p.team,
+                is_eliminated: p.is_eliminated,
+                score: p.scores?.[0]?.total_points ?? 0
+            }));
+
+            // Sort participants by score descending
+            participants.sort((a, b) => b.score - a.score);
             setEntries(participants);
 
             // Team Scores calculation
@@ -70,8 +85,8 @@ const Leaderboard = React.memo(function Leaderboard({
     useEffect(() => {
         fetchLeaderboard();
 
-        const channel = supabase
-            .channel(`leaderboard_realtime_${sessionId}`)
+        const participantsChannel = supabase
+            .channel(`participants_realtime_${sessionId}`)
             .on(
                 "postgres_changes",
                 { event: "*", schema: "public", table: "participants", filter: `session_id=eq.${sessionId}` },
@@ -79,7 +94,19 @@ const Leaderboard = React.memo(function Leaderboard({
             )
             .subscribe();
 
-        return () => { supabase.removeChannel(channel); };
+        const scoresChannel = supabase
+            .channel(`scores_realtime_${sessionId}`)
+            .on(
+                "postgres_changes",
+                { event: "*", schema: "public", table: "scores", filter: `session_id=eq.${sessionId}` },
+                () => fetchLeaderboard()
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(participantsChannel);
+            supabase.removeChannel(scoresChannel);
+        };
     }, [sessionId, fetchLeaderboard]);
 
     const rankIcon = (rank: number) => {
