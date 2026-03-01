@@ -4,72 +4,71 @@ import { NextResponse } from "next/server";
 export async function POST(req: Request) {
     const apiKey = process.env.GEMINI_API_KEY;
 
-    if (!apiKey || apiKey.length < 20) {
+    // Diagnóstico inicial: Verificación de clave
+    if (!apiKey || apiKey.trim().length < 20) {
         return NextResponse.json({
-            error: "Falta la GEMINI_API_KEY o es inválida",
-            details: "Asegúrate de haber guardado la clave en Vercel y haber hecho un REDEPLOY."
+            error: "Clave de API no detectada en Vercel",
+            details: `La clave recibida es: "${apiKey ? 'Existe pero es muy corta' : 'No existe (null/undefined)'}". \n\nPASOS:\n1. Ve a Vercel > Settings > Environment Variables.\n2. Asegúrate de que el nombre sea EXACTAMENTE "GEMINI_API_KEY".\n3. Pulsa "Save".\n4. Ve a la pestaña "Deployments" y haz un "REDEPLOY" del último despliegue.`
         }, { status: 500 });
     }
 
+    // Usamos la API v1 explícitamente, que es más estable para AI Studio
     const genAI = new GoogleGenerativeAI(apiKey);
 
     try {
         const { topic, count, grade, language } = await req.json();
 
-        // Lista de modelos para intentar en orden de preferencia
-        const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-pro"];
-        let lastRawError = "";
+        // Usamos gemini-1.5-flash que es el modelo estándar gratuito actual
+        const model = genAI.getGenerativeModel({
+            model: "gemini-1.5-flash"
+        });
 
-        for (const modelName of modelsToTry) {
-            try {
-                const model = genAI.getGenerativeModel({ model: modelName });
+        const prompt = `Act as an expert educator. Generate ${count} quiz questions about "${topic}" for "${grade}" students in ${language === 'es' ? 'Spanish' : 'English'}.
+        
+        The output MUST be a JSON array of objects:
+        [
+          {
+            "question_text": "text",
+            "question_type": "multiple_choice",
+            "options": ["a", "b", "c", "d"],
+            "correct_answer": "exact string matching one option",
+            "time_limit": 20,
+            "points": 1000
+          }
+        ]
+        
+        Return ONLY the raw JSON array.`;
 
-                const prompt = `Act as an expert educator. Topic: "${topic}", Grade: "${grade}", Language: ${language === 'es' ? 'Spanish' : 'English'}.
-                Generate ${count} multiple choice questions.
-                Return ONLY a JSON array.
-                Format:
-                [
-                  {
-                    "question_text": "text",
-                    "question_type": "multiple_choice",
-                    "options": ["a", "b", "c", "d"],
-                    "correct_answer": "the_matching_option_text",
-                    "time_limit": 20,
-                    "points": 1000
-                  }
-                ]`;
+        try {
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+            const text = response.text();
 
-                const result = await model.generateContent(prompt);
-                const response = await result.response;
-                const text = response.text();
+            // Limpieza de posibles tags de markdown
+            const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
+            const questions = JSON.parse(cleanedText);
 
-                const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
-                const questions = JSON.parse(cleanedText);
+            return NextResponse.json(questions);
 
-                return NextResponse.json(questions);
-            } catch (err) {
-                const errorMessage = err instanceof Error ? err.message : String(err);
-                lastRawError = errorMessage;
-                console.warn(`Failed with model ${modelName}:`, lastRawError);
+        } catch (apiError: any) {
+            console.error("Gemini API Error:", apiError.message);
 
-                // Si no es un 404, no seguimos intentando otros modelos (ej: cuota excedida)
-                if (!lastRawError.toLowerCase().includes("404") && !lastRawError.toLowerCase().includes("not found")) {
-                    break;
-                }
+            // Tratamiento específico del error 404 para claves de AI Studio
+            if (apiError.message?.includes("404") || apiError.message?.includes("not found")) {
+                return NextResponse.json({
+                    error: "Error de conexión con Google (404)",
+                    details: `ESTADO DE LA CLAVE: Tu servidor detectó una clave que empieza por "${apiKey.substring(0, 4)}...". \n\nSI ESTA NO ES TU CLAVE NUEVA, significa que Vercel no se ha actualizado. \n\nSOLUCIÓN:\n1. Ve a Vercel.\n2. Haz clic en "REDDEPLOY" (es un botón azul en la lista de despliegues).\n3. Si ya hiciste redeploy, intenta crear la clave en AI Studio eligiendo "NEW project".`
+                }, { status: 404 });
             }
+
+            throw apiError;
         }
 
-        // Si llegamos aquí, todos fallaron
+    } catch (error: any) {
+        console.error("AI Route Error:", error);
         return NextResponse.json({
-            error: "La IA no responde correctamente (404)",
-            details: `ERROR DE GOOGLE: "${lastRawError}"\n\nPASOS PARA ARREGLAR:\n1. Ve a Vercel > Deployments.\n2. Pulsa "..." en el último y dale a "Redeploy".\n3. Si sigue fallando, crea una clave NUEVA en AI Studio con 'New Project'.`
-        }, { status: 404 });
-
-    } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        return NextResponse.json({
-            error: "Error crítico en el servidor",
-            details: errorMessage
+            error: "Error técnico en la IA",
+            details: error.message || "Error desconocido"
         }, { status: 500 });
     }
 }
