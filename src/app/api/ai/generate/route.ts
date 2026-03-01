@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
     const apiKey = process.env.GEMINI_API_KEY;
-    const version = "REST-final-v1";
+    const version = "REST-final-v1.2";
 
     if (!apiKey || apiKey.trim().length < 20) {
         return NextResponse.json({
@@ -16,14 +16,12 @@ export async function POST(req: Request) {
     try {
         const { topic, count, grade, language } = await req.json();
 
-        // 1. Probamos con gemini-1.5-flash (el estándar actual)
-        // 2. Probamos con gemini-pro (el clásico) 
+        // 1.5-flash es el estándar actual. Probamos alternativas si falla.
         const models = ["gemini-1.5-flash", "gemini-pro"];
         let lastError = "";
 
         for (const modelName of models) {
             try {
-                // Usamos fetch directo (como en tu snippet) para evitar errores del SDK
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
                 const prompt = `Act as an expert educator. Topic: "${topic}", Grade: "${grade}", Language: ${language === 'es' ? 'Spanish' : 'English'}.
@@ -52,9 +50,11 @@ export async function POST(req: Request) {
                 const data = await res.json();
 
                 if (!res.ok) {
-                    lastError = data.error?.message || "Error desconocido de Google";
+                    lastError = (data.error && typeof data.error.message === 'string')
+                        ? data.error.message
+                        : "Error desconocido de Google";
                     console.error(`Fallo con ${modelName}:`, lastError);
-                    continue; // Sigue al siguiente modelo
+                    continue;
                 }
 
                 const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -65,22 +65,22 @@ export async function POST(req: Request) {
 
                 return NextResponse.json(questions);
 
-            } catch (err: any) {
-                lastError = err.message || String(err);
+            } catch (err) {
+                lastError = err instanceof Error ? err.message : String(err);
                 console.warn(`Error en catch de ${modelName}:`, lastError);
             }
         }
 
-        // Si todos fallan
         return NextResponse.json({
             error: `Error de Google (${version})`,
-            details: `Google rechazó la petición: "${lastError}". \n\nTIP: Si dice 404, es la región o la clave. Tu clave empieza por: "${apiKey.substring(0, 5)}...".`
+            details: `Google rechazó la petición: "${lastError}". \n\nTIP: Si dice 404, es la región o la clave. Tu clave detectada empieza por: "${apiKey.substring(0, 5)}...".`
         }, { status: 500 });
 
-    } catch (error: any) {
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Error desconocido";
         return NextResponse.json({
             error: `Error crítico (${version})`,
-            details: error.message || "Error desconocido"
+            details: errorMessage
         }, { status: 500 });
     }
 }
