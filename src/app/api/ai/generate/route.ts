@@ -56,7 +56,7 @@ export async function POST(req: Request) {
         try {
             const questions = JSON.parse(text);
             return NextResponse.json(questions);
-        } catch (parseError) {
+        } catch {
             console.error("Error parsing Gemini response:", text);
             return NextResponse.json({
                 error: "Error al procesar la respuesta de la IA",
@@ -64,11 +64,11 @@ export async function POST(req: Request) {
             }, { status: 500 });
         }
 
-    } catch (error: any) {
+    } catch (error) {
         console.error("AI Generation Error:", error);
 
         // Handle specific Gemini errors if possible
-        const errorMessage = error?.message || "Error desconocido en la generación";
+        const errorMessage = error instanceof Error ? error.message : "Error desconocido en la generación";
 
         return NextResponse.json({
             error: "Error en el servicio de IA",

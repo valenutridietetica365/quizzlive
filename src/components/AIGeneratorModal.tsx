@@ -51,9 +51,10 @@ export default function AIGeneratorModal({ isOpen, onClose, onGenerate }: AIGene
             // Reset fields
             setTopic("");
             setGrade("");
-        } catch (error: any) {
+        } catch (error) {
             console.error(error);
-            toast.error(error.message || t('ai.error'));
+            const errorMessage = error instanceof Error ? error.message : t('ai.error');
+            toast.error(errorMessage);
         } finally {
             setLoading(false);
         }
