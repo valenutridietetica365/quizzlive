@@ -1,9 +1,19 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-
 export async function POST(req: Request) {
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    if (!apiKey) {
+        console.error("AI Generation Error: GEMINI_API_KEY is not defined in environment variables.");
+        return NextResponse.json({
+            error: "Configuracion incompleta: Falta la clave de API en el servidor (Vercel).",
+            details: "Asegúrate de haber agregado GEMINI_API_KEY en las variables de entorno de Vercel."
+        }, { status: 500 });
+    }
+
+    const genAI = new GoogleGenerativeAI(apiKey);
+
     try {
         const { topic, count, grade, language } = await req.json();
 
@@ -46,13 +56,23 @@ export async function POST(req: Request) {
         try {
             const questions = JSON.parse(text);
             return NextResponse.json(questions);
-        } catch {
+        } catch (parseError) {
             console.error("Error parsing Gemini response:", text);
-            return NextResponse.json({ error: "Invalid JSON response from AI" }, { status: 500 });
+            return NextResponse.json({
+                error: "Error al procesar la respuesta de la IA",
+                details: "La IA devolvió un formato no válido."
+            }, { status: 500 });
         }
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("AI Generation Error:", error);
-        return NextResponse.json({ error: "Failed to generate questions" }, { status: 500 });
+
+        // Handle specific Gemini errors if possible
+        const errorMessage = error?.message || "Error desconocido en la generación";
+
+        return NextResponse.json({
+            error: "Error en el servicio de IA",
+            details: errorMessage
+        }, { status: 500 });
     }
 }
