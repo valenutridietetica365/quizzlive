@@ -6,6 +6,9 @@ import { useQuizStore } from "@/lib/store";
 import { useRouter } from "next/navigation";
 import { FinishedSession, SupabaseSessionResponse, LiveSession, Folder as FolderType } from "@/lib/schemas";
 import { toast } from "sonner";
+import { deleteQuiz, createFolder, deleteFolder } from "@/actions/quiz";
+import { createClass, deleteClass, addStudentToClass, removeStudentFromClass } from "@/actions/classes";
+import { startSession, finishSession, deleteHistory } from "@/actions/session";
 
 export interface Quiz {
     id: string;
@@ -139,90 +142,93 @@ export function useDashboardData() {
     }, [router, fetchQuizzes, fetchHistory, fetchFolders, fetchLiveSessions, fetchClasses, dashboardLoaded, setDashboardLoaded]);
 
     // --- Mutations ---
-    const finishSession = async (sessionId: string) => {
-        const { error } = await supabase.from("sessions").update({ status: "finished", finished_at: new Date().toISOString() }).eq("id", sessionId);
-        if (!error) {
+    const finishSessionHandler = async (sessionId: string) => {
+        try {
+            await finishSession(sessionId);
             setLiveSessions(prev => prev.filter(s => s.id !== sessionId));
             toast.success("Sesión finalizada");
             if (user) fetchHistory(user.id);
-        } else { toast.error("Error al finalizar la sesión"); }
+        } catch { toast.error("Error al finalizar la sesión"); }
     };
 
-    const deleteQuiz = async (id: string) => {
-        const { error } = await supabase.from("quizzes").delete().eq("id", id);
-        if (!error) { setQuizzes(quizzes.filter(q => q.id !== id)); toast.success("Cuestionario eliminado con éxito"); }
-        else { toast.error("No se pudo eliminar el cuestionario"); }
+    const deleteQuizHandler = async (id: string) => {
+        try {
+            await deleteQuiz(id);
+            setQuizzes(quizzes.filter(q => q.id !== id));
+            toast.success("Cuestionario eliminado con éxito");
+        } catch { toast.error("No se pudo eliminar el cuestionario"); }
     };
 
-    const deleteHistory = async (id: string) => {
-        const { error } = await supabase.from("sessions").delete().eq("id", id);
-        if (!error) { setHistory(history.filter(h => h.id !== id)); toast.success("Informe eliminado con éxito"); }
-        else { toast.error("No se pudo eliminar el informe"); }
+    const deleteHistoryHandler = async (id: string) => {
+        try {
+            await deleteHistory(id);
+            setHistory(history.filter(h => h.id !== id));
+            toast.success("Informe eliminado con éxito");
+        } catch { toast.error("No se pudo eliminar el informe"); }
     };
 
-    const createClass = async (name: string) => {
+    const createClassHandler = async (name: string) => {
         if (!user || !name.trim()) return;
-        const { data, error } = await supabase.from("classes").insert({ name, teacher_id: user.id }).select().single();
-        if (!error) { setClasses([{ ...data, students: [] }, ...classes]); toast.success("Clase creada con éxito"); }
-        else { toast.error(`Error: ${error.message || "No se pudo crear la clase"}`); }
+        try {
+            const data = await createClass(name);
+            setClasses([{ ...data, students: [] }, ...classes]);
+            toast.success("Clase creada con éxito");
+        } catch (error) { const err = error as Error; toast.error(`Error: ${err.message || "No se pudo crear la clase"}`); }
     };
 
-    const deleteClass = async (id: string) => {
-        const { error } = await supabase.from("classes").delete().eq("id", id);
-        if (!error) { setClasses(classes.filter(c => c.id !== id)); toast.success("Clase eliminada"); }
-        else { toast.error("Error al eliminar la clase"); }
+    const deleteClassHandler = async (id: string) => {
+        try {
+            await deleteClass(id);
+            setClasses(classes.filter(c => c.id !== id));
+            toast.success("Clase eliminada");
+        } catch { toast.error("Error al eliminar la clase"); }
     };
 
-    const createFolder = async (name: string, color: string) => {
+    const createFolderHandler = async (name: string, color: string) => {
         if (!user) return;
-        const { data, error } = await supabase.from("folders").insert({ name, color, teacher_id: user.id }).select().single();
-        if (!error && data) { setFolders([data as FolderType, ...folders]); toast.success("Carpeta creada"); }
-        else { toast.error("Error al crear carpeta"); }
+        try {
+            const data = await createFolder(name, color);
+            setFolders([data as FolderType, ...folders]);
+            toast.success("Carpeta creada");
+        } catch { toast.error("Error al crear carpeta"); }
     };
 
-    const deleteFolder = async (id: string) => {
-        const { error } = await supabase.from("folders").delete().eq("id", id);
-        if (!error) { setFolders(folders.filter(f => f.id !== id)); toast.success("Carpeta eliminada"); }
-        else { toast.error("Error al eliminar la carpeta"); }
+    const deleteFolderHandler = async (id: string) => {
+        try {
+            await deleteFolder(id);
+            setFolders(folders.filter(f => f.id !== id));
+            toast.success("Carpeta eliminada");
+        } catch { toast.error("Error al eliminar la carpeta"); }
     };
 
-    const addStudent = async (classId: string, name: string): Promise<DashboardStudent | null> => {
-        const { data, error } = await supabase.from("students").insert({ class_id: classId, name: name.trim() }).select().single();
-        if (!error) {
+    const addStudentHandler = async (classId: string, name: string): Promise<DashboardStudent | null> => {
+        try {
+            const data = await addStudentToClass(classId, name);
             const updatedClasses = classes.map(cls =>
                 cls.id === classId ? { ...cls, students: [...(cls.students || []), data] } : cls
             );
             setClasses(updatedClasses);
             toast.success("Alumno añadido");
             return data;
+        } catch {
+            toast.error("Error al añadir alumno");
+            return null;
         }
-        toast.error("Error al añadir alumno");
-        return null;
     };
 
-    const removeStudent = async (studentId: string, classId: string) => {
-        const { error } = await supabase.from("students").delete().eq("id", studentId);
-        if (!error) {
+    const removeStudentHandler = async (studentId: string, classId: string) => {
+        try {
+            await removeStudentFromClass(studentId);
             setClasses(classes.map(cls =>
                 cls.id === classId ? { ...cls, students: cls.students?.filter(s => s.id !== studentId) } : cls
             ));
             toast.success("Alumno eliminado");
-        } else { toast.error("Error al eliminar alumno"); }
+        } catch { toast.error("Error al eliminar alumno"); }
     };
 
-    const startSession = async (quizId: string, mode: "classic" | "survival" | "teams" | "hangman", config: Record<string, unknown>) => {
+    const startSessionHandler = async (quizId: string, mode: "classic" | "survival" | "teams" | "hangman", config: Record<string, unknown>) => {
         try {
-            let pin = "";
-            let unique = false;
-            let attempts = 0;
-            while (!unique && attempts < 3) {
-                pin = Math.floor(100000 + Math.random() * 900000).toString();
-                const { data: existing } = await supabase.from("sessions").select("id").eq("pin", pin).in("status", ["waiting", "active"]).maybeSingle();
-                if (!existing) unique = true;
-                attempts++;
-            }
-            const { data, error } = await supabase.from("sessions").insert({ quiz_id: quizId, pin, status: "waiting", game_mode: mode, config }).select().single();
-            if (error) throw error;
+            const data = await startSession(quizId, mode, config);
             if (data) router.push(`/teacher/session/${data.id}`);
         } catch (error) {
             console.error("Error starting session:", error);
@@ -234,8 +240,10 @@ export function useDashboardData() {
         // Data
         user, loading, language, quizzes, classes, history, liveSessions, folders,
         // Mutations
-        finishSession, deleteQuiz, deleteHistory, createClass, deleteClass,
-        createFolder, deleteFolder, addStudent, removeStudent, startSession,
+        finishSession: finishSessionHandler, deleteQuiz: deleteQuizHandler, deleteHistory: deleteHistoryHandler,
+        createClass: createClassHandler, deleteClass: deleteClassHandler, createFolder: createFolderHandler,
+        deleteFolder: deleteFolderHandler, addStudent: addStudentHandler, removeStudent: removeStudentHandler,
+        startSession: startSessionHandler,
         // Refresh helpers
         fetchHistory
     };

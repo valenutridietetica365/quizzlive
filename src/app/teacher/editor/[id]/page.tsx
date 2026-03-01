@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Question, QuestionSchema, ClassModel as Class } from "@/lib/schemas";
+import { saveQuizData } from "@/actions/quiz";
 import { useQuizStore } from "@/lib/store";
 import { getTranslation } from "@/lib/i18n";
 import { Plus, Loader2, Check } from "lucide-react";
@@ -127,34 +128,21 @@ export default function QuizEditor() {
             else { toast.error(t('editor.error_mismatch', { num: invalidQuestionIndex + 1 })); }
             return;
         }
+
         setLoading(true);
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) { toast.error(t('editor.login_required')); setLoading(false); return; }
         try {
             const currentNewTag = newTag.trim();
             const tagsToSave = currentNewTag && !tags.includes(currentNewTag) ? [...tags, currentNewTag] : tags;
             if (currentNewTag && !tags.includes(currentNewTag)) { setTags(tagsToSave); setNewTag(""); }
-            let quizId = id as string;
-            if (!isNew) {
-                const { data: activeSessions, error: sessionCheckError } = await supabase.from("sessions").select("id").eq("quiz_id", id).in("status", ["waiting", "active"]);
-                if (sessionCheckError) throw new Error(t('common.error'));
-                if (activeSessions && activeSessions.length > 0) { toast.error("No se puede editar un cuestionario mientras hay una sesión activa o en espera."); setLoading(false); return; }
-                const { error: quizError } = await supabase.from("quizzes").update({ title, tags: tagsToSave, class_id: selectedClassId || null, folder_id: selectedFolderId || null }).eq("id", id);
-                if (quizError) throw new Error(t('common.error'));
-                const { error: deleteError } = await supabase.from("questions").delete().eq("quiz_id", id);
-                if (deleteError) throw new Error(t('common.error'));
-            } else {
-                const { data: newQuiz, error: quizError } = await supabase.from("quizzes").insert({ title, tags: tagsToSave, class_id: selectedClassId || null, folder_id: selectedFolderId || null, teacher_id: user.id }).select().single();
-                if (quizError || !newQuiz) throw new Error(t('common.error'));
-                quizId = newQuiz.id;
-            }
-            const questionsToInsert = questions.map((q, index) => ({
-                quiz_id: quizId, question_text: q.question_text, question_type: q.question_type,
-                options: q.options, correct_answer: q.correct_answer, image_url: q.image_url || null,
-                time_limit: q.time_limit, points: q.points || 1000, sort_order: index
-            }));
-            const { error: questionsError } = await supabase.from("questions").insert(questionsToInsert);
-            if (questionsError) throw new Error(t('common.error'));
+
+            await saveQuizData(isNew, isNew ? null : id as string, {
+                title,
+                tags: tagsToSave,
+                class_id: selectedClassId || null,
+                folder_id: selectedFolderId || null,
+                questions
+            });
+
             toast.success(t('editor.save_success'));
             router.push("/teacher/dashboard");
         } catch (error) {

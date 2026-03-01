@@ -1,14 +1,46 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
 
 const locales = ['es', 'en']
 const defaultLocale = 'es'
 
-export function middleware(request: NextRequest) {
-    // Check if there is any supported locale in the pathname
+export async function middleware(request: NextRequest) {
+    let supabaseResponse = NextResponse.next({
+        request: {
+            headers: request.headers,
+        },
+    })
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() || ''
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() || ''
+
+    const supabase = createServerClient(
+        supabaseUrl,
+        supabaseAnonKey,
+        {
+            cookies: {
+                getAll() {
+                    return request.cookies.getAll()
+                },
+                setAll(cookiesToSet) {
+                    cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+                    supabaseResponse = NextResponse.next({
+                        request,
+                    })
+                    cookiesToSet.forEach(({ name, value, options }) =>
+                        supabaseResponse.cookies.set(name, value, options)
+                    )
+                },
+            },
+        }
+    )
+
+    // IMPORTANT: Refresh session if expired by requesting the user object
+    await supabase.auth.getUser()
+
+    // --- i18n logic ---
     const pathname = request.nextUrl.pathname
 
-    // Check if it's a root level public asset or api route or existing teacher/play route
     if (
         pathname.startsWith('/_next') ||
         pathname.includes('.') ||
@@ -17,24 +49,27 @@ export function middleware(request: NextRequest) {
         pathname.startsWith('/play') ||
         pathname.startsWith('/join')
     ) {
-        return NextResponse.next()
+        return supabaseResponse
     }
 
     const pathnameIsMissingLocale = locales.every(
         (locale) => !pathname.startsWith(`/${locale}/`) && pathname !== `/${locale}`
     )
 
-    // Redirect if there is no locale
     if (pathnameIsMissingLocale) {
-        // e.g. incoming request is /about
-        // The new URL is now /es/about
-        return NextResponse.redirect(
+        const redirected = NextResponse.redirect(
             new URL(`/${defaultLocale}${pathname === '/' ? '' : pathname}`, request.url)
         )
+        // Copy cookies over to the redirect response
+        supabaseResponse.cookies.getAll().forEach((cookie) => {
+            redirected.cookies.set(cookie.name, cookie.value, cookie)
+        })
+        return redirected
     }
+
+    return supabaseResponse
 }
 
 export const config = {
-    // Matcher ignoring `/_next/` and `/api/`
     matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 }
