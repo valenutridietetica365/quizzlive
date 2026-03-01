@@ -4,11 +4,11 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
     const apiKey = process.env.GEMINI_API_KEY;
-    const version = "REST-final-v1.2";
+    const version = "REST-v1.6-Gemini3";
 
     if (!apiKey || apiKey.trim().length < 20) {
         return NextResponse.json({
-            error: "Clave de API no detectada (" + version + ")",
+            error: `Clave no detectada (${version})`,
             details: "Por favor, añade GEMINI_API_KEY en Vercel y haz un REDEPLOY."
         }, { status: 500 });
     }
@@ -16,12 +16,13 @@ export async function POST(req: Request) {
     try {
         const { topic, count, grade, language } = await req.json();
 
-        // 1.5-flash es el estándar actual. Probamos alternativas si falla.
-        const models = ["gemini-1.5-flash", "gemini-pro"];
+        // Probamos modelos en orden. Gemini 3 es el que venía en tu snippet.
+        const models = ["gemini-3-flash-preview", "gemini-1.5-flash", "gemini-1.5-flash-latest"];
         let lastError = "";
 
         for (const modelName of models) {
             try {
+                // Usamos la URL exacta de tu snippet
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
                 const prompt = `Act as an expert educator. Topic: "${topic}", Grade: "${grade}", Language: ${language === 'es' ? 'Spanish' : 'English'}.
@@ -52,13 +53,13 @@ export async function POST(req: Request) {
                 if (!res.ok) {
                     lastError = (data.error && typeof data.error.message === 'string')
                         ? data.error.message
-                        : "Error desconocido de Google";
+                        : "Error desconocido en " + modelName;
                     console.error(`Fallo con ${modelName}:`, lastError);
                     continue;
                 }
 
                 const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (!text) throw new Error("Google no devolvió texto");
+                if (!text) throw new Error("No hay texto en la respuesta de " + modelName);
 
                 const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
                 const questions = JSON.parse(cleanedText);
@@ -67,19 +68,19 @@ export async function POST(req: Request) {
 
             } catch (err) {
                 lastError = err instanceof Error ? err.message : String(err);
-                console.warn(`Error en catch de ${modelName}:`, lastError);
+                console.warn(`Error capturado en ${modelName}:`, lastError);
             }
         }
 
         return NextResponse.json({
-            error: `Error de Google (${version})`,
-            details: `Google rechazó la petición: "${lastError}". \n\nTIP: Si dice 404, es la región o la clave. Tu clave detectada empieza por: "${apiKey.substring(0, 5)}...".`
+            error: `Error Final (${version})`,
+            details: `Ningún modelo funcionó. El último error fue: "${lastError}". \n\nTIP: Tu clave empieza por "${apiKey.substring(0, 5)}...". Revisa en AI Studio que tengas permiso para el modelo 'Gemini 3 Flash (Preview)'.`
         }, { status: 500 });
 
     } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "Error desconocido";
+        const errorMessage = error instanceof Error ? error.message : "Error crítico desconocido";
         return NextResponse.json({
-            error: `Error crítico (${version})`,
+            error: `Error Crítico de Servidor (${version})`,
             details: errorMessage
         }, { status: 500 });
     }
