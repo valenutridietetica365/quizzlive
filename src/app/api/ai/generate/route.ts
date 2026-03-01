@@ -51,8 +51,9 @@ export async function POST(req: Request) {
                 const questions = JSON.parse(cleanedText);
 
                 return NextResponse.json(questions);
-            } catch (err: any) {
-                lastError = err.message || String(err);
+            } catch (err) {
+                const currentErrorMessage = err instanceof Error ? err.message : String(err);
+                lastError = currentErrorMessage;
 
                 // Si falla v1, el loop seguirá o intentará con el siguiente modelo.
                 // Registramos el error pero no nos detenemos si es un 404.
@@ -68,10 +69,11 @@ export async function POST(req: Request) {
             details: `Google dice: "${lastError}". \n\nDIAGNÓSTICO:\n- Clave detectada empieza por: "${apiKey.substring(0, 5)}..."\n- Si esta NO es tu clave nueva, haz REDEPLOY en Vercel.\n- Si SÍ es tu clave, revisa que la 'Generative Language API' esté activa en Google Cloud y que tu zona geográfica esté admitida.`
         }, { status: 500 });
 
-    } catch (error: any) {
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
         return NextResponse.json({
             error: `Error crítico (${version})`,
-            details: error.message || "Error desconocido"
+            details: errorMessage
         }, { status: 500 });
     }
 }
