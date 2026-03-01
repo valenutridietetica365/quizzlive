@@ -46,7 +46,7 @@ export async function POST(req: Request) {
         try {
             const questions = JSON.parse(text);
             return NextResponse.json(questions);
-        } catch (parseError) {
+        } catch {
             console.error("Error parsing Gemini response:", text);
             return NextResponse.json({ error: "Invalid JSON response from AI" }, { status: 500 });
         }
