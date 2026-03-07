@@ -5,7 +5,25 @@ import { Plus, Trash2, Users, ChevronRight, GraduationCap, Target, Trophy, Trend
 import { DashboardClass, DashboardStudent } from "@/hooks/useDashboardData";
 import PerformanceChart from "@/components/PerformanceChart";
 import { supabase } from "@/lib/supabase";
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
+
+interface StudentParticipation {
+    id: string;
+    sessions: {
+        finished_at: string;
+        quizzes: {
+            tags: string[] | null;
+        };
+    };
+    answers: {
+        is_correct: boolean;
+    }[];
+}
+
+interface ClassSession {
+    finished_at: string;
+    participants: { count: number }[];
+}
 
 interface ClassManagerProps {
     classes: DashboardClass[];
@@ -52,9 +70,10 @@ export default function ClassManager({ classes, t, onCreateClass, onDeleteClass,
                 .order('sessions(finished_at)', { ascending: true });
 
             if (participations) {
-                const history = (participations as any[]).map(p => ({
+                const typedParticipations = participations as unknown as StudentParticipation[];
+                const history = typedParticipations.map(p => ({
                     date: new Date(p.sessions.finished_at).toLocaleDateString(undefined, { day: '2-digit', month: 'short' }),
-                    participation: Math.round((p.answers.filter((a: any) => a.is_correct).length / (p.answers.length || 1)) * 100)
+                    participation: Math.round((p.answers.filter(a => a.is_correct).length / (p.answers.length || 1)) * 100)
                 }));
 
                 const mastery: Record<string, { total: number; correct: number }> = {};
@@ -62,8 +81,8 @@ export default function ClassManager({ classes, t, onCreateClass, onDeleteClass,
                 let totalQuestions = 0;
                 let perfectCount = 0;
 
-                (participations as any[]).forEach(p => {
-                    const correctCount = p.answers.filter((a: any) => a.is_correct).length;
+                typedParticipations.forEach(p => {
+                    const correctCount = p.answers.filter(a => a.is_correct).length;
                     const qCount = p.answers.length;
                     if (correctCount === qCount && qCount > 0) perfectCount++;
 
@@ -359,7 +378,8 @@ function ClassEvolutionView({ classId, t }: { classId: string, t: (k: string) =>
                 .order('finished_at', { ascending: true });
 
             if (data) {
-                const formatted = (data as any[]).map(s => ({
+                const typedData = data as unknown as ClassSession[];
+                const formatted = typedData.map(s => ({
                     date: new Date(s.finished_at).toLocaleDateString(undefined, { day: '2-digit', month: 'short' }),
                     participation: s.participants?.[0]?.count || 0
                 }));

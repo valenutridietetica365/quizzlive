@@ -98,7 +98,7 @@ BEGIN
     WHERE status = 'waiting' 
     AND created_at < (now() - INTERVAL '24 hours');
 
-    -- 2. Eliminar sesiones 'active' de más de 12 horas (sesiones que el profesor olvidó cerrar)
+    -- 2. Eliminar sesiones 'active' de más de 12 hours (sesiones que el profesor olvidó cerrar)
     DELETE FROM public.sessions 
     WHERE status = 'active' 
     AND created_at < (now() - INTERVAL '12 hours');
