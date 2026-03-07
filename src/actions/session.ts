@@ -36,6 +36,17 @@ export async function finishSession(sessionId: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Unauthorized");
 
+    // Verify ownership: session must belong to a quiz owned by this teacher
+    const { data: session } = await supabase
+        .from("sessions")
+        .select("id, quiz:quizzes!inner(teacher_id)")
+        .eq("id", sessionId)
+        .single();
+
+    if (!session || (session.quiz as unknown as { teacher_id: string }).teacher_id !== user.id) {
+        throw new Error("Unauthorized: you don't own this session");
+    }
+
     const { error } = await supabase
         .from("sessions")
         .update({ status: "finished", finished_at: new Date().toISOString() })
@@ -50,6 +61,17 @@ export async function deleteHistory(sessionId: string) {
     const supabase = createSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Unauthorized");
+
+    // Verify ownership: session must belong to a quiz owned by this teacher
+    const { data: session } = await supabase
+        .from("sessions")
+        .select("id, quiz:quizzes!inner(teacher_id)")
+        .eq("id", sessionId)
+        .single();
+
+    if (!session || (session.quiz as unknown as { teacher_id: string }).teacher_id !== user.id) {
+        throw new Error("Unauthorized: you don't own this session");
+    }
 
     const { error } = await supabase.from("sessions").delete().eq("id", sessionId);
     if (error) throw new Error(error.message);

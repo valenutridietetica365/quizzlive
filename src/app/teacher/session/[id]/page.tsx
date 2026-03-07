@@ -125,11 +125,20 @@ export default function TeacherSession() {
     useEffect(() => {
         if (session?.status !== "active" || currentQuestionIndex === -1) return;
         const activeParticipants = participants.filter(p => !p.is_eliminated);
+
+        // Auto-advance when all active participants have answered
         if (activeParticipants.length > 0 && responsesCount >= activeParticipants.length) {
             const timer = setTimeout(() => { nextQuestion(); }, 1500);
             return () => clearTimeout(timer);
         }
-    }, [responsesCount, participants, session?.status, currentQuestionIndex, nextQuestion]);
+
+        // Safety timeout: auto-advance after 60s even if not all have answered
+        // This prevents the quiz from getting stuck if a participant disconnects
+        const currentQ = questions[currentQuestionIndex];
+        const safetyMs = ((currentQ?.time_limit || 20) + 10) * 1000; // time_limit + 10s buffer
+        const safetyTimer = setTimeout(() => { nextQuestion(); }, safetyMs);
+        return () => clearTimeout(safetyTimer);
+    }, [responsesCount, participants, session?.status, currentQuestionIndex, nextQuestion, questions]);
 
     if (loading) return <TeacherSessionSkeleton />;
     if (!session || !quiz) return <div className="min-h-screen flex items-center justify-center bg-slate-950"><Loader2 className="w-10 h-10 animate-spin text-blue-500" /></div>;

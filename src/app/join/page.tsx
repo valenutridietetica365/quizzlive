@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useQuizStore } from "@/lib/store";
@@ -61,13 +61,7 @@ function JoinContent() {
         checkRejoin();
     }, [searchParams, participantId]);
 
-    useEffect(() => {
-        if (pin.length === 6) {
-            checkPin(pin);
-        }
-    }, [pin]);
-
-    const checkPin = async (currentPin: string) => {
+    const checkPin = useCallback(async (currentPin: string) => {
         const { data: session } = await supabase
             .from("sessions")
             .select(`
@@ -87,7 +81,13 @@ function JoinContent() {
                 setStudents([]);
             }
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        if (pin.length === 6) {
+            checkPin(pin);
+        }
+    }, [pin, checkPin]);
 
     const handleJoin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -102,7 +102,7 @@ function JoinContent() {
                 .single();
 
             if (sessionError || !session) throw new Error(t('join.invalid_pin'));
-            if (session.status === "finished") throw new Error("Esta sesión ya ha finalizado");
+            if (session.status === "finished") throw new Error(t('join.session_finished'));
 
             type JoinPayload = {
                 session_id: string;
@@ -155,14 +155,14 @@ function JoinContent() {
                 {rejoinSession && (
                     <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 md:p-5 rounded-2xl md:rounded-3xl flex items-center justify-between gap-4 animate-in slide-in-from-top-4">
                         <div>
-                            <p className="font-black text-xs md:text-sm">¡Sesión activa encontrada!</p>
+                            <p className="font-black text-xs md:text-sm">{t('join.active_session_found')}</p>
                             <p className="text-[10px] md:text-xs font-medium text-emerald-600">PIN: {rejoinSession.pin} · {storedNickname}</p>
                         </div>
                         <button
                             onClick={handleRejoin}
                             className="bg-emerald-600 text-white px-3 md:px-4 py-2 rounded-xl font-black text-xs md:text-sm hover:bg-emerald-700 transition-all active:scale-95 whitespace-nowrap"
                         >
-                            Volver 🔥
+                            {t('join.rejoin_button')} 🔥
                         </button>
                     </div>
                 )}
@@ -197,8 +197,8 @@ function JoinContent() {
                                                 <Key className="w-4 md:w-5 h-4 md:h-5 text-white" />
                                             </div>
                                             <div className="flex flex-col">
-                                                <span className="text-[8px] md:text-[10px] font-black uppercase tracking-widest text-slate-400">Sesión Activa</span>
-                                                <span className="text-[10px] md:text-sm font-bold text-blue-400">Listo para entrar</span>
+                                                <span className="text-[8px] md:text-[10px] font-black uppercase tracking-widest text-slate-400">{t('join.active_session')}</span>
+                                                <span className="text-[10px] md:text-sm font-bold text-blue-400">{t('join.ready_to_enter')}</span>
                                             </div>
                                         </div>
                                         <span className="text-2xl md:text-4xl font-black font-mono tracking-widest relative z-10">{pin}</span>
@@ -225,7 +225,7 @@ function JoinContent() {
                                     <div className="space-y-2">
                                         <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
                                             <User className="w-3 h-3 text-blue-500" />
-                                            Selecciona tu nombre ({classInfo?.name})
+                                            {t('join.select_name')} ({classInfo?.name})
                                         </label>
                                         <select
                                             value={selectedStudentId}
@@ -237,7 +237,7 @@ function JoinContent() {
                                             className="input-premium !bg-white/80 appearance-none"
                                             required
                                         >
-                                            <option value="">-- Elige tu nombre --</option>
+                                            <option value="">{t('join.choose_name')}</option>
                                             {students.sort((a, b) => a.name.localeCompare(b.name)).map(s => (
                                                 <option key={s.id} value={s.id}>{s.name}</option>
                                             ))}
@@ -288,7 +288,7 @@ function JoinContent() {
                 <div className="flex justify-center flex-wrap gap-4">
                     <div className="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-full border border-slate-100">
                         <Sparkles className="w-4 h-4 text-amber-500" />
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sin registro</span>
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('join.no_registration')}</span>
                     </div>
                 </div>
             </div>

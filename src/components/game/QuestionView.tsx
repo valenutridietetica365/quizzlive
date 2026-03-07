@@ -85,6 +85,7 @@ export default function QuestionView({
                         onComplete={submitAnswer}
                         isSubmitting={isSubmitting}
                         config={config}
+                        t={t}
                     />
                 </div>
             ) : currentQuestion.question_type === "multiple_choice" || currentQuestion.question_type === "true_false" ? (

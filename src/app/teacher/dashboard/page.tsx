@@ -200,7 +200,7 @@ export default function TeacherDashboard() {
                                 <div key={session.id} onClick={() => router.push(`/teacher/session/${session.id}`)} className="bg-slate-900 text-white p-6 rounded-[2rem] border-b-4 border-blue-600 hover:scale-[1.02] transition-all cursor-pointer group flex flex-col justify-between h-48">
                                     <div className="flex justify-between items-start">
                                         <div className="space-y-1">
-                                            <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest">{session.status === 'active' ? 'En Juego' : 'Esperando'}</p>
+                                            <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest">{session.status === 'active' ? t('session.in_game') : t('session.waiting_status')}</p>
                                             <h3 className="text-xl font-black truncate max-w-[180px]">{session.quiz.title}</h3>
                                         </div>
                                         <div className="bg-white/10 px-3 py-1.5 rounded-xl font-mono font-black text-lg tracking-wider">{session.pin}</div>
@@ -212,7 +212,7 @@ export default function TeacherDashboard() {
                                                 <LogOut className="w-4 h-4" />
                                             </button>
                                             <button className="bg-blue-600 p-2 rounded-xl group-hover:px-4 transition-all flex items-center gap-2">
-                                                <ChevronRight className="w-5 h-5" /><span className="hidden group-hover:inline text-[10px] font-black uppercase">Reanudar</span>
+                                                <ChevronRight className="w-5 h-5" /><span className="hidden group-hover:inline text-[10px] font-black uppercase">{t('session.resume')}</span>
                                             </button>
                                         </div>
                                     </div>
@@ -311,7 +311,7 @@ export default function TeacherDashboard() {
                             <h2 className="text-xl font-black text-slate-900 uppercase tracking-widest leading-none">
                                 {activeTab === "quizzes" ? t('sidebar.quizzes') : t('sidebar.history')}
                             </h2>
-                            <p className="text-slate-400 text-[10px] font-black uppercase tracking-wider">Filtro por Clase</p>
+                            <p className="text-slate-400 text-[10px] font-black uppercase tracking-wider">{t('session.filter_by_class')}</p>
                         </div>
                         <div className="flex items-center gap-3 bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
                             <div className="flex gap-1 overflow-x-auto no-scrollbar max-w-[300px] md:max-w-md">

@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { Language } from './i18n'
+import type { Quiz as DashboardQuiz, DashboardClass } from '@/hooks/useDashboardData'
+import type { FinishedSession, Folder } from './schemas'
 export type { Language }
 
 export type QuestionData = {
@@ -70,13 +72,13 @@ interface QuizState {
     // Dashboard Caching
     dashboardLoaded: boolean
     dashboardUserId: string | null
-    dashboardQuizzes: unknown[]
-    dashboardClasses: unknown[]
-    dashboardHistory: unknown[]
+    dashboardQuizzes: DashboardQuiz[]
+    dashboardClasses: DashboardClass[]
+    dashboardHistory: FinishedSession[]
     dashboardLiveSessions: unknown[]
-    dashboardFolders: unknown[]
+    dashboardFolders: Folder[]
     setDashboardLoaded: (loaded: boolean) => void
-    setDashboardData: (data: { dashboardUserId?: string | null, dashboardQuizzes?: unknown[], dashboardClasses?: unknown[], dashboardHistory?: unknown[], dashboardLiveSessions?: unknown[], dashboardFolders?: unknown[] }) => void
+    setDashboardData: (data: { dashboardUserId?: string | null, dashboardQuizzes?: DashboardQuiz[], dashboardClasses?: DashboardClass[], dashboardHistory?: FinishedSession[], dashboardLiveSessions?: unknown[], dashboardFolders?: Folder[] }) => void
 }
 
 export const useQuizStore = create<QuizState>()(

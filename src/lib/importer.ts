@@ -12,7 +12,7 @@ export const parseQuizFile = async (file: File): Promise<ImportResult> => {
         reader.onload = (e) => {
             try {
                 const data = e.target?.result;
-                const workbook = XLSX.read(data, { type: 'binary' });
+                const workbook = XLSX.read(data, { type: 'array' });
                 const sheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[sheetName];
                 const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as unknown[][];
@@ -132,7 +132,7 @@ export const parseQuizFile = async (file: File): Promise<ImportResult> => {
         };
 
         reader.onerror = () => resolve({ questions: [], errors: ["Error de lectura del archivo."] });
-        reader.readAsBinaryString(file);
+        reader.readAsArrayBuffer(file);
     });
 };
 

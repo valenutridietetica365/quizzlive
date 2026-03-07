@@ -52,6 +52,17 @@ export async function removeStudentFromClass(studentId: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Unauthorized");
 
+    // Verify ownership: student must belong to a class owned by this teacher
+    const { data: student } = await supabase
+        .from("students")
+        .select("id, class:classes!inner(teacher_id)")
+        .eq("id", studentId)
+        .single();
+
+    if (!student || (student.class as unknown as { teacher_id: string }).teacher_id !== user.id) {
+        throw new Error("Unauthorized: you don't own this student's class");
+    }
+
     const { error } = await supabase.from("students").delete().eq("id", studentId);
     if (error) throw new Error(error.message);
     revalidatePath("/teacher/dashboard");

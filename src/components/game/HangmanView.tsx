@@ -13,9 +13,10 @@ interface HangmanViewProps {
         hangmanLives?: number;
         hangmanIgnoreAccents?: boolean;
     };
+    t?: (key: string) => string;
 }
 
-export default function HangmanView({ word, options, onComplete, isSubmitting, config }: HangmanViewProps) {
+export default function HangmanView({ word, options, onComplete, isSubmitting, config, t }: HangmanViewProps) {
     // 1. Clean the word from prefixes/suffixes like "A) ", "1. ", "(B) ", or trailing "."
     const cleanWord = useMemo(() => {
         let raw = word.trim().toUpperCase();
@@ -88,7 +89,7 @@ export default function HangmanView({ word, options, onComplete, isSubmitting, c
         if (isGameOver && status === "playing") {
             setStatus("lost");
             const timer = setTimeout(() => {
-                onComplete(""); // Fail
+                onComplete("__HANGMAN_FAIL__"); // Sentinel value for a failed hangman attempt
             }, 2500);
             return () => clearTimeout(timer);
         }
@@ -178,7 +179,7 @@ export default function HangmanView({ word, options, onComplete, isSubmitting, c
                         </div>
                         <div className="h-8 w-px bg-slate-200" />
                         <span className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                            {Math.max(0, maxMistakes - wrongCounter)} vidas
+                            {Math.max(0, maxMistakes - wrongCounter)} {t ? t('game.lives') : 'vidas'}
                         </span>
                     </div>
 
@@ -188,9 +189,9 @@ export default function HangmanView({ word, options, onComplete, isSubmitting, c
                         className="group relative px-6 py-3 bg-white text-slate-900 rounded-2xl font-black shadow-xl shadow-slate-200 hover:shadow-blue-200 hover:-translate-y-1 transition-all active:scale-95 disabled:opacity-50 disabled:translate-y-0 disabled:shadow-none flex items-center gap-2 border-b-4 border-slate-100 hover:border-blue-500"
                     >
                         <Sparkles className="w-4 h-4 text-amber-500 group-hover:rotate-12 transition-transform" />
-                        <span>Pista (Cuesta 1 Vida)</span>
+                        <span>{t ? t('game.hint_button') : 'Pista'} ({t ? t('game.hint_cost') : 'Cuesta 1 Vida'})</span>
                     </button>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Adivina la palabra para subir puntos</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t ? t('game.guess_instruction') : 'Adivina la palabra para subir puntos'}</p>
                 </div>
             </div>
 
@@ -214,15 +215,15 @@ export default function HangmanView({ word, options, onComplete, isSubmitting, c
             {/* Messages */}
             {status === "lost" && (
                 <div className="p-6 bg-red-100/80 border-2 border-red-200 text-red-600 rounded-3xl font-black animate-in zoom-in duration-300 text-center space-y-2 shadow-xl backdrop-blur-sm">
-                    <p className="animate-bounce text-xl uppercase">¡GAME OVER!</p>
-                    <p className="text-sm uppercase tracking-widest opacity-70">La palabra era: <span className="text-slate-900 bg-white px-3 py-1 rounded-lg ml-1">{cleanWord}</span></p>
+                    <p className="animate-bounce text-xl uppercase">{t ? t('game.game_over') : '¡GAME OVER!'}</p>
+                    <p className="text-sm uppercase tracking-widest opacity-70">{t ? t('game.word_was') : 'La palabra era:'} <span className="text-slate-900 bg-white px-3 py-1 rounded-lg ml-1">{cleanWord}</span></p>
                 </div>
             )}
 
             {status === "won" && (
                 <div className="p-6 bg-emerald-100/80 border-2 border-emerald-200 text-emerald-600 rounded-3xl font-black animate-in zoom-in duration-300 text-center space-y-2 shadow-xl backdrop-blur-sm">
-                    <p className="animate-bounce text-xl uppercase">¡VICTORIA!</p>
-                    <p className="text-sm uppercase tracking-widest opacity-70">¡Has salvado al ahorcado!</p>
+                    <p className="animate-bounce text-xl uppercase">{t ? t('game.victory') : '¡VICTORIA!'}</p>
+                    <p className="text-sm uppercase tracking-widest opacity-70">{t ? t('game.victory_desc') : '¡Has salvado al ahorcado!'}</p>
                 </div>
             )}
 
@@ -253,7 +254,7 @@ export default function HangmanView({ word, options, onComplete, isSubmitting, c
             </div>
 
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest hidden md:block">
-                Presiona las letras para adivinar
+                {t ? t('game.press_letters') : 'Presiona las letras para adivinar'}
             </p>
         </div>
     );

@@ -66,7 +66,15 @@ export const translations = {
             pin_placeholder: "PIN del juego",
             nickname_placeholder: "Tu apodo",
             button: "Entrar",
-            invalid_pin: "PIN inválido"
+            invalid_pin: "PIN inválido",
+            active_session_found: "¡Sesión activa encontrada!",
+            rejoin_button: "Volver",
+            no_registration: "Sin registro",
+            session_finished: "Esta sesión ya ha finalizado",
+            active_session: "Sesión Activa",
+            ready_to_enter: "Listo para entrar",
+            select_name: "Selecciona tu nombre",
+            choose_name: "-- Elige tu nombre --"
         },
         play: {
             waiting_title: "¡Adentro!",
@@ -96,7 +104,21 @@ export const translations = {
             pairs: "Parejas",
             time_left: "Tiempo restante",
             joined_late_title: "¡Llegaste justo a tiempo!",
-            joined_late_subtitle: "La pregunta ya terminó, pero prepárate para la siguiente."
+            joined_late_subtitle: "La pregunta ya terminó, pero prepárate para la siguiente.",
+            loading_next: "Cargando siguiente pregunta..."
+        },
+        game: {
+            eliminated: "¡ELIMINADO!",
+            eliminated_desc: "Has fallado en el modo supervivencia. Puedes seguir viendo el resto de la clase.",
+            game_over: "¡GAME OVER!",
+            victory: "¡VICTORIA!",
+            victory_desc: "¡Has salvado al ahorcado!",
+            hint_button: "Pista",
+            hint_cost: "Cuesta 1 Vida",
+            lives: "vidas",
+            guess_instruction: "Adivina la palabra para subir puntos",
+            press_letters: "Presiona las letras para adivinar",
+            word_was: "La palabra era:"
         },
         analytics: {
             avg_success: "Promedio de Acierto",
@@ -134,7 +156,12 @@ export const translations = {
             refresh_participants: "Refrescar participantes",
             share_session: "Compartir sesión",
             leave_session: "Abandonar sesión",
-            time_remaining: "Tiempo restante"
+            time_remaining: "Tiempo restante",
+            in_game: "En Juego",
+            waiting_status: "Esperando",
+            resume: "Reanudar",
+            filter_by_class: "Filtro por Clase",
+            finish_session: "Finalizar sesión"
         },
         landing: {
             features: "Características",
@@ -302,7 +329,15 @@ export const translations = {
             pin_placeholder: "Game PIN",
             nickname_placeholder: "Your nickname",
             button: "Join",
-            invalid_pin: "Invalid PIN"
+            invalid_pin: "Invalid PIN",
+            active_session_found: "Active session found!",
+            rejoin_button: "Rejoin",
+            no_registration: "No registration",
+            session_finished: "This session has already ended",
+            active_session: "Active Session",
+            ready_to_enter: "Ready to enter",
+            select_name: "Select your name",
+            choose_name: "-- Choose your name --"
         },
         play: {
             waiting_title: "You're in!",
@@ -332,7 +367,21 @@ export const translations = {
             pairs: "Pairs",
             time_left: "Time left",
             joined_late_title: "Just in time!",
-            joined_late_subtitle: "The question already ended, but get ready for the next one."
+            joined_late_subtitle: "The question already ended, but get ready for the next one.",
+            loading_next: "Loading next question..."
+        },
+        game: {
+            eliminated: "ELIMINATED!",
+            eliminated_desc: "You failed in survival mode. You can still watch the rest of the class.",
+            game_over: "GAME OVER!",
+            victory: "VICTORY!",
+            victory_desc: "You saved the hangman!",
+            hint_button: "Hint",
+            hint_cost: "Costs 1 Life",
+            lives: "lives",
+            guess_instruction: "Guess the word to earn points",
+            press_letters: "Press the letters to guess",
+            word_was: "The word was:"
         },
         analytics: {
             avg_success: "Avg. Success",
@@ -370,7 +419,12 @@ export const translations = {
             refresh_participants: "Refresh participants",
             share_session: "Share session",
             leave_session: "Leave session",
-            time_remaining: "Time remaining"
+            time_remaining: "Time remaining",
+            in_game: "In Game",
+            waiting_status: "Waiting",
+            resume: "Resume",
+            filter_by_class: "Filter by Class",
+            finish_session: "Finish session"
         },
         landing: {
             features: "Features",

@@ -74,8 +74,8 @@ export default function StudentPlay() {
                                 <div className="w-24 h-24 bg-red-600 rounded-[2rem] flex items-center justify-center text-white shadow-xl shadow-red-900/20 animate-bounce">
                                     <LogOut className="w-12 h-12 rotate-90" />
                                 </div>
-                                <h1 className="text-4xl font-black text-red-600">¡ELIMINADO!</h1>
-                                <p className="text-slate-500 font-bold max-w-xs text-balance">Has fallado en el modo supervivencia. Puedes seguir viendo el resto de la clase.</p>
+                                <h1 className="text-4xl font-black text-red-600">{t('game.eliminated')}</h1>
+                                <p className="text-slate-500 font-bold max-w-xs text-balance">{t('game.eliminated_desc')}</p>
                             </div>
                         </div>
                     ) : !currentQuestion ? (
@@ -83,7 +83,7 @@ export default function StudentPlay() {
                             <div className="w-20 h-20 bg-blue-100 rounded-3xl flex items-center justify-center text-blue-500">
                                 <Loader2 className="w-10 h-10 animate-spin" />
                             </div>
-                            <p className="text-slate-400 font-black uppercase tracking-[0.3em] text-xs">Cargando siguiente pregunta...</p>
+                            <p className="text-slate-400 font-black uppercase tracking-[0.3em] text-xs">{t('play.loading_next')}</p>
                         </div>
                     ) : timesUp ? (
                         <div className="w-full text-center space-y-6 animate-in zoom-in duration-700">
