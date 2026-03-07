@@ -1,8 +1,12 @@
 "use client";
 
-import { Calendar, ChevronRight, History, Trash2 } from "lucide-react";
+import { Calendar, ChevronRight, History, Trash2, FileDown, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FinishedSession } from "@/lib/schemas";
+import { useState } from "react";
+import { supabase } from "@/lib/supabase";
+import { generateExcelReport, ReportAnswer, ReportData, ReportParticipant, ReportQuestion } from "@/lib/reports";
+import { toast } from "sonner";
 
 interface HistoryTableProps {
     history: FinishedSession[];
@@ -11,8 +15,73 @@ interface HistoryTableProps {
     onDelete: (id: string) => void;
 }
 
+interface SessionDataWithQuiz {
+    id: string;
+    pin: string;
+    created_at: string;
+    finished_at: string;
+    quiz: {
+        id: string;
+        title: string;
+        class: { name: string } | null;
+    } | null;
+}
+
 export default function HistoryTable({ history, language, t, onDelete }: HistoryTableProps) {
     const router = useRouter();
+    const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+    const handleDownload = async (e: React.MouseEvent, session: FinishedSession) => {
+        e.stopPropagation();
+        try {
+            setDownloadingId(session.id);
+
+            // 1. Fetch complete data
+            const { data: sessionData, error: sessionError } = await supabase
+                .from("sessions")
+                .select(`
+                    id, pin, created_at, finished_at,
+                    quiz:quizzes(id, title, class:classes(name))
+                `)
+                .eq("id", session.id)
+                .single();
+
+            const { data: answersData, error: answersError } = await supabase
+                .from("answers")
+                .select("is_correct, points_awarded, question_id, participant_id")
+                .eq("session_id", session.id);
+
+            const { data: participantsData, error: participantsError } = await supabase
+                .from("participants")
+                .select("id, nickname")
+                .eq("session_id", session.id);
+
+            const { data: questionsData, error: questionsError } = await supabase
+                .from("questions")
+                .select("id, question_text")
+                .eq("quiz_id", (sessionData as unknown as SessionDataWithQuiz)?.quiz?.id || "")
+                .order('sort_order', { ascending: true });
+
+            if (sessionError || answersError || participantsError || questionsError || !sessionData) {
+                throw new Error("Error al obtener datos");
+            }
+
+            // 2. Generate
+            generateExcelReport({
+                session: sessionData as unknown as ReportData['session'],
+                answers: answersData as unknown as ReportAnswer[],
+                participants: participantsData as unknown as ReportParticipant[],
+                questions: questionsData as unknown as ReportQuestion[]
+            }, t);
+
+            toast.success("Reporte descargado");
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : "Error al descargar";
+            toast.error(message);
+        } finally {
+            setDownloadingId(null);
+        }
+    };
 
     if (history.length === 0) {
         return (
@@ -67,6 +136,14 @@ export default function HistoryTable({ history, language, t, onDelete }: History
                                     </td>
                                     <td className="px-10 py-8 text-right flex items-center justify-end gap-3">
                                         <button
+                                            onClick={(e) => handleDownload(e, session)}
+                                            disabled={!!downloadingId}
+                                            className="p-3 bg-emerald-50 rounded-xl text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all shadow-sm disabled:opacity-50"
+                                            title={t('session.download_report')}
+                                        >
+                                            {downloadingId === session.id ? <Loader2 className="w-5 h-5 animate-spin" /> : <FileDown className="w-5 h-5" />}
+                                        </button>
+                                        <button
                                             onClick={() => router.push(`/teacher/reports/${session.id}`)}
                                             className="inline-flex items-center gap-2 bg-slate-900 text-white px-6 py-2.5 rounded-xl font-black text-sm hover:bg-blue-600 transition-all active:scale-95 shadow-lg shadow-slate-100"
                                         >
@@ -118,6 +195,13 @@ export default function HistoryTable({ history, language, t, onDelete }: History
                             >
                                 {t('dashboard.report_button')}
                                 <ChevronRight className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={(e) => handleDownload(e, session)}
+                                disabled={!!downloadingId}
+                                className="p-4 bg-emerald-50 rounded-xl text-emerald-600 active:bg-emerald-600 active:text-white transition-all shadow-sm"
+                            >
+                                {downloadingId === session.id ? <Loader2 className="w-5 h-5 animate-spin" /> : <FileDown className="w-5 h-5" />}
                             </button>
                             <button
                                 onClick={() => onDelete(session.id)}

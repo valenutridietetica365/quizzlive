@@ -161,7 +161,16 @@ export const translations = {
             waiting_status: "Esperando",
             resume: "Reanudar",
             filter_by_class: "Filtro por Clase",
-            finish_session: "Finalizar sesión"
+            finish_session: "Finalizar sesión",
+            download_report: "Descargar Reporte",
+            report_summary: "Resumen",
+            report_grades: "Notas",
+            report_matrix: "Matriz de Respuestas",
+            table_student: "Alumno",
+            table_score: "Puntaje",
+            table_accuracy: "Precisión",
+            table_rank: "Puesto",
+            table_correct: "Correctas"
         },
         landing: {
             features: "Características",
@@ -424,7 +433,16 @@ export const translations = {
             waiting_status: "Waiting",
             resume: "Resume",
             filter_by_class: "Filter by Class",
-            finish_session: "Finish session"
+            finish_session: "Finish session",
+            download_report: "Download Report",
+            report_summary: "Summary",
+            report_grades: "Grades",
+            report_matrix: "Response Matrix",
+            table_student: "Student",
+            table_score: "Score",
+            table_accuracy: "Accuracy",
+            table_rank: "Rank",
+            table_correct: "Correct"
         },
         landing: {
             features: "Features",

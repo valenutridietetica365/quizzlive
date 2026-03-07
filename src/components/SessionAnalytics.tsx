@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Loader2, Target, TrendingUp } from "lucide-react";
+import { Loader2, Target, FileDown } from "lucide-react";
 import { toast } from "sonner";
 import { getTranslation } from "@/lib/i18n";
 import { useQuizStore } from "@/lib/store";
@@ -10,6 +10,7 @@ import { useQuizStore } from "@/lib/store";
 import KPISection from "@/components/analytics/KPISection";
 import InsightsPanel from "@/components/analytics/InsightsPanel";
 import QuestionsChart from "@/components/analytics/QuestionsChart";
+import { generateExcelReport, ReportAnswer, ReportData, ReportParticipant, ReportQuestion } from "@/lib/reports";
 
 interface SessionAnalyticsProps {
     sessionId: string;
@@ -41,6 +42,18 @@ interface HeatmapRow {
     answers: Record<string, boolean | null>;
 }
 
+interface ReportSessionData {
+    id: string;
+    pin: string;
+    created_at: string;
+    finished_at: string;
+    quiz: {
+        id: string;
+        title: string;
+        class: { name: string } | null;
+    } | null;
+}
+
 const SessionAnalytics = React.memo(function SessionAnalytics({ sessionId }: SessionAnalyticsProps) {
     const { language } = useQuizStore();
     const [data, setData] = useState<QuestionStat[]>([]);
@@ -48,27 +61,54 @@ const SessionAnalytics = React.memo(function SessionAnalytics({ sessionId }: Ses
     const [loading, setLoading] = useState(true);
     const t = (key: string) => getTranslation(language, key);
 
-    const exportToCSV = async () => {
-        const { data: answers, error } = await supabase.from("answers").select(`is_correct, points_awarded, questions(question_text), participants(nickname)`).eq("session_id", sessionId);
-        if (error || !answers) { toast.error("Error al exportar datos"); return; }
+    const downloadProfessionalReport = async () => {
+        try {
+            setLoading(true);
+            // 1. Fetch complete data for the report
+            const { data: sessionData, error: sessionError } = await supabase
+                .from("sessions")
+                .select(`
+                    id, pin, created_at, finished_at,
+                    quiz:quizzes(title, class:classes(name))
+                `)
+                .eq("id", sessionId)
+                .single();
 
-        const headers = ["Alumno", "Pregunta", "Correcto", "Puntos"];
-        const rows = (answers as unknown as ExportAnswer[]).map(a => [
-            a.participants?.nickname || "Anónimo",
-            a.questions?.question_text || "Pregunta",
-            a.is_correct ? "SÍ" : "NO",
-            a.points_awarded
-        ]);
-        const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.setAttribute("href", url);
-        link.setAttribute("download", `Reporte_Sesion_${sessionId}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+            const { data: answersData, error: answersError } = await supabase
+                .from("answers")
+                .select("is_correct, points_awarded, question_id, participant_id")
+                .eq("session_id", sessionId);
+
+            const { data: participantsData, error: participantsError } = await supabase
+                .from("participants")
+                .select("id, nickname")
+                .eq("session_id", sessionId);
+
+            const { data: questionsData, error: questionsError } = await supabase
+                .from("questions")
+                .select("id, question_text")
+                .eq("quiz_id", (sessionData as unknown as ReportSessionData)?.quiz?.id || "")
+                .order('sort_order', { ascending: true });
+
+            if (sessionError || answersError || participantsError || questionsError || !sessionData) {
+                throw new Error("Error al obtener datos para el reporte");
+            }
+
+            // 2. Generate and download
+            generateExcelReport({
+                session: sessionData as unknown as ReportData['session'],
+                answers: answersData as unknown as ReportAnswer[],
+                participants: participantsData as unknown as ReportParticipant[],
+                questions: questionsData as unknown as ReportQuestion[]
+            }, t);
+
+            toast.success("Reporte generado con éxito");
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : "Error al generar reporte";
+            toast.error(message);
+        } finally {
+            setLoading(false);
+        }
     };
 
     useEffect(() => {
@@ -122,8 +162,8 @@ const SessionAnalytics = React.memo(function SessionAnalytics({ sessionId }: Ses
                     <h2 className="text-2xl font-black text-white uppercase tracking-tight">Estadísticas de Sesión</h2>
                     <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Resumen detallado de resultados</p>
                 </div>
-                <button onClick={exportToCSV} className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-sm hover:bg-blue-700 transition-all active:scale-95 shadow-lg shadow-blue-500/20 flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4" /> Exportar CSV
+                <button onClick={downloadProfessionalReport} className="bg-emerald-600 text-white px-6 py-3 rounded-2xl font-black text-sm hover:bg-emerald-700 transition-all active:scale-95 shadow-lg shadow-emerald-500/20 flex items-center gap-2">
+                    <FileDown className="w-4 h-4" /> {t('session.download_report')}
                 </button>
             </div>
 
