@@ -10,7 +10,7 @@ import { useQuizStore } from "@/lib/store";
 import KPISection from "@/components/analytics/KPISection";
 import InsightsPanel from "@/components/analytics/InsightsPanel";
 import QuestionsChart from "@/components/analytics/QuestionsChart";
-import { generateExcelReport, ReportAnswer, ReportData, ReportParticipant, ReportQuestion } from "@/lib/reports";
+import { generateExcelReport, generatePDFReport, ReportAnswer, ReportData, ReportParticipant, ReportQuestion } from "@/lib/reports";
 
 interface SessionAnalyticsProps {
     sessionId: string;
@@ -102,9 +102,59 @@ const SessionAnalytics = React.memo(function SessionAnalytics({ sessionId }: Ses
                 questions: questionsData as unknown as ReportQuestion[]
             }, t);
 
-            toast.success("Reporte generado con éxito");
+            toast.success("Reporte generado con éxito (Excel)");
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : "Error al generar reporte";
+            toast.error(message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const downloadPDFReportAction = async () => {
+        try {
+            setLoading(true);
+            // 1. Fetch complete data
+            const { data: sessionData, error: sessionError } = await supabase
+                .from("sessions")
+                .select(`
+                    id, pin, created_at, finished_at,
+                    quiz:quizzes(id, title, class:classes(name))
+                `)
+                .eq("id", sessionId)
+                .single();
+
+            const { data: answersData, error: answersError } = await supabase
+                .from("answers")
+                .select("is_correct, points_awarded, question_id, participant_id")
+                .eq("session_id", sessionId);
+
+            const { data: participantsData, error: participantsError } = await supabase
+                .from("participants")
+                .select("id, nickname")
+                .eq("session_id", sessionId);
+
+            const { data: questionsData, error: questionsError } = await supabase
+                .from("questions")
+                .select("id, question_text")
+                .eq("quiz_id", (sessionData as unknown as ReportSessionData)?.quiz?.id || "")
+                .order('sort_order', { ascending: true });
+
+            if (sessionError || answersError || participantsError || questionsError || !sessionData) {
+                throw new Error("Error al obtener datos para el reporte");
+            }
+
+            // 2. Generate PDF
+            generatePDFReport({
+                session: sessionData as unknown as ReportData['session'],
+                answers: answersData as unknown as ReportAnswer[],
+                participants: participantsData as unknown as ReportParticipant[],
+                questions: questionsData as unknown as ReportQuestion[]
+            }, t);
+
+            toast.success("Reporte generado con éxito (PDF)");
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : "Error al generar PDF";
             toast.error(message);
         } finally {
             setLoading(false);
@@ -162,9 +212,24 @@ const SessionAnalytics = React.memo(function SessionAnalytics({ sessionId }: Ses
                     <h2 className="text-2xl font-black text-white uppercase tracking-tight">Estadísticas de Sesión</h2>
                     <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Resumen detallado de resultados</p>
                 </div>
-                <button onClick={downloadProfessionalReport} className="bg-emerald-600 text-white px-6 py-3 rounded-2xl font-black text-sm hover:bg-emerald-700 transition-all active:scale-95 shadow-lg shadow-emerald-500/20 flex items-center gap-2">
-                    <FileDown className="w-4 h-4" /> {t('session.download_report')}
-                </button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={downloadProfessionalReport}
+                        disabled={loading}
+                        className="bg-emerald-600 text-white px-6 py-3 rounded-2xl font-black text-sm hover:bg-emerald-700 transition-all active:scale-95 shadow-lg shadow-emerald-500/20 flex items-center gap-2 disabled:opacity-50"
+                    >
+                        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+                        Excel
+                    </button>
+                    <button
+                        onClick={downloadPDFReportAction}
+                        disabled={loading}
+                        className="bg-slate-900 text-white px-6 py-3 rounded-2xl font-black text-sm hover:bg-slate-800 transition-all active:scale-95 shadow-lg shadow-slate-900/20 flex items-center gap-2 disabled:opacity-50"
+                    >
+                        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+                        PDF
+                    </button>
+                </div>
             </div>
 
             <KPISection avgSuccess={avgSuccess} totalParticipants={data[0]?.total ?? 0} bestQuestionName={bestQuestionName} t={t} />

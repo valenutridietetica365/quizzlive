@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { FinishedSession } from "@/lib/schemas";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { generateExcelReport, ReportAnswer, ReportData, ReportParticipant, ReportQuestion } from "@/lib/reports";
+import { generateExcelReport, generatePDFReport, ReportAnswer, ReportData, ReportParticipant, ReportQuestion } from "@/lib/reports";
 import { toast } from "sonner";
 
 interface HistoryTableProps {
@@ -30,11 +30,13 @@ interface SessionDataWithQuiz {
 export default function HistoryTable({ history, language, t, onDelete }: HistoryTableProps) {
     const router = useRouter();
     const [downloadingId, setDownloadingId] = useState<string | null>(null);
+    const [downloadingFormat, setDownloadingFormat] = useState<'excel' | 'pdf' | null>(null);
 
-    const handleDownload = async (e: React.MouseEvent, session: FinishedSession) => {
+    const handleDownload = async (e: React.MouseEvent, session: FinishedSession, format: 'excel' | 'pdf') => {
         e.stopPropagation();
         try {
             setDownloadingId(session.id);
+            setDownloadingFormat(format);
 
             // 1. Fetch complete data
             const { data: sessionData, error: sessionError } = await supabase
@@ -67,19 +69,26 @@ export default function HistoryTable({ history, language, t, onDelete }: History
             }
 
             // 2. Generate
-            generateExcelReport({
+            const payload: ReportData = {
                 session: sessionData as unknown as ReportData['session'],
                 answers: answersData as unknown as ReportAnswer[],
                 participants: participantsData as unknown as ReportParticipant[],
                 questions: questionsData as unknown as ReportQuestion[]
-            }, t);
+            };
 
-            toast.success("Reporte descargado");
+            if (format === 'excel') {
+                generateExcelReport(payload, t);
+            } else {
+                generatePDFReport(payload, t);
+            }
+
+            toast.success(`Reporte ${format.toUpperCase()} generado`);
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : "Error al descargar";
             toast.error(message);
         } finally {
             setDownloadingId(null);
+            setDownloadingFormat(null);
         }
     };
 
@@ -136,12 +145,20 @@ export default function HistoryTable({ history, language, t, onDelete }: History
                                     </td>
                                     <td className="px-10 py-8 text-right flex items-center justify-end gap-3">
                                         <button
-                                            onClick={(e) => handleDownload(e, session)}
+                                            onClick={(e) => handleDownload(e, session, 'excel')}
                                             disabled={!!downloadingId}
                                             className="p-3 bg-emerald-50 rounded-xl text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all shadow-sm disabled:opacity-50"
-                                            title={t('session.download_report')}
+                                            title="Excel"
                                         >
-                                            {downloadingId === session.id ? <Loader2 className="w-5 h-5 animate-spin" /> : <FileDown className="w-5 h-5" />}
+                                            {downloadingId === session.id && downloadingFormat === 'excel' ? <Loader2 className="w-5 h-5 animate-spin" /> : <FileDown className="w-5 h-5" />}
+                                        </button>
+                                        <button
+                                            onClick={(e) => handleDownload(e, session, 'pdf')}
+                                            disabled={!!downloadingId}
+                                            className="p-3 bg-slate-50 rounded-xl text-slate-600 hover:bg-slate-900 hover:text-white transition-all shadow-sm disabled:opacity-50"
+                                            title="PDF"
+                                        >
+                                            {downloadingId === session.id && downloadingFormat === 'pdf' ? <Loader2 className="w-5 h-5 animate-spin" /> : <FileDown className="w-5 h-5" />}
                                         </button>
                                         <button
                                             onClick={() => router.push(`/teacher/reports/${session.id}`)}
@@ -197,11 +214,18 @@ export default function HistoryTable({ history, language, t, onDelete }: History
                                 <ChevronRight className="w-4 h-4" />
                             </button>
                             <button
-                                onClick={(e) => handleDownload(e, session)}
+                                onClick={(e) => handleDownload(e, session, 'excel')}
                                 disabled={!!downloadingId}
                                 className="p-4 bg-emerald-50 rounded-xl text-emerald-600 active:bg-emerald-600 active:text-white transition-all shadow-sm"
                             >
-                                {downloadingId === session.id ? <Loader2 className="w-5 h-5 animate-spin" /> : <FileDown className="w-5 h-5" />}
+                                {downloadingId === session.id && downloadingFormat === 'excel' ? <Loader2 className="w-5 h-5 animate-spin" /> : <FileDown className="w-5 h-5" />}
+                            </button>
+                            <button
+                                onClick={(e) => handleDownload(e, session, 'pdf')}
+                                disabled={!!downloadingId}
+                                className="p-4 bg-slate-50 rounded-xl text-slate-600 active:bg-slate-900 active:text-white transition-all shadow-sm"
+                            >
+                                {downloadingId === session.id && downloadingFormat === 'pdf' ? <Loader2 className="w-5 h-5 animate-spin" /> : <FileDown className="w-5 h-5" />}
                             </button>
                             <button
                                 onClick={() => onDelete(session.id)}

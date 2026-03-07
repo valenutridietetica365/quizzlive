@@ -1,4 +1,6 @@
 import * as XLSX from 'xlsx';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export interface ReportAnswer {
     is_correct: boolean;
@@ -157,3 +159,141 @@ export const generateExcelReport = (data: ReportData, t: (key: string) => string
     XLSX.writeFile(wb, fileName);
 };
 
+export const generatePDFReport = (data: ReportData, t: (key: string) => string) => {
+    const { session, answers, questions, participants } = data;
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
+    const dateStr = new Date(session.finished_at).toLocaleString();
+
+    // --- 1. Header & Branding ---
+    doc.setFillColor(15, 23, 42); // slate-900
+    doc.rect(0, 0, pageWidth, 40, 'F');
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(22);
+    doc.setFont("helvetica", "bold");
+    doc.text("QUIZZLIVE", 20, 20);
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text("REPORTE PEDAGÓGICO PROFESIONAL", 20, 28);
+
+    // Header Info Box (Right)
+    doc.setFontSize(9);
+    doc.text(`${t('dashboard.table_pin')}: ${session.pin}`, pageWidth - 60, 15);
+    doc.text(`${t('dashboard.table_date')}: ${dateStr}`, pageWidth - 60, 22);
+    doc.text(`ID: ${session.id.substring(0, 8)}`, pageWidth - 60, 29);
+
+    // --- 2. Session Info Section ---
+    let yPos = 55;
+    doc.setTextColor(15, 23, 42);
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text(session.quiz.title.toUpperCase(), 20, yPos);
+
+    yPos += 10;
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    doc.text(`${t('sidebar.classes')}: ${session.quiz.class?.name || 'N/A'}`, 20, yPos);
+
+    // --- 3. KPIs Recap ---
+    yPos += 20;
+    const correctCount = answers.filter(a => a.is_correct).length;
+    const totalAnswers = Math.max(1, answers.length);
+    const avgSuccess = Math.round((correctCount / totalAnswers) * 100);
+
+    autoTable(doc, {
+        startY: yPos,
+        head: [[t('analytics.participation'), t('analytics.avg_success'), 'Puntaje Total Máximo']],
+        body: [[`${participants.length} Alumnos`, `${avgSuccess}%`, answers.reduce((s, a) => s + a.points_awarded, 0).toLocaleString()]],
+        theme: 'grid',
+        headStyles: { fillColor: [59, 130, 246], fontStyle: 'bold' }, // blue-500
+    });
+
+    // --- 4. Rankings Table ---
+    const docWithTable = doc as jsPDF & { lastAutoTable: { finalY: number } };
+    yPos = docWithTable.lastAutoTable.finalY + 15;
+    doc.setFontSize(13);
+    doc.setFont("helvetica", "bold");
+    doc.text("TABLA DE CALIFICACIONES Y RANKING", 20, yPos);
+
+    const studentGrades = participants.map(p => {
+        const pAnswers = answers.filter(a => a.participant_id === p.id);
+        return {
+            name: p.nickname,
+            score: pAnswers.reduce((s, a) => s + a.points_awarded, 0),
+            correct: pAnswers.filter(a => a.is_correct).length,
+            total: pAnswers.length,
+            accuracy: pAnswers.length > 0 ? `${Math.round((pAnswers.filter(a => a.is_correct).length / pAnswers.length) * 100)}%` : '0%'
+        };
+    }).sort((a, b) => b.score - a.score);
+
+    autoTable(doc, {
+        startY: yPos + 5,
+        head: [[t('session.table_rank'), t('session.table_student'), t('session.table_score'), t('session.table_correct'), t('session.table_accuracy')]],
+        body: studentGrades.map((g, i) => [i + 1, g.name, g.score, `${g.correct}/${g.total}`, g.accuracy]),
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [30, 41, 59] }, // slate-800
+    });
+
+    // --- 5. Response Matrix (Heatmap) ---
+    doc.addPage();
+    doc.setFontSize(13);
+    doc.setFont("helvetica", "bold");
+    doc.text("MATRIZ DE RESPUESTAS POR PREGUNTA", 20, 20);
+
+    const matrixHead = [t('session.table_student'), ...questions.map((_, i) => `P${i + 1}`)];
+    const matrixBody = participants.sort((a, b) => a.nickname.localeCompare(b.nickname)).map(p => {
+        const row = [p.nickname];
+        questions.forEach(q => {
+            const ans = answers.find(a => a.participant_id === p.id && a.question_id === q.id);
+            if (!ans) row.push('-');
+            else row.push(ans.is_correct ? 'CORR' : 'INC');
+        });
+        return row;
+    });
+
+    autoTable(doc, {
+        startY: 30,
+        head: [matrixHead],
+        body: matrixBody,
+        styles: { fontSize: 7, cellPadding: 1.5 },
+        headStyles: { fillColor: [30, 41, 59] },
+        didParseCell: (data) => {
+            if (data.section === 'body' && data.column.index > 0) {
+                if (data.cell.text[0] === 'CORR') {
+                    data.cell.styles.textColor = [16, 185, 129]; // emerald-500
+                    data.cell.styles.fontStyle = 'bold';
+                } else if (data.cell.text[0] === 'INC') {
+                    data.cell.styles.textColor = [244, 63, 94]; // rose-500
+                    data.cell.styles.fontStyle = 'bold';
+                }
+            }
+        }
+    });
+
+    // Question Legend
+    yPos = docWithTable.lastAutoTable.finalY + 10;
+    doc.setFontSize(10);
+    doc.text("Leyenda de Preguntas:", 20, yPos);
+
+    questions.forEach((q, i) => {
+        if (yPos > 270) { doc.addPage(); yPos = 20; }
+        yPos += 6;
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        doc.text(`P${i + 1}: ${q.question_text}`, 25, yPos);
+    });
+
+    // Footer on all pages
+    const internalDoc = doc.internal as unknown as { getNumberOfPages: () => number };
+    const pageCount = internalDoc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text(`Página ${i} de ${pageCount} - Generado por QuizzLive`, pageWidth / 2, 290, { align: 'center' });
+    }
+
+    doc.save(`Reporte_${session.quiz.title.replace(/\s+/g, '_')}_${new Date(session.finished_at).toISOString().split('T')[0]}.pdf`);
+};
