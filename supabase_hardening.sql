@@ -58,6 +58,14 @@ BEGIN
     END IF;
 END $$;
 
+-- Link Participants to Students (CRITICAL for Evolution Analytics)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='participants' AND column_name='student_id') THEN
+        ALTER TABLE public.participants ADD COLUMN student_id UUID REFERENCES public.students(id) ON DELETE SET NULL;
+    END IF;
+END $$;
+
 -- ----------------------------------------------------------
 -- 2. PERFORMANCE INDICES
 -- ----------------------------------------------------------
@@ -71,6 +79,11 @@ CREATE INDEX IF NOT EXISTS idx_sessions_finished_at ON public.sessions(finished_
 -- Filtros rápidos por profesor
 CREATE INDEX IF NOT EXISTS idx_quizzes_teacher_id ON public.quizzes(teacher_id);
 CREATE INDEX IF NOT EXISTS idx_classes_teacher_id ON public.classes(teacher_id);
+
+-- Analytics & Evolution Indices
+CREATE INDEX IF NOT EXISTS idx_participants_student_id ON public.participants(student_id);
+CREATE INDEX IF NOT EXISTS idx_participants_session_id ON public.participants(session_id);
+CREATE INDEX IF NOT EXISTS idx_answers_participant_id ON public.answers(participant_id);
 
 -- ----------------------------------------------------------
 -- 3. AUTO-CLEANUP (Maintenance)

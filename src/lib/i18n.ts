@@ -127,7 +127,14 @@ export const translations = {
             success_by_question: "Éxito por Pregunta",
             critical_questions: "Preguntas Críticas",
             insight_title: "Diagnóstico Pedagógico",
-            insight_desc: "Se recomienda reforzar los temas relacionados con estas preguntas."
+            insight_desc: "Se recomienda reforzar los temas relacionados con estas preguntas.",
+            student_profile: "Perfil del Alumno",
+            evolution_title: "Evolución de Aprendizaje",
+            topic_mastery: "Dominio por Temas",
+            sessions_played: "Sesiones Jugadas",
+            avg_score: "Puntaje Promedio",
+            perfect_quizzes: "Quizzes Perfectos",
+            performance_trend: "Tendencia de Desempeño"
         },
         session: {
             title: "Sesión en Vivo",
@@ -401,7 +408,14 @@ export const translations = {
             success_by_question: "Success by Question",
             critical_questions: "Critical Questions",
             insight_title: "Learning Insight",
-            insight_desc: "It is recommended to reinforce the topics related to these questions."
+            insight_desc: "It is recommended to reinforce the topics related to these questions.",
+            student_profile: "Student Profile",
+            evolution_title: "Learning Evolution",
+            topic_mastery: "Topic Mastery",
+            sessions_played: "Sessions Played",
+            avg_score: "Average Score",
+            perfect_quizzes: "Perfect Quizzes",
+            performance_trend: "Performance Trend"
         },
         session: {
             title: "Live Session",
