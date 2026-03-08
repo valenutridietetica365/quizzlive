@@ -20,43 +20,42 @@ export default function ModeSelectionModal({ isOpen, onClose, onStart }: ModeSel
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="bg-white w-full max-w-xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-                <div className="p-8 md:p-12 space-y-8">
-                    <div className="text-center space-y-2">
-                        <h3 className="text-3xl font-black text-slate-900 tracking-tight">Selecciona un Modo de Juego</h3>
-                        <p className="text-slate-500 font-medium">Personaliza cómo van a competir tus alumnos hoy.</p>
+            <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+                <div className="p-6 md:p-8 space-y-6">
+                    <div className="text-center space-y-1">
+                        <h3 className="text-2xl font-black text-slate-900 tracking-tight">Selecciona un Modo de Juego</h3>
+                        <p className="text-sm text-slate-500 font-medium">Personaliza cómo van a competir tus alumnos hoy.</p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         {([
-                            { id: 'classic', icon: Play, name: 'Clásico', desc: 'Todos contra todos por puntos.' },
-                            { id: 'survival', icon: Users, name: 'Supervivencia', desc: 'Un fallo y quedas fuera del podio.' },
-                            { id: 'teams', icon: Users, name: 'Equipos', desc: 'Competición grupal (2-4 equipos).' },
-                            { id: 'roulette', icon: Sparkles, name: 'Ruleta', desc: 'Sorteo de alumnos y preguntas.' },
-                            { id: 'hangman', icon: BookOpen, name: 'Ahorcado', desc: 'Adivina la palabra letra por letra.' }
+                            { id: 'classic', icon: Play, name: 'Clásico', desc: 'Puntos estándar.' },
+                            { id: 'survival', icon: Users, name: 'Supervivencia', desc: 'Vidas limitadas.' },
+                            { id: 'teams', icon: Users, name: 'Equipos', desc: 'Grupos vs Grupos.' },
+                            { id: 'roulette', icon: Sparkles, name: 'Ruleta', desc: 'Sorteo dinámico.' },
+                            { id: 'hangman', icon: BookOpen, name: 'Ahorcado', desc: 'Palabra oculta.' }
                         ] as const).map((mode) => (
                             <button
                                 key={mode.id}
                                 onClick={() => setSelectedMode(mode.id)}
-                                className={`p-6 rounded-[2rem] border-2 text-left transition-all space-y-3 ${selectedMode === mode.id
-                                    ? "border-blue-600 bg-blue-50/50 ring-4 ring-blue-50"
+                                className={`p-4 rounded-[2rem] border-2 text-left transition-all space-y-2 ${selectedMode === mode.id
+                                    ? "border-blue-600 bg-blue-50/50 ring-2 ring-blue-50"
                                     : "border-slate-100 bg-white hover:border-slate-200"
                                     }`}
                             >
-                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${selectedMode === mode.id ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-500"}`}>
-                                    <mode.icon className="w-6 h-6" />
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${selectedMode === mode.id ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-500"}`}>
+                                    <mode.icon className="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <p className="font-black text-slate-900">{mode.name}</p>
-                                    <p className="text-xs text-slate-500 font-medium">{mode.desc}</p>
+                                    <p className="font-black text-slate-900 text-sm leading-tight">{mode.name}</p>
+                                    <p className="text-[10px] text-slate-500 font-medium leading-tight">{mode.desc}</p>
                                 </div>
                             </button>
                         ))}
                     </div>
 
-                    {/* Mode Specific Config */}
-                    <div className="bg-slate-50 p-6 rounded-[2rem] space-y-4 border border-slate-100">
-                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest pl-2">Configuración del Modo</p>
+                    <div className="bg-slate-50 p-4 rounded-[2rem] space-y-3 border border-slate-100">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Configuración del Modo</p>
 
                         {selectedMode === 'roulette' && (
                             <div className="flex items-center justify-between">
@@ -139,16 +138,16 @@ export default function ModeSelectionModal({ isOpen, onClose, onStart }: ModeSel
                         )}
                     </div>
 
-                    <div className="flex gap-4 pt-4">
+                    <div className="flex gap-4 pt-2">
                         <button
                             onClick={onClose}
-                            className="px-8 py-4 rounded-2xl font-black text-slate-400 hover:bg-slate-50 transition-all"
+                            className="px-6 py-3 rounded-2xl font-black text-slate-400 hover:bg-slate-100 transition-all text-sm"
                         >
                             Cancelar
                         </button>
                         <button
                             onClick={() => onStart(selectedMode, config)}
-                            className="flex-1 px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black shadow-xl shadow-blue-200 transition-all transform active:scale-95"
+                            className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black shadow-lg shadow-blue-100 transition-all transform active:scale-95 text-sm"
                         >
                             ¡Comenzar Juego!
                         </button>
