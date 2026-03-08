@@ -167,18 +167,26 @@ export function usePlaySession(id: string) {
     }, [id, nickname, participantId, session?.status, fetchInitialState, fetchParticipants, fetchTotalScore, handleNewQuestion, totalScore, fetchingScore]);
 
     const submitAnswer = useCallback(async (answer: string) => {
-        if (answered || isSubmitting || !currentQuestion) return;
+        if (answered || isSubmitting || !currentQuestion) {
+            console.warn("[submitAnswer] Blocked:", { answered, isSubmitting, hasQuestion: !!currentQuestion });
+            return;
+        }
         setIsSubmitting(true);
         setAnswered(true);
         setSelectedOption(answer);
 
         try {
-            const { data, error } = await supabase.rpc('submit_answer', {
+            const payload = {
                 p_session_id: id,
                 p_participant_id: participantId,
                 p_question_id: currentQuestion.id,
                 p_answer_text: currentQuestion.question_type === "matching" ? JSON.stringify(matchingPairs) : answer
-            });
+            };
+            console.log("[submitAnswer] Calling RPC with:", payload);
+
+            const { data, error } = await supabase.rpc('submit_answer', payload);
+
+            console.log("[submitAnswer] RPC result:", { data, error });
 
             if (error) throw error;
 
@@ -188,11 +196,14 @@ export function usePlaySession(id: string) {
                 setCurrentStreak(data.current_streak || 0);
                 playSFX(data.is_correct ? "correct" : "wrong");
                 if (data.is_correct && (data.current_streak || 0) >= 2) playSFX("streak");
+            } else if (data && !data.success) {
+                console.error("[submitAnswer] Server rejected:", data.error);
+                toast.error(`Respuesta rechazada: ${data.error || 'Error desconocido'}`);
             }
             setIsSubmitting(false);
         } catch (e) {
             console.error("Error al enviar respuesta:", e);
-            toast.error("Error de conexión al enviar tu respuesta");
+            toast.error(`Error al enviar respuesta: ${e instanceof Error ? e.message : String(e)}`);
             setIsSubmitting(false);
             setAnswered(false);
         }
