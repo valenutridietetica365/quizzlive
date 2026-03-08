@@ -6,6 +6,7 @@
 -- 2. Implementar limpieza automática de sesiones antiguas.
 -- 3. Optimizar índices para mejor rendimiento.
 -- 4. Reforzar la seguridad (RLS).
+-- 5. RPC robusto para validación de respuestas (Ahorcado/MCQ).
 
 -- ----------------------------------------------------------
 -- 1. MISSING TABLES (Classes, Folders, Students)
@@ -70,7 +71,7 @@ END $$;
 -- 2. PERFORMANCE INDICES
 -- ----------------------------------------------------------
 
--- Búsqueda rápida de sesiones activas por PIN (Ya es UNIQUE pero esto ayuda a la visibilidad)
+-- Búsqueda rápida de sesiones activas por PIN
 CREATE INDEX IF NOT EXISTS idx_sessions_pin_active ON public.sessions(pin) WHERE status != 'finished';
 
 -- Búsqueda de historial por fecha
@@ -86,32 +87,10 @@ CREATE INDEX IF NOT EXISTS idx_participants_session_id ON public.participants(se
 CREATE INDEX IF NOT EXISTS idx_answers_participant_id ON public.answers(participant_id);
 
 -- ----------------------------------------------------------
--- 3. AUTO-CLEANUP (Maintenance)
--- ----------------------------------------------------------
--- Función para limpiar sesiones "húerfanas" o muy viejas para ahorrar espacio en el tier gratuito
-
-CREATE OR REPLACE FUNCTION public.clean_old_sessions()
-RETURNS VOID AS $$
-BEGIN
-    -- 1. Eliminar sesiones en espera 'waiting' de más de 24 horas (abandonadas)
-    DELETE FROM public.sessions 
-    WHERE status = 'waiting' 
-    AND created_at < (now() - INTERVAL '24 hours');
-
-    -- 2. Eliminar sesiones 'active' de más de 12 hours (sesiones que el profesor olvidó cerrar)
-    DELETE FROM public.sessions 
-    WHERE status = 'active' 
-    AND created_at < (now() - INTERVAL '12 hours');
-
-    -- 3. (Opcional) Las sesiones 'finished' se mantienen para el historial, el profesor las borra manualmente.
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- ----------------------------------------------------------
--- 4. REINFORCED RLS POLICIES
+-- 3. REINFORCED RLS POLICIES
 -- ----------------------------------------------------------
 
--- Enable RLS for new tables
+-- Enable RLS for tables
 ALTER TABLE public.folders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.classes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.students ENABLE ROW LEVEL SECURITY;
@@ -137,7 +116,7 @@ CREATE POLICY "Profesor puede gestionar alumnos de sus clases" ON public.student
         )
     );
 
--- Refuerzo en Sessions para que no cualquiera pueda ver TODO
+-- Refuerzo en Sessions
 DROP POLICY IF EXISTS "Anyone can view sessions by PIN or ID" ON public.sessions;
 CREATE POLICY "Anyone can view sessions by PIN or ID"
     ON public.sessions FOR SELECT
@@ -148,7 +127,144 @@ CREATE POLICY "Anyone can view sessions by PIN or ID"
     ));
 
 -- ----------------------------------------------------------
--- 5. NOTAS FINALES
+-- 4. UTILS & RPC (Normalización y Validación)
 -- ----------------------------------------------------------
--- Para automatizar la limpieza (clean_old_sessions), puedes usar pg_cron si está disponible 
--- o simplemente llamar a esta función desde una Edge Function cada vez que el profesor entra al dashboard.
+
+-- Función para normalizar texto (Quita acentos, prefijos MCQ y puntuación)
+CREATE OR REPLACE FUNCTION public.normalize_answer_text(text_to_normalize TEXT)
+RETURNS TEXT AS $$
+BEGIN
+    -- 1. Convertir a minúsculas y quitar espacios
+    text_to_normalize := lower(trim(text_to_normalize));
+    
+    -- 2. Quitar prefijos comunes (A), A), 1.-, etc.)
+    text_to_normalize := regexp_replace(text_to_normalize, '^(?:[a-z0-9][.)\-:]+\s*)|^(?:\([a-z0-9]\)\s*)', '');
+    
+    -- 3. Quitar puntuación final (. , ; ! ?)
+    text_to_normalize := regexp_replace(text_to_normalize, '[.;,!?]$', '');
+    
+    -- 4. Normalizar acentos
+    text_to_normalize := translate(text_to_normalize, 'áéíóúüñ', 'aeiouun');
+    
+    RETURN trim(text_to_normalize);
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+-- RPC Robusto para enviar respuestas
+CREATE OR REPLACE FUNCTION public.submit_answer(
+  p_session_id UUID,
+  p_participant_id UUID,
+  p_question_id UUID,
+  p_answer_text TEXT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_correct_answer TEXT;
+  v_max_points INT;
+  v_time_limit INT;
+  v_is_correct BOOLEAN;
+  v_points_awarded INT;
+  v_session_status TEXT;
+  v_current_question_id UUID;
+  v_started_at TIMESTAMP WITH TIME ZONE;
+  v_q_type TEXT;
+  v_seconds_elapsed FLOAT;
+  v_game_mode public.game_mode_type;
+  v_is_eliminated BOOLEAN;
+  v_current_streak INT;
+BEGIN
+  -- 1. Validar estado de la sesión y participante
+  SELECT status, current_question_id, current_question_started_at, game_mode
+  INTO v_session_status, v_current_question_id, v_started_at, v_game_mode
+  FROM public.sessions
+  WHERE id = p_session_id;
+
+  SELECT is_eliminated, COALESCE(current_streak, 0) 
+  INTO v_is_eliminated, v_current_streak
+  FROM public.participants
+  WHERE id = p_participant_id;
+
+  IF v_session_status != 'active' THEN
+    RETURN jsonb_build_object('success', false, 'error', 'La sesión no está activa');
+  END IF;
+
+  IF v_is_eliminated THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Has sido eliminado de esta sesión');
+  END IF;
+
+  IF v_current_question_id IS NULL OR v_current_question_id != p_question_id THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Esta no es la pregunta actual');
+  END IF;
+
+  -- 2. Obtener datos de la pregunta
+  SELECT question_type, correct_answer, points, time_limit 
+  INTO v_q_type, v_correct_answer, v_max_points, v_time_limit
+  FROM public.questions
+  WHERE id = p_question_id;
+
+  -- 3. Validar si ya respondió
+  IF EXISTS (SELECT 1 FROM public.answers WHERE participant_id = p_participant_id AND question_id = p_question_id) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Ya has respondido esta pregunta');
+  END IF;
+
+  -- 4. Lógica de corrección Normalizada
+  IF v_q_type = 'matching' THEN
+     v_is_correct := (p_answer_text = v_correct_answer);
+  ELSIF p_answer_text = '__HANGMAN_FAIL__' THEN
+     v_is_correct := false;
+  ELSE
+     v_is_correct := (normalize_answer_text(p_answer_text) = normalize_answer_text(v_correct_answer));
+  END IF;
+
+  -- 5. Cálculo de puntos
+  v_points_awarded := 0;
+  IF v_is_correct THEN
+    IF v_started_at IS NOT NULL THEN
+      v_seconds_elapsed := extract(epoch from (now() - v_started_at));
+      v_points_awarded := round(v_max_points * (1 - least(v_seconds_elapsed / v_time_limit, 1.0) / 2));
+    ELSE
+      v_points_awarded := v_max_points;
+    END IF;
+    v_current_streak := v_current_streak + 1;
+  ELSE
+    v_current_streak := 0;
+  END IF;
+
+  -- Actualizar racha
+  UPDATE public.participants SET current_streak = v_current_streak WHERE id = p_participant_id;
+
+  -- 6. Lógica de Supervivencia
+  IF v_game_mode = 'survival' AND NOT v_is_correct THEN
+    UPDATE public.participants SET is_eliminated = true WHERE id = p_participant_id;
+  END IF;
+
+  -- 7. Registrar respuesta
+  INSERT INTO public.answers (participant_id, question_id, session_id, answer_text, is_correct, points_awarded)
+  VALUES (p_participant_id, p_question_id, p_session_id, p_answer_text, v_is_correct, v_points_awarded);
+  
+  RETURN jsonb_build_object(
+    'success', true, 
+    'is_correct', v_is_correct, 
+    'points_earned', v_points_awarded,
+    'current_streak', v_current_streak,
+    'eliminated', (v_game_mode = 'survival' AND NOT v_is_correct)
+  );
+END;
+$$;
+
+-- ----------------------------------------------------------
+-- 5. MANTENIMIENTO
+-- ----------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.clean_old_sessions(days_old INT DEFAULT 30)
+RETURNS VOID AS $$
+BEGIN
+    DELETE FROM public.sessions 
+    WHERE status = 'finished' 
+    AND finished_at < NOW() - (days_old || ' days')::INTERVAL;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

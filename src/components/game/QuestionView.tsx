@@ -78,15 +78,43 @@ export default function QuestionView({
 
             {(gameMode === "hangman" || currentQuestion.question_type === "hangman") && currentQuestion.question_type !== "matching" ? (
                 <div className="space-y-6">
-                    <HangmanView
-                        key={currentQuestion.id}
-                        word={currentQuestion.correct_answer || ""}
-                        options={currentQuestion.options}
-                        onComplete={submitAnswer}
-                        isSubmitting={isSubmitting}
-                        config={config}
-                        t={t}
-                    />
+                    {(() => {
+                        let targetWord = currentQuestion.correct_answer || "";
+
+                        // Intelligent Word Extraction for Hangman
+                        // If correct_answer is short (e.g., "A", "1") or matches a prefix, find the full option text
+                        if (currentQuestion.question_type === "multiple_choice" || currentQuestion.question_type === "true_false") {
+                            const matchingOption = currentQuestion.options.find(opt => {
+                                const normalizedOpt = opt.trim().toUpperCase();
+                                const normalizedCorrect = targetWord.trim().toUpperCase();
+
+                                // Match exact
+                                if (normalizedOpt === normalizedCorrect) return true;
+
+                                // Match prefix (e.g., correct is "A", option is "A) Paris")
+                                const prefixMatch = normalizedOpt.match(/^[A-Z0-9][.)\-:]+\s*(.*)/);
+                                if (prefixMatch && normalizedOpt.startsWith(normalizedCorrect)) return true;
+
+                                return false;
+                            });
+
+                            if (matchingOption) {
+                                targetWord = matchingOption;
+                            }
+                        }
+
+                        return (
+                            <HangmanView
+                                key={currentQuestion.id}
+                                word={targetWord}
+                                options={currentQuestion.options}
+                                onComplete={submitAnswer}
+                                isSubmitting={isSubmitting}
+                                config={config}
+                                t={t}
+                            />
+                        );
+                    })()}
                 </div>
             ) : currentQuestion.question_type === "multiple_choice" || currentQuestion.question_type === "true_false" ? (
                 <MultipleChoiceRenderer
