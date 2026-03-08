@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { playSFX } from "@/components/AudioController";
 import { Sparkles, Heart } from "lucide-react";
 
@@ -17,6 +17,9 @@ interface HangmanViewProps {
 }
 
 export default function HangmanView({ word, options, onComplete, isSubmitting, config, t }: HangmanViewProps) {
+    // Use ref for onComplete to avoid re-triggering useEffect when submitAnswer is recreated
+    const onCompleteRef = useRef(onComplete);
+    onCompleteRef.current = onComplete;
     // 1. Clean the word from prefixes/suffixes like "A) ", "1. ", "(B) ", or trailing "."
     const cleanWord = useMemo(() => {
         let raw = word.trim().toUpperCase();
@@ -79,21 +82,23 @@ export default function HangmanView({ word, options, onComplete, isSubmitting, c
                     for (const r of prefixes) { if (r.test(oRaw)) { oRaw = oRaw.replace(r, ""); break; } }
                     return oRaw.replace(/[.;,!?]$/, "") === cleanWord;
                 });
-                onComplete(originalOption || cleanWord);
+                onCompleteRef.current(originalOption || cleanWord);
             }, 1500);
             return () => clearTimeout(timer);
         }
-    }, [isWinner, onComplete, cleanWord, status, options]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isWinner, cleanWord, status, options]);
 
     useEffect(() => {
         if (isGameOver && status === "playing") {
             setStatus("lost");
             const timer = setTimeout(() => {
-                onComplete("__HANGMAN_FAIL__"); // Sentinel value for a failed hangman attempt
+                onCompleteRef.current("__HANGMAN_FAIL__"); // Sentinel value for a failed hangman attempt
             }, 2500);
             return () => clearTimeout(timer);
         }
-    }, [isGameOver, onComplete, status]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isGameOver, status]);
 
     const handleGuess = (letter: string) => {
         if (guessedLetters.includes(letter) || isWinner || isGameOver || isSubmitting) return;
