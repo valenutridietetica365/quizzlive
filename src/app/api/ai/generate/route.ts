@@ -28,14 +28,14 @@ export async function POST(req: Request) {
                 let expectedFormat = "";
 
                 if (questionType === "hangman") {
-                    promptInstructions = `Generate ${count} hangman game questions based on the topic. The question_text should be a clue or definition, and the options array MUST contain exactly ONE element which is the secret word to guess. The secret word should be a single word or short phrase relevant to the topic.`;
+                    promptInstructions = `Generate ${count} hangman game questions. The question_text should be a clue, definition, or a phrase with a missing word. The secret word MUST be placed in "correct_answer". "options" should be an empty array [].`;
                     expectedFormat = `
                 [
                   {
                     "question_text": "Clue or definition here...",
-                    "question_type": "hangman",
-                    "options": ["SECRET_WORD"],
-                    "correct_answer": null,
+                    "question_type": "fill_in_the_blank",
+                    "options": [],
+                    "correct_answer": "SECRET_WORD",
                     "time_limit": 30,
                     "points": 1000
                   }

@@ -76,7 +76,7 @@ export default function LiveQuestion({
                 ) : question.question_type === "fill_in_the_blank" ? (
                     <div className="bg-slate-900/50 p-10 rounded-[3rem] border-4 border-emerald-500/30 flex flex-col items-center gap-4 animate-in zoom-in">
                         <span className="text-xs font-black text-emerald-400 uppercase tracking-[0.4em]">{t('session.expected_answer')}</span>
-                        <h3 className="text-4xl md:text-6xl font-black text-white tracking-tight">{question.options.length > 0 ? question.options[0] : "---"}</h3>
+                        <h3 className="text-4xl md:text-6xl font-black text-white tracking-tight">{question.correct_answer || (question.options.length > 0 ? question.options[0] : "---")}</h3>
                     </div>
                 ) : (
                     <div className="grid sm:grid-cols-2 gap-4">
