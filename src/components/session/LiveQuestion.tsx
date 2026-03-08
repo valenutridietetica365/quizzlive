@@ -116,15 +116,17 @@ export default function LiveQuestion({
                 </div>
 
                 {/* Timer Card */}
-                <div className="bg-slate-900/80 backdrop-blur-xl p-6 md:p-8 rounded-3xl border border-white/5 flex flex-col items-center text-center space-y-3 shadow-2xl">
-                    <CircularTimer
-                        startedAt={startedAt}
-                        timeLimit={question.time_limit || 20}
-                        size="sm"
-                        onTimeUp={onNext}
-                    />
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('session.time_remaining')}</p>
-                </div>
+                {question.question_type !== "hangman" && (
+                    <div className="bg-slate-900/80 backdrop-blur-xl p-6 md:p-8 rounded-3xl border border-white/5 flex flex-col items-center text-center space-y-3 shadow-2xl">
+                        <CircularTimer
+                            startedAt={startedAt}
+                            timeLimit={question.time_limit || 20}
+                            size="sm"
+                            onTimeUp={onNext}
+                        />
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('session.time_remaining')}</p>
+                    </div>
+                )}
 
                 <button
                     onClick={onNext}
