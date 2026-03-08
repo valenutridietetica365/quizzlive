@@ -73,9 +73,16 @@ export default function RouletteController({ sessionId, participants, questions,
         await broadcastSpin("question", index, remainingQuestions.map(q => q.question_text));
     };
 
-    const onFinishSpin = (winner: string) => {
+    const onFinishSpin = async (winner: string) => {
         setWinnerIndex(null);
         setSpinningType(null);
+
+        // Notify students that the spin has finished
+        await supabase.channel(`roulette_${sessionId}`).send({
+            type: "broadcast",
+            event: "spin_finish",
+            payload: { winner }
+        });
 
         if (step === "spinning_p") {
             const p = remainingParticipants.find(p => p.nickname === winner);

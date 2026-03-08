@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import Image from "next/image";
 import CircularTimer from "@/components/CircularTimer";
 import HangmanView from "@/components/game/HangmanView";
@@ -59,9 +60,11 @@ export default function QuestionView({
     rouletteType = null,
     userNickname
 }: QuestionViewProps) {
-    const isCurrentWinner = rouletteType === "participant" &&
-        rouletteWinnerIndex !== null &&
-        rouletteItems[rouletteWinnerIndex] === userNickname;
+    const isCurrentWinner = useMemo(() => {
+        if (rouletteType !== "participant" || rouletteWinnerIndex === null || !userNickname) return false;
+        const winnerName = rouletteItems[rouletteWinnerIndex]?.trim().toLowerCase();
+        return winnerName === userNickname.trim().toLowerCase();
+    }, [rouletteType, rouletteWinnerIndex, rouletteItems, userNickname]);
 
     const currentWinnerName = rouletteType === "participant" && rouletteWinnerIndex !== null
         ? rouletteItems[rouletteWinnerIndex]

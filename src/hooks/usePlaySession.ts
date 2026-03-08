@@ -149,6 +149,9 @@ export function usePlaySession(id: string) {
                 setRouletteType(payload.type);
                 setRouletteSpinning(true);
             })
+            .on('broadcast', { event: 'spin_finish' }, () => {
+                setRouletteSpinning(false);
+            })
             .on('broadcast', { event: 'reset' }, () => {
                 setRouletteSpinning(false);
                 setRouletteWinnerIndex(null);
