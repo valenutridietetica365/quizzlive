@@ -1,19 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { Play, Users, BookOpen } from "lucide-react";
+import { Play, Users, BookOpen, Sparkles } from "lucide-react";
 import { GameModeConfig } from "@/lib/schemas";
 
 interface ModeSelectionModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onStart: (mode: "classic" | "survival" | "teams" | "hangman", config: GameModeConfig) => void;
+    onStart: (mode: "classic" | "survival" | "teams" | "hangman" | "roulette", config: GameModeConfig) => void;
 }
 
 export default function ModeSelectionModal({ isOpen, onClose, onStart }: ModeSelectionModalProps) {
-    const [selectedMode, setSelectedMode] = useState<"classic" | "survival" | "teams" | "hangman">("classic");
+    const [selectedMode, setSelectedMode] = useState<"classic" | "survival" | "teams" | "hangman" | "roulette">("classic");
     const [config, setConfig] = useState<GameModeConfig>({
-        hangmanLives: 6, hangmanIgnoreAccents: true, teamsCount: 2, survivalLives: 1
+        hangmanLives: 6, hangmanIgnoreAccents: true, teamsCount: 2, survivalLives: 1, rouletteManualPoints: 1000
     });
 
     if (!isOpen) return null;
@@ -32,6 +32,7 @@ export default function ModeSelectionModal({ isOpen, onClose, onStart }: ModeSel
                             { id: 'classic', icon: Play, name: 'Clásico', desc: 'Todos contra todos por puntos.' },
                             { id: 'survival', icon: Users, name: 'Supervivencia', desc: 'Un fallo y quedas fuera del podio.' },
                             { id: 'teams', icon: Users, name: 'Equipos', desc: 'Competición grupal (2-4 equipos).' },
+                            { id: 'roulette', icon: Sparkles, name: 'Ruleta', desc: 'Sorteo de alumnos y preguntas.' },
                             { id: 'hangman', icon: BookOpen, name: 'Ahorcado', desc: 'Adivina la palabra letra por letra.' }
                         ] as const).map((mode) => (
                             <button
@@ -56,6 +57,20 @@ export default function ModeSelectionModal({ isOpen, onClose, onStart }: ModeSel
                     {/* Mode Specific Config */}
                     <div className="bg-slate-50 p-6 rounded-[2rem] space-y-4 border border-slate-100">
                         <p className="text-xs font-black text-slate-400 uppercase tracking-widest pl-2">Configuración del Modo</p>
+
+                        {selectedMode === 'roulette' && (
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <p className="font-bold text-slate-800 text-sm">Puntos por Acierto</p>
+                                    <p className="text-xs text-slate-500">Puntos que otorgarás manualmente.</p>
+                                </div>
+                                <div className="flex items-center gap-4 bg-white px-4 py-2 rounded-xl border border-slate-200">
+                                    <button onClick={() => setConfig({ ...config, rouletteManualPoints: Math.max(100, (config.rouletteManualPoints || 1000) - 100) })} className="text-blue-600 font-bold">-</button>
+                                    <span className="font-black text-slate-900 w-12 text-center">{config.rouletteManualPoints}</span>
+                                    <button onClick={() => setConfig({ ...config, rouletteManualPoints: Math.min(5000, (config.rouletteManualPoints || 1000) + 100) })} className="text-blue-600 font-bold">+</button>
+                                </div>
+                            </div>
+                        )}
 
                         {selectedMode === 'hangman' && (
                             <div className="space-y-4">

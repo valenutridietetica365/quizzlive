@@ -42,6 +42,15 @@ CREATE TABLE IF NOT EXISTS public.students (
 -- Link Quizzes to Classes/Folders (if not already there)
 DO $$
 BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'game_mode_type') THEN
+        CREATE TYPE public.game_mode_type AS ENUM ('classic', 'survival', 'teams', 'hangman', 'roulette');
+    ELSE
+        -- Ensure roulette exists in the enum if it was created before
+        IF NOT EXISTS (SELECT 1 FROM pg_enum e JOIN pg_type t ON e.enumtypid = t.oid WHERE t.typname = 'game_mode_type' AND e.enumlabel = 'roulette') THEN
+            ALTER TYPE public.game_mode_type ADD VALUE 'roulette';
+        END IF;
+    END IF;
+
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='quizzes' AND column_name='class_id') THEN
         ALTER TABLE public.quizzes ADD COLUMN class_id UUID REFERENCES public.classes(id) ON DELETE SET NULL;
     END IF;
@@ -253,6 +262,36 @@ BEGIN
     'current_streak', v_current_streak,
     'eliminated', (v_game_mode = 'survival' AND NOT v_is_correct)
   );
+END;
+$$;
+
+-- RPC para premiar puntos manualmente (Modo Ruleta)
+CREATE OR REPLACE FUNCTION public.award_manual_points(
+  p_session_id UUID,
+  p_participant_id UUID,
+  p_question_id UUID,
+  p_points INT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  -- Insertamos en la tabla de respuestas como una respuesta manual
+  INSERT INTO public.answers (participant_id, question_id, session_id, answer_text, is_correct, points_awarded)
+  VALUES (p_participant_id, p_question_id, p_session_id, 'MANUAL_ROULETTE', p_points > 0, p_points);
+
+  -- Actualizamos el streak si los puntos > 0
+  IF p_points > 0 THEN
+    UPDATE public.participants 
+    SET current_streak = COALESCE(current_streak, 0) + 1 
+    WHERE id = p_participant_id;
+  ELSE
+    UPDATE public.participants SET current_streak = 0 WHERE id = p_participant_id;
+  END IF;
+
+  RETURN jsonb_build_object('success', true);
 END;
 $$;
 

@@ -33,8 +33,13 @@ export function usePlaySession(id: string) {
     const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
     const [shuffledMatches, setShuffledMatches] = useState<string[]>([]);
 
+    // Roulette specific state
+    const [rouletteItems, setRouletteItems] = useState<string[]>([]);
+    const [rouletteSpinning, setRouletteSpinning] = useState(false);
+    const [rouletteWinnerIndex, setRouletteWinnerIndex] = useState<number | null>(null);
+    const [rouletteType, setRouletteType] = useState<"participant" | "question" | null>(null);
+
     const handleNewQuestion = useCallback(async (questionId: string, isHangmanMode?: boolean) => {
-        // We include correct_answer for hangman mode so the client can manage the guessing logic
         const selectFields = `id, quiz_id, question_text, question_type, options, image_url, time_limit, points, sort_order${isHangmanMode ? ", correct_answer" : ""}`;
 
         const { data, error } = await supabase.from("questions")
@@ -62,6 +67,11 @@ export function usePlaySession(id: string) {
                 setIsSubmitting(false);
                 setTimesUp(false);
                 setIsLate(false);
+
+                // Reset roulette on new question
+                setRouletteSpinning(false);
+                setRouletteWinnerIndex(null);
+                setRouletteType(null);
 
                 if (q.question_type === "matching") {
                     const matches = q.options.map(opt => opt.split(":")[1]);
@@ -132,10 +142,26 @@ export function usePlaySession(id: string) {
             })
             .subscribe();
 
+        const rouletteChannel = supabase.channel(`roulette_${id}`)
+            .on('broadcast', { event: 'spin' }, ({ payload }) => {
+                setRouletteItems(payload.items);
+                setRouletteWinnerIndex(payload.index);
+                setRouletteType(payload.type);
+                setRouletteSpinning(true);
+            })
+            .on('broadcast', { event: 'reset' }, () => {
+                setRouletteSpinning(false);
+                setRouletteWinnerIndex(null);
+                setRouletteType(null);
+            })
+            .subscribe();
+
         fetchParticipants();
-        return () => { supabase.removeChannel(sessionChannel); };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [id, nickname, participantId]);
+        return () => {
+            supabase.removeChannel(sessionChannel);
+            supabase.removeChannel(rouletteChannel);
+        };
+    }, [id, nickname, participantId, session?.status, fetchInitialState, fetchParticipants, fetchTotalScore, handleNewQuestion, totalScore, fetchingScore]);
 
     const submitAnswer = useCallback(async (answer: string) => {
         if (answered || isSubmitting || !currentQuestion) return;
@@ -175,6 +201,7 @@ export function usePlaySession(id: string) {
         selectedOption, totalScore, fetchingScore, pointsEarned, currentStreak,
         isSubmitting, timesUp, setTimesUp,
         fillAnswer, setFillAnswer, matchingPairs, setMatchingPairs,
-        selectedTerm, setSelectedTerm, shuffledMatches, submitAnswer
+        selectedTerm, setSelectedTerm, shuffledMatches, submitAnswer,
+        rouletteItems, rouletteSpinning, rouletteWinnerIndex, rouletteType
     };
 }

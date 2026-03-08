@@ -28,7 +28,8 @@ export default function StudentPlay() {
         selectedOption, totalScore, fetchingScore, pointsEarned, currentStreak,
         isSubmitting, timesUp, setTimesUp,
         fillAnswer, setFillAnswer, matchingPairs, setMatchingPairs,
-        selectedTerm, setSelectedTerm, shuffledMatches, submitAnswer
+        selectedTerm, setSelectedTerm, shuffledMatches, submitAnswer,
+        rouletteItems, rouletteSpinning, rouletteWinnerIndex, rouletteType
     } = usePlaySession(id as string);
 
     if (loading || !session) return <StudentPlaySkeleton />;
@@ -116,6 +117,10 @@ export default function StudentPlay() {
                             }}
                             config={session.config}
                             gameMode={session.game_mode}
+                            rouletteItems={rouletteItems}
+                            rouletteSpinning={rouletteSpinning}
+                            rouletteWinnerIndex={rouletteWinnerIndex}
+                            rouletteType={rouletteType}
                         />
                     ) : (
                         <AnswerWaiting

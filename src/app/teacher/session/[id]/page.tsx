@@ -17,6 +17,7 @@ const ParticipantMarquee = dynamic(() => import("@/components/game/ParticipantMa
 import WaitingRoom from "@/components/session/WaitingRoom";
 import LiveQuestion from "@/components/session/LiveQuestion";
 import SessionResults from "@/components/session/SessionResults";
+import RouletteController from "@/components/session/RouletteController";
 
 import { Quiz, quizSchema, Question, QuestionSchema, Session, SessionSchema, Participant, ParticipantSchema } from "@/lib/schemas";
 
@@ -197,16 +198,28 @@ export default function TeacherSession() {
                 )}
 
                 {session.status === "active" && currentQuestionIndex !== -1 && questions[currentQuestionIndex] && (
-                    <LiveQuestion
-                        sessionId={session.id}
-                        question={questions[currentQuestionIndex]}
-                        questionIndex={currentQuestionIndex}
-                        totalQuestions={questions.length}
-                        responsesCount={responsesCount}
-                        startedAt={session.current_question_started_at ?? null}
-                        t={t}
-                        onNext={nextQuestion}
-                    />
+                    <>
+                        {session.game_mode === "roulette" ? (
+                            <RouletteController
+                                sessionId={session.id}
+                                participants={participants}
+                                questions={questions}
+                                t={t}
+                                manualPoints={session.config.rouletteManualPoints || 1000}
+                            />
+                        ) : (
+                            <LiveQuestion
+                                sessionId={session.id}
+                                question={questions[currentQuestionIndex]}
+                                questionIndex={currentQuestionIndex}
+                                totalQuestions={questions.length}
+                                responsesCount={responsesCount}
+                                startedAt={session.current_question_started_at ?? null}
+                                t={t}
+                                onNext={nextQuestion}
+                            />
+                        )}
+                    </>
                 )}
 
                 {session.status === "finished" && (

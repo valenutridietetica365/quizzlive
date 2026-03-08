@@ -13,6 +13,7 @@ export const GameModeConfigSchema = z.object({
     hangmanIgnoreAccents: z.boolean().optional().default(true),
     teamsCount: z.number().optional().default(2),
     survivalLives: z.number().optional().default(1),
+    rouletteManualPoints: z.number().optional().default(1000),
 });
 
 export const QuestionSchema = z.object({
@@ -36,12 +37,13 @@ export const quizSchema = z.object({
     folder_id: z.string().nullable().optional(),
     tags: z.array(z.string()).optional().default([]),
     created_at: z.string().optional(),
-    game_mode: z.enum(["classic", "survival", "teams", "hangman"]).optional().default("classic"),
+    game_mode: z.enum(["classic", "survival", "teams", "hangman", "roulette"]).optional().default("classic"),
     config: GameModeConfigSchema.optional().default({
         hangmanLives: 6,
         hangmanIgnoreAccents: true,
         teamsCount: 2,
-        survivalLives: 1
+        survivalLives: 1,
+        rouletteManualPoints: 1000
     }),
 });
 
@@ -69,12 +71,13 @@ export const SessionSchema = z.object({
     current_question_started_at: z.string().nullable().optional(),
     started_at: z.string().nullable().optional(),
     finished_at: z.string().nullable().optional(),
-    game_mode: z.enum(["classic", "survival", "teams", "hangman"]).optional().default("classic"),
+    game_mode: z.enum(["classic", "survival", "teams", "hangman", "roulette"]).optional().default("classic"),
     config: GameModeConfigSchema.optional().default({
         hangmanLives: 6,
         hangmanIgnoreAccents: true,
         teamsCount: 2,
-        survivalLives: 1
+        survivalLives: 1,
+        rouletteManualPoints: 1000
     }),
 });
 
