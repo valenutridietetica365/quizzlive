@@ -133,13 +133,16 @@ export default function TeacherSession() {
             return () => clearTimeout(timer);
         }
 
-        // Safety timeout: auto-advance after 60s even if not all have answered
+        // Safety timeout: auto-advance after time_limit + 10s even if not all have answered
         // This prevents the quiz from getting stuck if a participant disconnects
-        const currentQ = questions[currentQuestionIndex];
-        const safetyMs = ((currentQ?.time_limit || 20) + 10) * 1000; // time_limit + 10s buffer
-        const safetyTimer = setTimeout(() => { nextQuestion(); }, safetyMs);
-        return () => clearTimeout(safetyTimer);
-    }, [responsesCount, participants, session?.status, currentQuestionIndex, nextQuestion, questions]);
+        // SKIP safety timeout in hangman mode — teacher controls advancement manually
+        if (session?.game_mode !== "hangman") {
+            const currentQ = questions[currentQuestionIndex];
+            const safetyMs = ((currentQ?.time_limit || 20) + 10) * 1000; // time_limit + 10s buffer
+            const safetyTimer = setTimeout(() => { nextQuestion(); }, safetyMs);
+            return () => clearTimeout(safetyTimer);
+        }
+    }, [responsesCount, participants, session?.status, session?.game_mode, currentQuestionIndex, nextQuestion, questions]);
 
     if (loading) return <TeacherSessionSkeleton />;
     if (!session || !quiz) return <div className="min-h-screen flex items-center justify-center bg-slate-950"><Loader2 className="w-10 h-10 animate-spin text-blue-500" /></div>;
