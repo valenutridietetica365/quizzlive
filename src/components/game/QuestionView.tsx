@@ -8,6 +8,7 @@ import FillInBlankRenderer from "@/components/game/FillInBlankRenderer";
 import MatchingRenderer from "@/components/game/MatchingRenderer";
 import RouletteWheel from "@/components/game/RouletteWheel";
 import { Question, GameModeConfig } from "@/lib/schemas";
+import { User, HelpCircle, Sparkles } from "lucide-react";
 
 interface QuestionViewProps {
     currentQuestion: Question;
@@ -31,6 +32,7 @@ interface QuestionViewProps {
     rouletteSpinning?: boolean;
     rouletteWinnerIndex?: number | null;
     rouletteType?: "participant" | "question" | null;
+    userNickname?: string;
 }
 
 export default function QuestionView({
@@ -54,46 +56,90 @@ export default function QuestionView({
     rouletteItems = [],
     rouletteSpinning = false,
     rouletteWinnerIndex = null,
-    rouletteType = null
+    rouletteType = null,
+    userNickname
 }: QuestionViewProps) {
+    const isCurrentWinner = rouletteType === "participant" &&
+        rouletteWinnerIndex !== null &&
+        rouletteItems[rouletteWinnerIndex] === userNickname;
+
+    const currentWinnerName = rouletteType === "participant" && rouletteWinnerIndex !== null
+        ? rouletteItems[rouletteWinnerIndex]
+        : null;
+
     return (
         <div className="w-full space-y-4 md:space-y-6 animate-in slide-in-from-bottom-12 duration-700">
             {gameMode === "roulette" && (
-                <div className="bg-white/80 backdrop-blur-md p-8 rounded-[3rem] shadow-xl border border-white flex flex-col items-center gap-6 text-center">
-                    <div className="space-y-2">
-                        <h3 className="text-blue-600 font-black uppercase tracking-[0.2em] text-[10px]">
-                            {rouletteType === "participant" ? t('roulette.spin_participant') : t('roulette.spin_question')}
-                        </h3>
-                        {rouletteWinnerIndex === null && !rouletteSpinning && (
-                            <p className="text-slate-400 font-medium animate-pulse">{t('roulette.waiting_spin')}</p>
+                <div className="flex flex-col gap-6">
+                    {/* Main Roulette Container */}
+                    <div className="bg-white/80 backdrop-blur-md p-8 rounded-[3rem] shadow-xl border border-white flex flex-col items-center gap-6 text-center overflow-hidden relative">
+                        {isCurrentWinner && (
+                            <div className="absolute inset-0 bg-blue-500/5 animate-pulse pointer-events-none" />
                         )}
-                    </div>
 
-                    <RouletteWheel
-                        items={rouletteItems}
-                        spinning={rouletteSpinning}
-                        winnerIndex={rouletteWinnerIndex}
-                        onFinish={() => { }}
-                    />
-
-                    {rouletteWinnerIndex !== null && !rouletteSpinning && (
-                        <div className="animate-in zoom-in duration-500 space-y-2">
-                            <p className="text-2xl font-black text-slate-900">
-                                {rouletteType === "participant"
-                                    ? t('roulette.selected_participant').replace('{name}', rouletteItems[rouletteWinnerIndex])
-                                    : t('roulette.selected_question')
-                                }
-                            </p>
-                            {rouletteType === "question" && (
-                                <p className="text-lg font-bold text-blue-600 italic">&quot;{rouletteItems[rouletteWinnerIndex]}&quot;</p>
-                            )}
-                            {rouletteType === "question" && (
-                                <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-4">
-                                    {t('roulette.instruction')}
-                                </p>
+                        <div className="space-y-2 z-10 w-full">
+                            <h3 className="text-blue-600 font-black uppercase tracking-[0.2em] text-[10px]">
+                                {rouletteType === "participant" ? t('roulette.spin_participant') : t('roulette.spin_question')}
+                            </h3>
+                            {rouletteWinnerIndex === null && !rouletteSpinning && (
+                                <p className="text-slate-400 font-medium animate-pulse">{t('roulette.waiting_spin')}</p>
                             )}
                         </div>
-                    )}
+
+                        <div className="z-10 w-full flex justify-center">
+                            <RouletteWheel
+                                items={rouletteItems}
+                                spinning={rouletteSpinning}
+                                winnerIndex={rouletteWinnerIndex}
+                                onFinish={() => { }}
+                            />
+                        </div>
+
+                        {rouletteWinnerIndex !== null && !rouletteSpinning && (
+                            <div className="animate-in zoom-in duration-500 space-y-4 z-10 w-full">
+                                {rouletteType === "participant" ? (
+                                    <div className="space-y-4">
+                                        {isCurrentWinner ? (
+                                            <div className="bg-blue-600 p-6 rounded-[2rem] text-white shadow-2xl shadow-blue-500/40 animate-bounce mt-4">
+                                                <div className="flex items-center justify-center gap-2 mb-1">
+                                                    <Sparkles className="w-5 h-5 fill-white" />
+                                                    <span className="font-black text-xs tracking-widest uppercase">{t('roulette.your_turn')}</span>
+                                                    <Sparkles className="w-5 h-5 fill-white" />
+                                                </div>
+                                                <p className="text-4xl font-black truncate">{userNickname}</p>
+                                            </div>
+                                        ) : (
+                                            <div className="bg-slate-100 p-6 rounded-[2rem] text-slate-800 border border-slate-200 mt-4">
+                                                <div className="flex items-center justify-center gap-2 mb-1">
+                                                    <User className="w-4 h-4 text-slate-400" />
+                                                    <span className="font-black text-xs tracking-widest uppercase text-slate-400">Seleccionado</span>
+                                                </div>
+                                                <p className="text-3xl font-black truncate">{currentWinnerName}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="space-y-6 pt-4 border-t border-slate-100 mt-2">
+                                        <div className="bg-amber-500/10 p-2 rounded-xl inline-flex items-center gap-2 text-amber-600 border border-amber-500/20">
+                                            <HelpCircle className="w-4 h-4" />
+                                            <span className="text-[10px] font-black uppercase tracking-widest">{t('roulette.selected_question')}</span>
+                                        </div>
+                                        <div className="bg-white p-8 rounded-[2.5rem] shadow-inner border border-slate-100 relative group transition-transform hover:scale-[1.02]">
+                                            <h2 className="text-2xl md:text-4xl font-black text-slate-900 leading-tight">
+                                                &quot;{rouletteItems[rouletteWinnerIndex]}&quot;
+                                            </h2>
+                                            <div className="absolute -top-3 -right-3 w-10 h-10 bg-amber-500 rounded-2xl flex items-center justify-center text-white rotate-12 shadow-lg">
+                                                <HelpCircle className="w-6 h-6" />
+                                            </div>
+                                        </div>
+                                        <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">
+                                            {t('roulette.instruction')}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
 

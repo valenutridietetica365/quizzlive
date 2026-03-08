@@ -121,6 +121,7 @@ export default function StudentPlay() {
                             rouletteSpinning={rouletteSpinning}
                             rouletteWinnerIndex={rouletteWinnerIndex}
                             rouletteType={rouletteType}
+                            userNickname={nickname ?? undefined}
                         />
                     ) : (
                         <AnswerWaiting
