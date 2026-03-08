@@ -9,6 +9,7 @@ import { useEffect } from "react";
 
 interface StudentParticipation {
     id: string;
+    student_id?: string;
     sessions: {
         finished_at: string;
         quizzes: {
@@ -39,7 +40,7 @@ export default function ClassManager({ classes, t, onCreateClass, onDeleteClass,
     const [selectedClass, setSelectedClass] = useState<DashboardClass | null>(null);
     const [newStudentName, setNewStudentName] = useState("");
     const [selectedStudent, setSelectedStudent] = useState<DashboardStudent | null>(null);
-    const [viewMode, setViewMode] = useState<"students" | "evolution">("students");
+    const [viewMode, setViewMode] = useState<"students" | "evolution" | "mastery">("students");
     const [studentStats, setStudentStats] = useState<{
         sessions: number;
         avgSuccess: number;
@@ -190,64 +191,85 @@ export default function ClassManager({ classes, t, onCreateClass, onDeleteClass,
                                         <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tight">{currentClass.name}</h2>
                                         <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">Gestión de Alumnos</p>
                                     </div>
-                                    <div className="flex bg-slate-100 p-1 rounded-xl">
-                                        <button onClick={() => setViewMode("students")} className={`px-4 py-2 rounded-lg text-xs font-black uppercase transition-all ${viewMode === 'students' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>Alumnos</button>
-                                        <button onClick={() => setViewMode("evolution")} className={`px-4 py-2 rounded-lg text-xs font-black uppercase transition-all ${viewMode === 'evolution' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>Evolución</button>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => setViewMode("students")}
+                                            className={`px-6 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all duration-300 ${viewMode === "students" ? "bg-blue-600 text-white shadow-lg shadow-blue-200" : "bg-white text-slate-400 hover:bg-slate-50 border border-slate-200"}`}
+                                        >
+                                            Alumnos
+                                        </button>
+                                        <button
+                                            onClick={() => setViewMode("evolution")}
+                                            className={`px-6 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all duration-300 ${viewMode === "evolution" ? "bg-blue-600 text-white shadow-lg shadow-blue-200" : "bg-white text-slate-400 hover:bg-slate-50 border border-slate-200"}`}
+                                        >
+                                            {t('analytics.evolution_view')}
+                                        </button>
+
+                                        <button
+                                            onClick={() => setViewMode("mastery")}
+                                            className={`px-6 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all duration-300 ${viewMode === "mastery" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200" : "bg-white text-slate-400 hover:bg-slate-50 border border-slate-200"}`}
+                                        >
+                                            {t('dashboard.mastery_matrix')}
+                                        </button>
                                     </div>
                                     <button onClick={() => { setSelectedClass(null); setViewMode("students"); }} className="p-4 bg-slate-50 rounded-2xl text-slate-400 hover:text-slate-900 transition-all">
                                         <ChevronRight className="w-6 h-6 rotate-180" />
                                     </button>
                                 </div>
 
-                                {viewMode === 'students' ? (
-                                    <>
-                                        <div className="flex gap-2">
-                                            <input
-                                                type="text"
-                                                value={newStudentName}
-                                                onChange={(e) => setNewStudentName(e.target.value)}
-                                                placeholder="Nombre completo del alumno"
-                                                className="flex-1 bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 rounded-2xl px-6 py-4 font-bold"
-                                                onKeyDown={(e) => e.key === 'Enter' && handleAddStudent()}
-                                            />
-                                            <button
-                                                onClick={handleAddStudent}
-                                                className="bg-blue-600 text-white px-8 rounded-2xl font-black hover:bg-blue-700 transition-all active:scale-95 shadow-lg shadow-blue-100"
-                                            >
-                                                Añadir
-                                            </button>
-                                        </div>
+                                <div className="bg-white rounded-[3rem] p-8 shadow-sm border border-slate-100 min-h-[400px]">
+                                    {viewMode === 'students' ? (
+                                        <>
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={newStudentName}
+                                                    onChange={(e) => setNewStudentName(e.target.value)}
+                                                    placeholder="Nombre completo del alumno"
+                                                    className="flex-1 bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 rounded-2xl px-6 py-4 font-bold"
+                                                    onKeyDown={(e) => e.key === 'Enter' && handleAddStudent()}
+                                                />
+                                                <button
+                                                    onClick={handleAddStudent}
+                                                    className="bg-blue-600 text-white px-8 rounded-2xl font-black hover:bg-blue-700 transition-all active:scale-95 shadow-lg shadow-blue-100"
+                                                >
+                                                    Añadir
+                                                </button>
+                                            </div>
 
-                                        <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 no-scrollbar">
-                                            {currentClass.students?.length === 0 ? (
-                                                <div className="text-center py-12 bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200">
-                                                    <p className="text-slate-400 font-bold uppercase text-xs tracking-widest">No hay alumnos en esta clase</p>
-                                                </div>
-                                            ) : (
-                                                currentClass.students?.map((student) => (
-                                                    <div key={student.id} className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-white hover:shadow-lg transition-all cursor-pointer" onClick={() => handleSelectStudent(student)}>
-                                                        <div className="flex items-center gap-4">
-                                                            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 font-black">
-                                                                {student.name.charAt(0).toUpperCase()}
-                                                            </div>
-                                                            <span className="font-black text-slate-900">{student.name}</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <button onClick={(e) => { e.stopPropagation(); handleSelectStudent(student); }} className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all">
-                                                                <TrendingUp className="w-5 h-5" />
-                                                            </button>
-                                                            <button onClick={(e) => { e.stopPropagation(); onRemoveStudent(student.id!, currentClass.id); }} className="p-2 text-slate-300 hover:text-red-500 transition-colors">
-                                                                <Trash2 className="w-5 h-5" />
-                                                            </button>
-                                                        </div>
+                                            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 no-scrollbar">
+                                                {currentClass.students?.length === 0 ? (
+                                                    <div className="text-center py-12 bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200">
+                                                        <p className="text-slate-400 font-bold uppercase text-xs tracking-widest">No hay alumnos en esta clase</p>
                                                     </div>
-                                                ))
-                                            )}
-                                        </div>
-                                    </>
-                                ) : (
-                                    <ClassEvolutionView classId={currentClass.id} t={t} />
-                                )}
+                                                ) : (
+                                                    currentClass.students?.map((student) => (
+                                                        <div key={student.id} className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-white hover:shadow-lg transition-all cursor-pointer" onClick={() => handleSelectStudent(student)}>
+                                                            <div className="flex items-center gap-4">
+                                                                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 font-black">
+                                                                    {student.name.charAt(0).toUpperCase()}
+                                                                </div>
+                                                                <span className="font-black text-slate-900">{student.name}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                                <button onClick={(e) => { e.stopPropagation(); handleSelectStudent(student); }} className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all">
+                                                                    <TrendingUp className="w-5 h-5" />
+                                                                </button>
+                                                                <button onClick={(e) => { e.stopPropagation(); onRemoveStudent(student.id!, currentClass.id); }} className="p-2 text-slate-300 hover:text-red-500 transition-colors">
+                                                                    <Trash2 className="w-5 h-5" />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                                )}
+                                            </div>
+                                        </>
+                                    ) : viewMode === "evolution" ? (
+                                        <ClassEvolutionView classId={currentClass.id} t={t} />
+                                    ) : (
+                                        <ClassMasteryMatrix classId={currentClass.id} students={currentClass.students || []} t={t} />
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -356,6 +378,146 @@ export default function ClassManager({ classes, t, onCreateClass, onDeleteClass,
                         </div>
                     </div>
                 )}
+            </div>
+        </div>
+    );
+}
+
+function ClassMasteryMatrix({ classId, students, t }: { classId: string, students: DashboardStudent[], t: (k: string) => string }) {
+    const [matrixData, setMatrixData] = useState<{ student: string, topic: string, score: number }[]>([]);
+    const [topics, setTopics] = useState<string[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchMasteryData = async () => {
+            setLoading(true);
+            try {
+                // Fetch all participants and their sessions/answers for this class
+                const { data } = await supabase
+                    .from('participants')
+                    .select(`
+                        student_id,
+                        sessions!inner (
+                            quizzes!inner (
+                                class_id,
+                                tags
+                            )
+                        ),
+                        answers (
+                            is_correct
+                        )
+                    `)
+                    .eq('sessions.quizzes.class_id', classId);
+
+                if (data) {
+                    const typedData = data as unknown as StudentParticipation[];
+                    const aggregation: Record<string, Record<string, { total: number, correct: number }>> = {};
+                    const allTopics = new Set<string>();
+
+                    typedData.forEach(p => {
+                        const sId = p.student_id;
+                        if (!sId) return;
+
+                        const safeId = sId as string;
+                        const studentTags = p.sessions.quizzes.tags || [];
+                        const correctCount = p.answers.filter(a => a.is_correct).length;
+                        const totalCount = p.answers.length;
+
+                        if (!aggregation[safeId]) aggregation[safeId] = {};
+
+                        studentTags.forEach((tag: string) => {
+                            allTopics.add(tag);
+                            if (!aggregation[safeId][tag]) aggregation[safeId][tag] = { total: 0, correct: 0 };
+                            aggregation[safeId][tag].total += totalCount;
+                            aggregation[safeId][tag].correct += correctCount;
+                        });
+                    });
+
+                    const sortedTopics = Array.from(allTopics).sort();
+                    const matrix: { student: string, topic: string, score: number }[] = [];
+
+                    students.forEach(student => {
+                        const currentStudentId = student.id;
+                        if (!currentStudentId) return;
+
+                        const safeStudentId = currentStudentId as string;
+                        sortedTopics.forEach(topic => {
+                            const stats = aggregation[safeStudentId]?.[topic];
+                            matrix.push({
+                                student: student.name,
+                                topic,
+                                score: stats && stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : -1 // -1 for no data
+                            });
+                        });
+                    });
+
+                    setTopics(sortedTopics);
+                    setMatrixData(matrix);
+                }
+            } catch (e) {
+                console.error(e);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchMasteryData();
+    }, [classId, students]);
+
+    const getCellColor = (score: number) => {
+        if (score === -1) return "bg-slate-50 text-slate-300"; // No data
+        if (score < 50) return "bg-rose-100 text-rose-700 font-bold";
+        if (score < 80) return "bg-amber-100 text-amber-700 font-bold";
+        return "bg-emerald-100 text-emerald-700 font-bold";
+    };
+
+    if (loading) return <div className="py-20 flex justify-center"><div className="w-10 h-10 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin" /></div>;
+
+    if (topics.length === 0) {
+        return (
+            <div className="py-20 text-center">
+                <Target className="mx-auto text-slate-200 mb-4" size={48} />
+                <p className="text-slate-400 font-bold uppercase text-xs tracking-widest">{t('dashboard.no_tags_desc')}</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-6">
+            <div className="flex justify-between items-end pr-2">
+                <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">{t('dashboard.mastery_matrix')}</h3>
+                <span className="text-[10px] text-slate-400 font-bold uppercase">{t('dashboard.mastery_legend')}</span>
+            </div>
+
+            <div className="overflow-x-auto pb-4 custom-scrollbar">
+                <table className="w-full border-separate border-spacing-2">
+                    <thead>
+                        <tr>
+                            <th className="p-3 text-left text-[10px] font-black uppercase text-slate-400 w-48 sticky left-0 bg-white z-10">{t('dashboard.table_student')}</th>
+                            {topics.map(topic => (
+                                <th key={topic} className="p-3 text-center text-[10px] font-black uppercase text-slate-500 bg-slate-50 rounded-xl min-w-[100px]">
+                                    {topic}
+                                </th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {students.map(student => (
+                            <tr key={student.id}>
+                                <td className="p-4 text-sm font-bold text-slate-700 bg-white sticky left-0 z-10 border-r border-slate-50">{student.name}</td>
+                                {topics.map(topic => {
+                                    const cell = matrixData.find(d => d.student === student.name && d.topic === topic);
+                                    const score = cell ? cell.score : -1;
+                                    return (
+                                        <td key={topic} className={`p-4 text-center rounded-2xl text-xs transition-all duration-300 ${getCellColor(score)}`}>
+                                            {score === -1 ? "-" : `${score}%`}
+                                        </td>
+                                    );
+                                })}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
             </div>
         </div>
     );

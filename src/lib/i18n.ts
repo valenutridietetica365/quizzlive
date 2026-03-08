@@ -134,7 +134,11 @@ export const translations = {
             sessions_played: "Sesiones Jugadas",
             avg_score: "Puntaje Promedio",
             perfect_quizzes: "Quizzes Perfectos",
-            performance_trend: "Tendencia de Desempeño"
+            performance_trend: "Tendencia de Desempeño",
+            mastery_matrix: "Matriz de Maestría",
+            topic: "Tema",
+            no_tags_desc: "Sin etiquetas de tema detectadas en los quizzes",
+            mastery_legend: "Leyenda: <50% Crítico (Rojo) | 50-80% En Progreso (Naranja) | >80% Dominado (Verde)"
         },
         session: {
             title: "Sesión en Vivo",
@@ -415,7 +419,11 @@ export const translations = {
             sessions_played: "Sessions Played",
             avg_score: "Average Score",
             perfect_quizzes: "Perfect Quizzes",
-            performance_trend: "Performance Trend"
+            performance_trend: "Performance Trend",
+            mastery_matrix: "Mastery Matrix",
+            topic: "Topic",
+            no_tags_desc: "No topic tags detected in quizzes",
+            mastery_legend: "Legend: <50% Critical (Red) | 50-80% In Progress (Orange) | >80% Mastered (Green)"
         },
         session: {
             title: "Live Session",
