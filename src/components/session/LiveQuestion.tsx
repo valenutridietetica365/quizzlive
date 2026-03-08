@@ -17,11 +17,12 @@ interface LiveQuestionProps {
     startedAt: string | null;
     t: (key: string) => string;
     onNext: () => void;
+    gameMode?: string;
 }
 
 export default function LiveQuestion({
     sessionId, question, questionIndex, totalQuestions,
-    responsesCount, startedAt, t, onNext
+    responsesCount, startedAt, t, onNext, gameMode
 }: LiveQuestionProps) {
     return (
         <div className="w-full grid lg:grid-cols-3 gap-6 animate-in slide-in-from-bottom-12 duration-700">
@@ -116,7 +117,7 @@ export default function LiveQuestion({
                 </div>
 
                 {/* Timer Card */}
-                {question.question_type !== "hangman" && (
+                {question.question_type !== "hangman" && gameMode !== "hangman" && (
                     <div className="bg-slate-900/80 backdrop-blur-xl p-6 md:p-8 rounded-3xl border border-white/5 flex flex-col items-center text-center space-y-3 shadow-2xl">
                         <CircularTimer
                             startedAt={startedAt}

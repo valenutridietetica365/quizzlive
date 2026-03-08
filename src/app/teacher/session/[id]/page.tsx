@@ -217,6 +217,7 @@ export default function TeacherSession() {
                                 startedAt={session.current_question_started_at ?? null}
                                 t={t}
                                 onNext={nextQuestion}
+                                gameMode={session.game_mode}
                             />
                         )}
                     </>

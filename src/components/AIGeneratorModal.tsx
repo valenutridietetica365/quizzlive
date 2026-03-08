@@ -18,6 +18,7 @@ export default function AIGeneratorModal({ isOpen, onClose, onGenerate }: AIGene
     const [topic, setTopic] = useState("");
     const [grade, setGrade] = useState("");
     const [count, setCount] = useState(5);
+    const [questionType, setQuestionType] = useState<"multiple_choice" | "hangman" | "matching">("multiple_choice");
     const [loading, setLoading] = useState(false);
 
     const t = (key: string) => getTranslation(language, key);
@@ -35,7 +36,7 @@ export default function AIGeneratorModal({ isOpen, onClose, onGenerate }: AIGene
             const response = await fetch("/api/ai/generate", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ topic, count, grade, language }),
+                body: JSON.stringify({ topic, count, grade, language, questionType }),
             });
 
             const data = await response.json();
@@ -115,8 +116,24 @@ export default function AIGeneratorModal({ isOpen, onClose, onGenerate }: AIGene
                             />
                         </div>
 
-                        {/* Count */}
+                        {/* Type & Count Row */}
                         <div className="space-y-3">
+                            <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                                <Brain className="w-3 h-3" /> Tipo
+                            </label>
+                            <select
+                                value={questionType}
+                                onChange={(e) => setQuestionType(e.target.value as "multiple_choice" | "hangman" | "matching")}
+                                className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl px-6 py-4 font-bold text-slate-900 outline-none transition-all"
+                            >
+                                <option value="multiple_choice">Opción Múltiple</option>
+                                <option value="hangman">Ahorcado</option>
+                                <option value="matching">Emparejar</option>
+                            </select>
+                        </div>
+
+                        {/* Count */}
+                        <div className="space-y-3 md:col-span-2">
                             <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
                                 <Hash className="w-3 h-3" /> {t('ai.count_label')}
                             </label>
