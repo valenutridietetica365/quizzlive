@@ -74,17 +74,14 @@ export default function HangmanView({ word, options, onComplete, isSubmitting, c
     useEffect(() => {
         if (isWinner && status === "playing") {
             setStatus("won");
-            const timer = setTimeout(() => {
-                // Return original option if found, otherwise return cleanWord
-                const originalOption = options?.find(opt => {
-                    let oRaw = opt.trim().toUpperCase();
-                    const prefixes = [/^(?:[A-Z0-9][.)\-:]+\s*)/, /^(?:\([A-Z0-9]\)\s*)/, /^(?:[A-Z0-9]\s+-\s*)/];
-                    for (const r of prefixes) { if (r.test(oRaw)) { oRaw = oRaw.replace(r, ""); break; } }
-                    return oRaw.replace(/[.;,!?]$/, "") === cleanWord;
-                });
-                onCompleteRef.current(originalOption || cleanWord);
-            }, 1500);
-            return () => clearTimeout(timer);
+            // Return original option if found, otherwise return cleanWord
+            const originalOption = options?.find(opt => {
+                let oRaw = opt.trim().toUpperCase();
+                const prefixes = [/^(?:[A-Z0-9][.)\-:]+\s*)/, /^(?:\([A-Z0-9]\)\s*)/, /^(?:[A-Z0-9]\s+-\s*)/];
+                for (const r of prefixes) { if (r.test(oRaw)) { oRaw = oRaw.replace(r, ""); break; } }
+                return oRaw.replace(/[.;,!?]$/, "") === cleanWord;
+            });
+            onCompleteRef.current(originalOption || cleanWord);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isWinner, cleanWord, status, options]);
@@ -92,10 +89,7 @@ export default function HangmanView({ word, options, onComplete, isSubmitting, c
     useEffect(() => {
         if (isGameOver && status === "playing") {
             setStatus("lost");
-            const timer = setTimeout(() => {
-                onCompleteRef.current("__HANGMAN_FAIL__"); // Sentinel value for a failed hangman attempt
-            }, 2500);
-            return () => clearTimeout(timer);
+            onCompleteRef.current("__HANGMAN_FAIL__"); // Sentinel value for a failed hangman attempt
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isGameOver, status]);
