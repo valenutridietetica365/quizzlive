@@ -49,8 +49,8 @@ export default function QuestionView({
 }: QuestionViewProps) {
     return (
         <div className="w-full space-y-4 md:space-y-6 animate-in slide-in-from-bottom-12 duration-700">
-            {/* Circular Timer (Self-managed) */}
-            {startedAt !== null && !answered && (
+            {/* Circular Timer (Self-managed) - Disabled for Hangman Mode */}
+            {startedAt !== null && !answered && gameMode !== "hangman" && currentQuestion.question_type !== "hangman" && (
                 <div className="flex justify-center -mb-2">
                     <div className="scale-75 md:scale-100 origin-center">
                         <CircularTimer
