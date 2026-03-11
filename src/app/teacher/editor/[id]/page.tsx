@@ -69,6 +69,17 @@ export default function QuizEditor() {
             if (data) setClasses(data);
         };
         fetchClasses();
+
+        // Prevent closing tab with unsaved changes
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            e.preventDefault();
+            e.returnValue = '';
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
     }, [fetchQuizData]);
 
     // --- Question handlers ---

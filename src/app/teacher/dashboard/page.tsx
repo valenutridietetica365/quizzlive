@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Plus, BookOpen, LogOut, History, LayoutDashboard, ChevronRight, Users, Folder, Trash2 } from "lucide-react";
+import { Plus, BookOpen, LogOut, History, LayoutDashboard, ChevronRight, Users, Folder, Trash2, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { QuizCardSkeleton } from "@/components/Skeleton";
 import ConfirmModal from "@/components/ConfirmModal";
@@ -43,12 +43,14 @@ export default function TeacherDashboard() {
         user, loading, quizzes, classes, history, liveSessions, folders,
         finishSession, deleteQuiz, deleteHistory, deleteMultipleHistory,
         createClass, deleteClass, createFolder, deleteFolder,
-        addStudent, removeStudent, startSession, updateBranding
+        addStudent, removeStudent, startSession, updateBranding,
+        duplicateQuiz, exportQuiz
     } = useDashboardData();
 
     const [activeTab, setActiveTab] = useState<"quizzes" | "history" | "classes">("quizzes");
     const [selectedQuizTag, setSelectedQuizTag] = useState<string>("All");
     const [selectedFolderId, setSelectedFolderId] = useState<string>("All");
+    const [searchTerm, setSearchTerm] = useState("");
     const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
     const [isBrandingModalOpen, setIsBrandingModalOpen] = useState(false);
     const [selectedHistoryTag, setSelectedHistoryTag] = useState<string>("All");
@@ -74,7 +76,8 @@ export default function TeacherDashboard() {
         const matchesTag = selectedQuizTag === "All" || q.tags?.includes(selectedQuizTag);
         const matchesClass = selectedGlobalClassId === "All" || q.class_id === selectedGlobalClassId;
         const matchesFolder = selectedFolderId === "All" || q.folder_id === selectedFolderId || (selectedFolderId === "Uncategorized" && !q.folder_id);
-        return matchesTag && matchesClass && matchesFolder;
+        const matchesSearch = !searchTerm || q.title.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchesTag && matchesClass && matchesFolder && matchesSearch;
     });
 
     const allHistoryTags = ["All", ...Array.from(new Set(history.flatMap(h => h.quiz.tags || [])))];
@@ -148,60 +151,76 @@ export default function TeacherDashboard() {
         return (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 {/* Control Bar */}
-                <div className="bg-white p-4 md:p-5 rounded-3xl border border-slate-100 shadow-sm flex flex-col xl:flex-row gap-6">
-                    {/* Folders */}
-                    <div className="flex-1 space-y-3 min-w-0">
-                        <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1"><Folder className="w-3 h-3" /> {t('dashboard.folders') || "Mis Carpetas"}</span>
-                            <button onClick={() => setIsFolderModalOpen(true)} className="text-[10px] font-black text-blue-600 hover:text-blue-700 bg-blue-50 px-2 py-1 rounded-lg transition-colors flex items-center gap-1">
-                                <Plus className="w-3 h-3" />{t('dashboard.new_folder')}
-                            </button>
+                <div className="bg-white p-4 md:p-6 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-6">
+                    {/* Search Bar */}
+                    <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                            <Search className="h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                         </div>
-                        <div className="flex overflow-x-auto no-scrollbar gap-2 pb-1">
-                            <button onClick={() => setSelectedFolderId("All")} className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${selectedFolderId === "All" ? "bg-slate-900 border-slate-900 text-white shadow-md" : "bg-slate-50 border-transparent text-slate-500 hover:bg-slate-100"}`}>
-                                {t('dashboard.all_folders') || "Todos"}
-                            </button>
-                            <button onClick={() => setSelectedFolderId("Uncategorized")} className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${selectedFolderId === "Uncategorized" ? "bg-slate-900 border-slate-900 text-white shadow-md" : "bg-slate-50 border-transparent text-slate-500 hover:bg-slate-100"}`}>
-                                {t('dashboard.uncategorized') || "Sin Carpeta"}
-                            </button>
-                            {folders.map((folder: FolderType) => (
-                                <div key={folder.id} className="relative group/folder shrink-0">
-                                    <button
-                                        onClick={() => setSelectedFolderId(folder.id!)}
-                                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${selectedFolderId === folder.id ? "text-white shadow-md pr-8" : "bg-white text-slate-600 hover:bg-slate-50 pr-8"}`}
-                                        style={{ backgroundColor: selectedFolderId === folder.id ? folder.color : "white", borderColor: selectedFolderId === folder.id ? folder.color : `${folder.color}40` } as React.CSSProperties}
-                                    >
-                                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: selectedFolderId === folder.id ? "white" : folder.color }} />
-                                        {folder.name}
-                                    </button>
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); setConfirmModal({ open: true, quizId: null, historyIds: null, folderId: folder.id! }); }}
-                                        className={`absolute right-1.5 top-1/2 -translate-y-1/2 p-1 rounded-md transition-all ${selectedFolderId === folder.id ? "text-white/60 hover:text-white hover:bg-white/20" : "opacity-0 group-hover/folder:opacity-100 text-slate-300 hover:!text-red-500 hover:!bg-red-50"}`}
-                                        title={t('common.delete')}
-                                    >
-                                        <Trash2 className="w-3 h-3" />
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
+                        <input
+                            type="text"
+                            placeholder={t('dashboard.search_placeholder') || "Buscar cuestionarios..."}
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="block w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent focus:border-blue-500/50 focus:bg-white rounded-2xl text-slate-900 font-bold placeholder-slate-400 transition-all outline-none"
+                        />
                     </div>
 
-                    {/* Divider */}
-                    {allTags.length > 1 && <div className="hidden xl:block w-px bg-slate-100 self-stretch"></div>}
-
-                    {/* Tags */}
-                    {allTags.length > 1 && (
+                    <div className="flex flex-col xl:flex-row gap-8">
+                        {/* Folders */}
                         <div className="flex-1 space-y-3 min-w-0">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Etiquetas</span>
+                            <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1"><Folder className="w-3 h-3" /> {t('dashboard.folders') || "Mis Carpetas"}</span>
+                                <button onClick={() => setIsFolderModalOpen(true)} className="text-[10px] font-black text-blue-600 hover:text-blue-700 bg-blue-50 px-2 py-1 rounded-lg transition-colors flex items-center gap-1">
+                                    <Plus className="w-3 h-3" />{t('dashboard.new_folder')}
+                                </button>
+                            </div>
                             <div className="flex overflow-x-auto no-scrollbar gap-2 pb-1">
-                                {allTags.map(tag => (
-                                    <button key={tag} onClick={() => setSelectedQuizTag(tag)} className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${selectedQuizTag === tag ? "bg-slate-900 border-slate-900 text-white shadow-md" : "bg-slate-50 border-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-700"}`}>
-                                        {tag === "All" ? (t('dashboard.all_tags') || "Todos") : tag}
-                                    </button>
+                                <button onClick={() => setSelectedFolderId("All")} className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${selectedFolderId === "All" ? "bg-slate-900 border-slate-900 text-white shadow-md" : "bg-slate-50 border-transparent text-slate-500 hover:bg-slate-100"}`}>
+                                    {t('dashboard.all_folders') || "Todos"}
+                                </button>
+                                <button onClick={() => setSelectedFolderId("Uncategorized")} className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${selectedFolderId === "Uncategorized" ? "bg-slate-900 border-slate-900 text-white shadow-md" : "bg-slate-50 border-transparent text-slate-500 hover:bg-slate-100"}`}>
+                                    {t('dashboard.uncategorized') || "Sin Carpeta"}
+                                </button>
+                                {folders.map((folder: FolderType) => (
+                                    <div key={folder.id} className="relative group/folder shrink-0">
+                                        <button
+                                            onClick={() => setSelectedFolderId(folder.id!)}
+                                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${selectedFolderId === folder.id ? "text-white shadow-md pr-8" : "bg-white text-slate-600 hover:bg-slate-50 pr-8"}`}
+                                            style={{ backgroundColor: selectedFolderId === folder.id ? folder.color : "white", borderColor: selectedFolderId === folder.id ? folder.color : `${folder.color}40` } as React.CSSProperties}
+                                        >
+                                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: selectedFolderId === folder.id ? "white" : folder.color }} />
+                                            {folder.name}
+                                        </button>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); setConfirmModal({ open: true, quizId: null, historyIds: null, folderId: folder.id! }); }}
+                                            className={`absolute right-1.5 top-1/2 -translate-y-1/2 p-1 rounded-md transition-all ${selectedFolderId === folder.id ? "text-white/60 hover:text-white hover:bg-white/20" : "opacity-0 group-hover/folder:opacity-100 text-slate-300 hover:!text-red-500 hover:!bg-red-50"}`}
+                                            title={t('common.delete')}
+                                        >
+                                            <Trash2 className="w-3 h-3" />
+                                        </button>
+                                    </div>
                                 ))}
                             </div>
                         </div>
-                    )}
+
+                        {/* Divider */}
+                        {allTags.length > 1 && <div className="hidden xl:block w-px bg-slate-100 self-stretch"></div>}
+
+                        {/* Tags */}
+                        {allTags.length > 1 && (
+                            <div className="flex-1 space-y-3 min-w-0">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Etiquetas</span>
+                                <div className="flex overflow-x-auto no-scrollbar gap-2 pb-1">
+                                    {allTags.map(tag => (
+                                        <button key={tag} onClick={() => setSelectedQuizTag(tag)} className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${selectedQuizTag === tag ? "bg-slate-900 border-slate-900 text-white shadow-md" : "bg-slate-50 border-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-700"}`}>
+                                            {tag === "All" ? (t('dashboard.all_tags') || "Todos") : tag}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* Live Sessions */}
@@ -239,7 +258,7 @@ export default function TeacherDashboard() {
                 )}
 
                 {/* Quiz Cards */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                     {filteredQuizzes.length === 0 ? (
                         <div className="col-span-full bg-white rounded-[3rem] border-4 border-dashed border-slate-100 p-20 text-center space-y-6">
                             <div className="bg-blue-50 w-24 h-24 rounded-[2rem] flex items-center justify-center mx-auto text-blue-500"><BookOpen className="w-12 h-12" /></div>
@@ -260,6 +279,8 @@ export default function TeacherDashboard() {
                                 t={t}
                                 onPlay={(id) => setModeModal({ open: true, quizId: id })}
                                 onDelete={(id) => setConfirmModal({ open: true, quizId: id, historyIds: null, folderId: null })}
+                                onDuplicate={duplicateQuiz}
+                                onExport={exportQuiz}
                             />
                         ))
                     )}

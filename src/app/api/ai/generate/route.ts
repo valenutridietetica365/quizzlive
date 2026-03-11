@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export const dynamic = 'force-dynamic';
 
@@ -9,6 +10,12 @@ export async function POST(req: Request) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
         return NextResponse.json({ error: "Unauthorized", details: "You must be logged in to generate questions." }, { status: 401 });
+    }
+
+    // Rate limiting: 10 requests per minute per user
+    const { allowed, resetIn } = checkRateLimit(user.id, "ai-generate", 10, 60_000);
+    if (!allowed) {
+        return NextResponse.json({ error: "Rate limit exceeded", details: `Too many requests. Try again in ${Math.ceil(resetIn / 1000)} seconds.` }, { status: 429 });
     }
 
     const apiKey = process.env.GEMINI_API_KEY;

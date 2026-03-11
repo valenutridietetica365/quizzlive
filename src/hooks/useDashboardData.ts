@@ -6,7 +6,7 @@ import { useQuizStore } from "@/lib/store";
 import { useRouter } from "next/navigation";
 import { FinishedSession, SupabaseSessionResponse, LiveSession, Folder as FolderType } from "@/lib/schemas";
 import { toast } from "sonner";
-import { deleteQuiz, createFolder, deleteFolder } from "@/actions/quiz";
+import { deleteQuiz, createFolder, deleteFolder, duplicateQuiz, exportQuizAsJson } from "@/actions/quiz";
 import { createClass, deleteClass, addStudentToClass, removeStudentFromClass } from "@/actions/classes";
 import { startSession, finishSession, deleteHistory, deleteMultipleHistory } from "@/actions/session";
 
@@ -207,6 +207,35 @@ export function useDashboardData() {
         } catch { toast.error("Error al eliminar la clase"); }
     };
 
+    const duplicateQuizHandler = async (id: string) => {
+        try {
+            const result = await duplicateQuiz(id);
+            if (result.success) {
+                // We could refetch or just wait for revalidatePath if it's a server action
+                // But since we are in a client hook managing state, we might need a refresh
+                // For now, let's assume the user will see it on manual refresh or we can add logic to fetch again
+                toast.success("Cuestionario duplicado");
+                // Trigger a refresh of quizzes
+                const { data } = await supabase.from("quizzes").select("id, title, tags, class_id, folder_id, questions(id)").eq("teacher_id", user?.id).order('created_at', { ascending: false });
+                if (data) setQuizzes(data as Quiz[]);
+            }
+        } catch { toast.error("Error al duplicar el cuestionario"); }
+    };
+
+    const exportQuizHandler = async (id: string) => {
+        try {
+            const data = await exportQuizAsJson(id);
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `quiz-${id}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            toast.success("Exportación iniciada");
+        } catch { toast.error("Error al exportar el cuestionario"); }
+    };
+
     const createFolderHandler = async (name: string, color: string) => {
         if (!user) return;
         try {
@@ -286,6 +315,9 @@ export function useDashboardData() {
         deleteFolder: deleteFolderHandler, addStudent: addStudentHandler, removeStudent: removeStudentHandler,
         startSession: startSessionHandler,
         updateBranding: updateBrandingHandler,
+        duplicateQuiz: duplicateQuizHandler,
+        exportQuiz: exportQuizHandler,
+
         // Refresh helpers
         fetchHistory
     };

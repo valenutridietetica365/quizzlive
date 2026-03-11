@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, Play, Pencil, Trash2, Users } from "lucide-react";
+import { BookOpen, Play, Pencil, Trash2, Users, Copy, Download } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Quiz, DashboardClass } from "@/hooks/useDashboardData";
 
@@ -10,9 +10,11 @@ interface QuizCardProps {
     t: (key: string) => string;
     onPlay: (quizId: string) => void;
     onDelete: (quizId: string) => void;
+    onDuplicate: (quizId: string) => void;
+    onExport: (quizId: string) => void;
 }
 
-export default function QuizCard({ quiz, classes, t, onPlay, onDelete }: QuizCardProps) {
+export default function QuizCard({ quiz, classes, t, onPlay, onDelete, onDuplicate, onExport }: QuizCardProps) {
     const router = useRouter();
 
     return (
@@ -59,6 +61,20 @@ export default function QuizCard({ quiz, classes, t, onPlay, onDelete }: QuizCar
                         title={t('dashboard.edit')}
                     >
                         <Pencil className="w-5 h-5" />
+                    </button>
+                    <button
+                        onClick={() => onDuplicate(quiz.id)}
+                        className="p-4 bg-slate-50 rounded-2xl text-slate-400 hover:text-emerald-600 hover:bg-white hover:shadow-lg transition-all"
+                        title={t('dashboard.duplicate') || "Duplicar"}
+                    >
+                        <Copy className="w-5 h-5" />
+                    </button>
+                    <button
+                        onClick={() => onExport(quiz.id)}
+                        className="p-4 bg-slate-50 rounded-2xl text-slate-400 hover:text-amber-600 hover:bg-white hover:shadow-lg transition-all"
+                        title={t('dashboard.export') || "Exportar JSON"}
+                    >
+                        <Download className="w-5 h-5" />
                     </button>
                     <button
                         onClick={() => onDelete(quiz.id)}
