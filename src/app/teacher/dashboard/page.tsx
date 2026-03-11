@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Plus, BookOpen, LogOut, History, LayoutDashboard, ChevronRight, Users, Folder, FolderPlus, Trash2 } from "lucide-react";
+import { Plus, BookOpen, LogOut, History, LayoutDashboard, ChevronRight, Users, Folder, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { QuizCardSkeleton } from "@/components/Skeleton";
 import ConfirmModal from "@/components/ConfirmModal";
@@ -19,18 +19,18 @@ import ClassManager from "@/components/dashboard/ClassManager";
 import ModeSelectionModal from "@/components/dashboard/ModeSelectionModal";
 
 const StatsHeader = ({ stats, t }: { stats: { quizzes: number; sessions: number; avg: number }, t: (key: string) => string }) => (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 animate-in fade-in slide-in-from-top-4 duration-1000">
-        <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col gap-1">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-4 animate-in fade-in slide-in-from-top-4 duration-1000">
+        <div className="bg-white p-4 md:p-5 rounded-3xl border border-slate-100 shadow-sm flex flex-col gap-1">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('dashboard.total_quizzes')}</span>
-            <span className="text-3xl font-black text-slate-900">{stats.quizzes}</span>
+            <span className="text-2xl font-black text-slate-900">{stats.quizzes}</span>
         </div>
-        <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col gap-1">
+        <div className="bg-white p-4 md:p-5 rounded-3xl border border-slate-100 shadow-sm flex flex-col gap-1">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('dashboard.total_sessions')}</span>
-            <span className="text-3xl font-black text-slate-900">{stats.sessions}</span>
+            <span className="text-2xl font-black text-slate-900">{stats.sessions}</span>
         </div>
-        <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col gap-1">
+        <div className="bg-white p-4 md:p-5 rounded-3xl border border-slate-100 shadow-sm flex flex-col gap-1">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('dashboard.avg_participation')}</span>
-            <span className="text-3xl font-black text-slate-900">{stats.avg}</span>
+            <span className="text-2xl font-black text-slate-900">{stats.avg}</span>
         </div>
     </div>
 );
@@ -39,7 +39,7 @@ export default function TeacherDashboard() {
     const { language } = useQuizStore();
     const {
         user, loading, quizzes, classes, history, liveSessions, folders,
-        finishSession, deleteQuiz, deleteHistory,
+        finishSession, deleteQuiz, deleteHistory, deleteMultipleHistory,
         createClass, deleteClass, createFolder, deleteFolder,
         addStudent, removeStudent, startSession
     } = useDashboardData();
@@ -50,8 +50,8 @@ export default function TeacherDashboard() {
     const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
     const [selectedHistoryTag, setSelectedHistoryTag] = useState<string>("All");
     const [selectedGlobalClassId, setSelectedGlobalClassId] = useState<string>("All");
-    const [confirmModal, setConfirmModal] = useState<{ open: boolean, quizId: string | null, historyId: string | null, folderId: string | null }>({
-        open: false, quizId: null, historyId: null, folderId: null
+    const [confirmModal, setConfirmModal] = useState<{ open: boolean, quizId: string | null, historyIds: string[] | null, folderId: string | null }>({
+        open: false, quizId: null, historyIds: null, folderId: null
     });
     const [modeModal, setModeModal] = useState<{ open: boolean, quizId: string | null }>({ open: false, quizId: null });
 
@@ -134,7 +134,8 @@ export default function TeacherDashboard() {
                         history={filteredHistory}
                         language={language}
                         t={t}
-                        onDelete={(id) => setConfirmModal({ open: true, quizId: null, historyId: id, folderId: null })}
+                        onDelete={(id) => setConfirmModal({ open: true, quizId: null, historyIds: [id], folderId: null })}
+                        onBulkDelete={(ids) => setConfirmModal({ open: true, quizId: null, historyIds: ids, folderId: null })}
                     />
                 </div>
             );
@@ -142,50 +143,62 @@ export default function TeacherDashboard() {
 
         // Quizzes tab
         return (
-            <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                {/* Folders */}
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <h2 className="text-xl font-black text-slate-900 uppercase tracking-widest">{t('dashboard.folders') || "Mis Carpetas"}</h2>
-                        <button onClick={() => setIsFolderModalOpen(true)} className="flex items-center gap-2 text-sm font-black text-blue-600 hover:text-blue-700 bg-blue-50 px-4 py-2 rounded-xl transition-colors">
-                            <FolderPlus className="w-4 h-4" />{t('dashboard.new_folder') || "Nueva Carpeta"}
-                        </button>
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                {/* Control Bar */}
+                <div className="bg-white p-4 md:p-5 rounded-3xl border border-slate-100 shadow-sm flex flex-col xl:flex-row gap-6">
+                    {/* Folders */}
+                    <div className="flex-1 space-y-3 min-w-0">
+                        <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1"><Folder className="w-3 h-3" /> {t('dashboard.folders') || "Mis Carpetas"}</span>
+                            <button onClick={() => setIsFolderModalOpen(true)} className="text-[10px] font-black text-blue-600 hover:text-blue-700 bg-blue-50 px-2 py-1 rounded-lg transition-colors flex items-center gap-1">
+                                <Plus className="w-3 h-3" />{t('dashboard.new_folder')}
+                            </button>
+                        </div>
+                        <div className="flex overflow-x-auto no-scrollbar gap-2 pb-1">
+                            <button onClick={() => setSelectedFolderId("All")} className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${selectedFolderId === "All" ? "bg-slate-900 border-slate-900 text-white shadow-md" : "bg-slate-50 border-transparent text-slate-500 hover:bg-slate-100"}`}>
+                                {t('dashboard.all_folders') || "Todos"}
+                            </button>
+                            <button onClick={() => setSelectedFolderId("Uncategorized")} className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${selectedFolderId === "Uncategorized" ? "bg-slate-900 border-slate-900 text-white shadow-md" : "bg-slate-50 border-transparent text-slate-500 hover:bg-slate-100"}`}>
+                                {t('dashboard.uncategorized') || "Sin Carpeta"}
+                            </button>
+                            {folders.map((folder: FolderType) => (
+                                <div key={folder.id} className="relative group/folder shrink-0">
+                                    <button
+                                        onClick={() => setSelectedFolderId(folder.id!)}
+                                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${selectedFolderId === folder.id ? "text-white shadow-md pr-8" : "bg-white text-slate-600 hover:bg-slate-50 pr-8"}`}
+                                        style={{ backgroundColor: selectedFolderId === folder.id ? folder.color : "white", borderColor: selectedFolderId === folder.id ? folder.color : `${folder.color}40` } as React.CSSProperties}
+                                    >
+                                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: selectedFolderId === folder.id ? "white" : folder.color }} />
+                                        {folder.name}
+                                    </button>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); setConfirmModal({ open: true, quizId: null, historyIds: null, folderId: folder.id! }); }}
+                                        className={`absolute right-1.5 top-1/2 -translate-y-1/2 p-1 rounded-md transition-all ${selectedFolderId === folder.id ? "text-white/60 hover:text-white hover:bg-white/20" : "opacity-0 group-hover/folder:opacity-100 text-slate-300 hover:!text-red-500 hover:!bg-red-50"}`}
+                                        title={t('common.delete')}
+                                    >
+                                        <Trash2 className="w-3 h-3" />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                    <div className="flex bg-white p-2 rounded-2xl border border-slate-100 overflow-x-auto no-scrollbar gap-3 max-w-full">
-                        <button onClick={() => setSelectedFolderId("All")} className={`flex items-center gap-2 px-6 py-4 rounded-xl font-black whitespace-nowrap transition-all border-2 ${selectedFolderId === "All" ? "bg-slate-900 border-slate-900 text-white shadow-lg" : "bg-white border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-600"}`}>
-                            <LayoutDashboard className="w-5 h-5" />{t('dashboard.all_folders') || "Todos"}
-                        </button>
-                        <button onClick={() => setSelectedFolderId("Uncategorized")} className={`flex items-center gap-2 px-6 py-4 rounded-xl font-black whitespace-nowrap transition-all border-2 ${selectedFolderId === "Uncategorized" ? "bg-slate-900 border-slate-900 text-white shadow-lg" : "bg-white border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-600"}`}>
-                            <BookOpen className="w-5 h-5" />{t('dashboard.uncategorized') || "Sin Carpeta"}
-                        </button>
-                        {folders.map((folder: FolderType) => (
-                            <div key={folder.id} className="relative group/folder shrink-0">
-                                <button
-                                    onClick={() => setSelectedFolderId(folder.id!)}
-                                    className={`flex items-center gap-2 px-6 py-4 rounded-xl font-black whitespace-nowrap transition-all border-2 ${selectedFolderId === folder.id ? "text-white shadow-lg ring-4 ring-offset-2 pr-12" : "bg-white text-slate-600 hover:bg-slate-50 pr-12"}`}
-                                    style={{ backgroundColor: selectedFolderId === folder.id ? folder.color : "white", borderColor: selectedFolderId === folder.id ? folder.color : `${folder.color}40`, "--tw-ring-color": `${folder.color}50` } as React.CSSProperties}
-                                >
-                                    <Folder className="w-5 h-5" style={{ color: selectedFolderId === folder.id ? "white" : folder.color }} />{folder.name}
-                                </button>
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); setConfirmModal({ open: true, quizId: null, historyId: null, folderId: folder.id! }); }}
-                                    className={`absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-all ${selectedFolderId === folder.id ? "text-white/60 hover:text-white hover:bg-white/20" : "text-slate-300 hover:text-red-500 hover:bg-red-50"}`}
-                                    title={t('common.delete')}
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                </div>
 
-                {/* Tag filter */}
-                <div className="flex bg-white p-1.5 rounded-2xl border border-slate-100 overflow-x-auto no-scrollbar gap-2 max-w-full">
-                    {allTags.map(tag => (
-                        <button key={tag} onClick={() => setSelectedQuizTag(tag)} className={`px-5 py-2.5 rounded-xl font-black text-sm whitespace-nowrap transition-all ${selectedQuizTag === tag ? "bg-slate-900 text-white shadow-lg shadow-slate-200" : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"}`}>
-                            {tag === "All" ? (t('dashboard.all_tags') || "Todos") : tag}
-                        </button>
-                    ))}
+                    {/* Divider */}
+                    {allTags.length > 1 && <div className="hidden xl:block w-px bg-slate-100 self-stretch"></div>}
+
+                    {/* Tags */}
+                    {allTags.length > 1 && (
+                        <div className="flex-1 space-y-3 min-w-0">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Etiquetas</span>
+                            <div className="flex overflow-x-auto no-scrollbar gap-2 pb-1">
+                                {allTags.map(tag => (
+                                    <button key={tag} onClick={() => setSelectedQuizTag(tag)} className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${selectedQuizTag === tag ? "bg-slate-900 border-slate-900 text-white shadow-md" : "bg-slate-50 border-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-700"}`}>
+                                        {tag === "All" ? (t('dashboard.all_tags') || "Todos") : tag}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Live Sessions */}
@@ -243,7 +256,7 @@ export default function TeacherDashboard() {
                                 classes={classes}
                                 t={t}
                                 onPlay={(id) => setModeModal({ open: true, quizId: id })}
-                                onDelete={(id) => setConfirmModal({ open: true, quizId: id, historyId: null, folderId: null })}
+                                onDelete={(id) => setConfirmModal({ open: true, quizId: id, historyIds: null, folderId: null })}
                             />
                         ))
                     )}
@@ -285,71 +298,72 @@ export default function TeacherDashboard() {
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 p-2 md:p-6 space-y-4 md:space-y-6 overflow-y-auto">
-                <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mt-16 md:mt-0">
-                    <div className="space-y-1">
-                        <h1 className="text-3xl md:text-5xl font-black text-slate-900 leading-tight">
-                            {activeTab === "quizzes" ? t('sidebar.my_quizzes') : activeTab === "history" ? t('dashboard.history_title') : t('sidebar.classes')}
-                        </h1>
-                        <p className="text-slate-400 font-medium text-sm md:text-base">
-                            {activeTab === "quizzes" ? t('dashboard.quizzes_subtitle') : activeTab === "history" ? t('dashboard.history_subtitle') : "Gestiona tus clases y alumnos."}
-                        </p>
-                    </div>
-                    {activeTab === "quizzes" && (
-                        <button onClick={() => router.push("/teacher/editor/new")} className="w-full sm:w-auto bg-blue-600 text-white px-8 py-4 rounded-[1.25rem] md:rounded-[1.5rem] font-black shadow-xl shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 flex items-center justify-center gap-2">
-                            <Plus className="w-5 md:w-6 h-5 md:h-6" />{t('dashboard.new_quiz')}
-                        </button>
-                    )}
-                </header>
-
-                <StatsHeader stats={stats} t={t} />
-
-                {/* Class filter */}
-                {(activeTab === "quizzes" || activeTab === "history") && classes.length > 0 && (
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 py-6 border-y border-slate-50">
+            <main className="flex-1 overflow-y-auto bg-slate-50/50">
+                <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-6 md:space-y-8">
+                    <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mt-16 md:mt-0">
                         <div className="space-y-1">
-                            <h2 className="text-xl font-black text-slate-900 uppercase tracking-widest leading-none">
-                                {activeTab === "quizzes" ? t('sidebar.quizzes') : t('sidebar.history')}
-                            </h2>
-                            <p className="text-slate-400 text-[10px] font-black uppercase tracking-wider">{t('session.filter_by_class')}</p>
+                            <h1 className="text-3xl md:text-5xl font-black text-slate-900 leading-tight">
+                                {activeTab === "quizzes" ? t('sidebar.my_quizzes') : activeTab === "history" ? t('dashboard.history_title') : t('sidebar.classes')}
+                            </h1>
+                            <p className="text-slate-400 font-medium text-sm md:text-base">
+                                {activeTab === "quizzes" ? t('dashboard.quizzes_subtitle') : activeTab === "history" ? t('dashboard.history_subtitle') : "Gestiona tus clases y alumnos."}
+                            </p>
                         </div>
-                        <div className="flex items-center gap-3 bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
-                            <div className="flex gap-1 overflow-x-auto no-scrollbar max-w-[300px] md:max-w-md">
-                                <button onClick={() => setSelectedGlobalClassId("All")} className={`px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all whitespace-nowrap ${selectedGlobalClassId === "All" ? "bg-slate-900 text-white shadow-lg" : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"}`}>Todas</button>
+                        {activeTab === "quizzes" && (
+                            <button onClick={() => router.push("/teacher/editor/new")} className="w-full sm:w-auto bg-blue-600 text-white px-8 py-4 rounded-[1.25rem] md:rounded-[1.5rem] font-black shadow-xl shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 flex items-center justify-center gap-2">
+                                <Plus className="w-5 md:w-6 h-5 md:h-6" />{t('dashboard.new_quiz')}
+                            </button>
+                        )}
+                    </header>
+
+                    <StatsHeader stats={stats} t={t} />
+
+                    {/* Class filter */}
+                    {(activeTab === "quizzes" || activeTab === "history") && classes.length > 0 && (
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-4 mb-4 border-b border-slate-100">
+                            <div className="flex items-center gap-2">
+                                <Users className="w-4 h-4 text-slate-400" />
+                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('session.filter_by_class')}</span>
+                            </div>
+                            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                                <button onClick={() => setSelectedGlobalClassId("All")} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap border ${selectedGlobalClassId === "All" ? "bg-slate-900 text-white border-slate-900 shadow-md" : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"}`}>Todas</button>
                                 {classes.map(cls => (
-                                    <button key={cls.id} onClick={() => setSelectedGlobalClassId(cls.id)} className={`px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all whitespace-nowrap ${selectedGlobalClassId === cls.id ? "bg-blue-600 text-white shadow-lg shadow-blue-100" : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"}`}>{cls.name}</button>
+                                    <button key={cls.id} onClick={() => setSelectedGlobalClassId(cls.id)} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap border ${selectedGlobalClassId === cls.id ? "bg-blue-600 text-white border-blue-600 shadow-md" : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"}`}>{cls.name}</button>
                                 ))}
                             </div>
                         </div>
-                    </div>
-                )}
+                    )}
 
-                {history.length > 0 && activeTab === "history" && (
-                    <div className="space-y-3">
-                        <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest pl-2">{t('dashboard.stats_trend') || 'Tendencia de Participación'}</h3>
-                        <PerformanceChart
-                            data={filteredHistory.slice(0, 7).reverse().map(s => ({
-                                date: new Date(s.finished_at).toLocaleDateString(undefined, { day: '2-digit', month: 'short' }),
-                                participation: s._count?.participants || 0
-                            }))}
-                            label={t('dashboard.participants_label') || 'Participantes'}
-                            t={t}
-                        />
-                    </div>
-                )}
+                    {history.length > 0 && activeTab === "history" && (
+                        <div className="space-y-3">
+                            <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest pl-2">{t('dashboard.stats_trend') || 'Tendencia de Participación'}</h3>
+                            <PerformanceChart
+                                data={filteredHistory.slice(0, 7).reverse().map(s => ({
+                                    date: new Date(s.finished_at).toLocaleDateString(undefined, { day: '2-digit', month: 'short' }),
+                                    participation: s._count?.participants || 0
+                                }))}
+                                label={t('dashboard.participants_label') || 'Participantes'}
+                                t={t}
+                            />
+                        </div>
+                    )}
 
-                {renderContent()}
+                    {renderContent()}
+                </div>
             </main>
 
             {/* Modals */}
             <ConfirmModal
                 isOpen={confirmModal.open}
-                onClose={() => setConfirmModal({ open: false, quizId: null, historyId: null, folderId: null })}
+                onClose={() => setConfirmModal({ open: false, quizId: null, historyIds: null, folderId: null })}
                 onConfirm={() => {
                     if (confirmModal.quizId) deleteQuiz(confirmModal.quizId);
-                    else if (confirmModal.historyId) deleteHistory(confirmModal.historyId);
+                    else if (confirmModal.historyIds) {
+                        if (confirmModal.historyIds.length === 1) deleteHistory(confirmModal.historyIds[0]);
+                        else deleteMultipleHistory(confirmModal.historyIds);
+                    }
                     else if (confirmModal.folderId) { deleteFolder(confirmModal.folderId); if (selectedFolderId === confirmModal.folderId) setSelectedFolderId("All"); }
-                    setConfirmModal({ open: false, quizId: null, historyId: null, folderId: null });
+                    setConfirmModal({ open: false, quizId: null, historyIds: null, folderId: null });
                 }}
                 title={confirmModal.folderId ? t('dashboard.delete_folder_confirm') : t('dashboard.delete_confirm')}
                 message={confirmModal.folderId ? t('dashboard.delete_folder_desc') : t('dashboard.delete_confirm_desc')}

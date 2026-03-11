@@ -74,6 +74,7 @@ export const translations = {
         },
         sidebar: {
             my_quizzes: "Mis Quizzes",
+            quizzes: "Quizzes",
             history: "Historial",
             classes: "Clases",
             user: "Usuario",
@@ -377,6 +378,7 @@ export const translations = {
         },
         sidebar: {
             my_quizzes: "My Quizzes",
+            quizzes: "Quizzes",
             history: "History",
             classes: "Classes",
             user: "User",

@@ -78,3 +78,28 @@ export async function deleteHistory(sessionId: string) {
     revalidatePath("/teacher/dashboard");
     return { success: true };
 }
+
+export async function deleteMultipleHistory(sessionIds: string[]) {
+    const supabase = createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Unauthorized");
+
+    if (!sessionIds.length) return { success: true };
+
+    // Verify ownership for all sessions
+    const { data: sessions } = await supabase
+        .from("sessions")
+        .select("id, quiz:quizzes!inner(teacher_id)")
+        .in("id", sessionIds);
+
+    const unauthorized = sessions?.some(s => (s.quiz as unknown as { teacher_id: string }).teacher_id !== user.id);
+    if (unauthorized || !sessions || sessions.length !== sessionIds.length) {
+        throw new Error("Unauthorized: you don't own all these sessions");
+    }
+
+    const { error } = await supabase.from("sessions").delete().in("id", sessionIds);
+    if (error) throw new Error(error.message);
+
+    revalidatePath("/teacher/dashboard");
+    return { success: true };
+}

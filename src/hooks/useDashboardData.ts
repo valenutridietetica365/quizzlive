@@ -8,7 +8,7 @@ import { FinishedSession, SupabaseSessionResponse, LiveSession, Folder as Folder
 import { toast } from "sonner";
 import { deleteQuiz, createFolder, deleteFolder } from "@/actions/quiz";
 import { createClass, deleteClass, addStudentToClass, removeStudentFromClass } from "@/actions/classes";
-import { startSession, finishSession, deleteHistory } from "@/actions/session";
+import { startSession, finishSession, deleteHistory, deleteMultipleHistory } from "@/actions/session";
 
 export interface Quiz {
     id: string;
@@ -167,6 +167,14 @@ export function useDashboardData() {
         } catch { toast.error("No se pudo eliminar el informe"); }
     };
 
+    const deleteMultipleHistoryHandler = async (ids: string[]) => {
+        try {
+            await deleteMultipleHistory(ids);
+            setHistory(history.filter(h => !ids.includes(h.id)));
+            toast.success(`${ids.length} informes eliminados con éxito`);
+        } catch { toast.error("No se pudieron eliminar los informes"); }
+    };
+
     const createClassHandler = async (name: string) => {
         if (!user || !name.trim()) return;
         try {
@@ -241,6 +249,7 @@ export function useDashboardData() {
         user, loading, language, quizzes, classes, history, liveSessions, folders,
         // Mutations
         finishSession: finishSessionHandler, deleteQuiz: deleteQuizHandler, deleteHistory: deleteHistoryHandler,
+        deleteMultipleHistory: deleteMultipleHistoryHandler,
         createClass: createClassHandler, deleteClass: deleteClassHandler, createFolder: createFolderHandler,
         deleteFolder: deleteFolderHandler, addStudent: addStudentHandler, removeStudent: removeStudentHandler,
         startSession: startSessionHandler,
