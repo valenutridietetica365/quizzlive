@@ -248,16 +248,18 @@ export const generatePDFReport = (data: ReportData, t: (key: string) => string) 
     }).sort((a, b) => b.score - a.score);
 
     autoTable(doc, {
-        startY: yPos + 5,
-        head: [[t('session.table_rank'), t('session.table_student'), 'Nota', t('session.table_score'), t('session.table_correct'), t('session.table_accuracy')]],
+        startY: yPos + 8,
+        head: [[t('session.table_rank'), t('session.table_student'), t('analytics.grade'), t('session.table_score'), t('session.table_correct'), t('session.table_accuracy')]],
         body: studentGrades.map((g, i) => [i + 1, g.name, g.grade.toFixed(1), g.score, `${g.correct}/${g.total}`, g.accuracy]),
-        styles: { fontSize: 9 },
-        headStyles: { fillColor: [30, 41, 59] }, // slate-800
+        styles: { fontSize: 9, cellPadding: 3 },
+        headStyles: { fillColor: [30, 41, 59], fontStyle: 'bold' }, // slate-800
         didParseCell: (data) => {
             if (data.section === 'body' && data.column.index === 2) {
-                const grade = parseFloat(data.cell.text[0]);
-                if (grade >= 4.0) data.cell.styles.textColor = [59, 130, 246]; // blue-500
-                else data.cell.styles.textColor = [244, 63, 94]; // rose-500
+                const gradeText = data.cell.text[0];
+                const grade = parseFloat(gradeText);
+                if (grade >= 4.0) data.cell.styles.textColor = [30, 64, 175]; // blue-900 (stronger for print)
+                else data.cell.styles.textColor = [190, 18, 60]; // rose-900
+                data.cell.styles.fontStyle = 'bold';
             }
         }
     });

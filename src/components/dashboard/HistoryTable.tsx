@@ -77,7 +77,7 @@ export default function HistoryTable({ history, language, t, onDelete, onBulkDel
 
             const { data: questionsData, error: questionsError } = await supabase
                 .from("questions")
-                .select("id, question_text")
+                .select("id, question_text, points")
                 .eq("quiz_id", (sessionData as unknown as SessionDataWithQuiz)?.quiz?.id || "")
                 .order('sort_order', { ascending: true });
 
