@@ -7,12 +7,79 @@ import { Question, QuestionSchema, ClassModel as Class } from "@/lib/schemas";
 import { saveQuizData } from "@/actions/quiz";
 import { useQuizStore } from "@/lib/store";
 import { getTranslation } from "@/lib/i18n";
-import { Plus, Loader2, Check } from "lucide-react";
+import { Plus, Loader2, Check, Eye, GripVertical } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import ImportModal from "@/components/ImportModal";
 import AIGeneratorModal from "@/components/AIGeneratorModal";
 import EditorHeader from "@/components/editor/EditorHeader";
 import QuestionCard from "@/components/editor/QuestionCard";
+import QuizPreviewModal from "@/components/editor/QuizPreviewModal";
+
+// DND Kit Imports
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
+interface SortableQuestionProps {
+    q: Question;
+    index: number;
+    t: (key: string, params?: Record<string, string | number>) => string;
+    updateQuestion: (index: number, field: keyof Question, value: string | number | string[]) => void;
+    updateOption: (qIndex: number, oIndex: number, value: string) => void;
+    deleteQuestion: (index: number) => void;
+}
+
+function SortableQuestion({ q, index, t, updateQuestion, updateOption, deleteQuestion }: SortableQuestionProps) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging
+    } = useSortable({ id: index.toString() });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 50 : 0,
+        opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+        <div ref={setNodeRef} style={style} className="relative group">
+            <div 
+                {...attributes} 
+                {...listeners} 
+                className="absolute -left-10 top-1/2 -translate-y-1/2 p-2 text-slate-300 hover:text-blue-500 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity hidden md:block"
+            >
+                <GripVertical className="w-6 h-6" />
+            </div>
+            <QuestionCard
+                question={q}
+                index={index}
+                t={t}
+                onUpdate={updateQuestion}
+                onUpdateOption={updateOption}
+                onDelete={deleteQuestion}
+            />
+        </div>
+    );
+}
 
 export default function QuizEditor() {
     const { id } = useParams();
@@ -32,6 +99,7 @@ export default function QuizEditor() {
     const [fetching, setFetching] = useState(!isNew);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isAIModalOpen, setIsAIModalOpen] = useState(false);
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
     const router = useRouter();
 
     const t = useCallback((key: string, params?: Record<string, string | number>) => {
@@ -41,6 +109,13 @@ export default function QuizEditor() {
         }
         return text;
     }, [language]);
+
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
 
     // --- Data fetching ---
     const fetchQuizData = useCallback(async () => {
@@ -70,7 +145,6 @@ export default function QuizEditor() {
         };
         fetchClasses();
 
-        // Prevent closing tab with unsaved changes
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {
             e.preventDefault();
             e.returnValue = '';
@@ -82,7 +156,18 @@ export default function QuizEditor() {
         };
     }, [fetchQuizData]);
 
-    // --- Question handlers ---
+    // --- Handlers ---
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (over && active.id !== over.id) {
+            setQuestions((items) => {
+                const oldIndex = parseInt(active.id as string);
+                const newIndex = parseInt(over.id as string);
+                return arrayMove(items, oldIndex, newIndex);
+            });
+        }
+    };
+
     const handleAddQuestion = () => {
         setQuestions([...questions, { question_text: "", question_type: "multiple_choice", options: ["", "", "", ""], correct_answer: "", image_url: "", time_limit: 20, points: 1000 }]);
     };
@@ -121,7 +206,6 @@ export default function QuizEditor() {
         setQuestions(questions.filter((_, i) => i !== index));
     };
 
-    // --- Save ---
     const handleSave = async () => {
         if (!title.trim()) { toast.error(t('editor.error_title')); return; }
         const invalidQuestionIndex = questions.findIndex(q => {
@@ -185,17 +269,28 @@ export default function QuizEditor() {
             />
 
             <main className="max-w-4xl mx-auto w-full p-4 md:p-12 pt-36 md:pt-44 space-y-8 md:space-y-12">
-                {questions.map((q, qIndex) => (
-                    <QuestionCard
-                        key={qIndex}
-                        question={q}
-                        index={qIndex}
-                        t={t}
-                        onUpdate={updateQuestion}
-                        onUpdateOption={updateOption}
-                        onDelete={deleteQuestion}
-                    />
-                ))}
+                <DndContext 
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                >
+                    <SortableContext 
+                        items={questions.map((_, i) => i.toString())}
+                        strategy={verticalListSortingStrategy}
+                    >
+                        {questions.map((q, qIndex) => (
+                            <SortableQuestion
+                                key={qIndex}
+                                q={q}
+                                index={qIndex}
+                                t={t}
+                                updateQuestion={updateQuestion}
+                                updateOption={updateOption}
+                                deleteQuestion={deleteQuestion}
+                            />
+                        ))}
+                    </SortableContext>
+                </DndContext>
 
                 <button onClick={handleAddQuestion} className="w-full py-8 md:py-12 border-4 border-dashed rounded-[2rem] md:rounded-[3rem] text-slate-200 hover:text-blue-600 hover:border-blue-100 transition-all flex flex-col items-center gap-2 md:gap-4 font-black text-lg md:text-xl">
                     <Plus className="w-6 md:w-8 h-6 md:h-8" /> {t('editor.add_question')}
@@ -209,15 +304,31 @@ export default function QuizEditor() {
                 </div>
 
                 <div className="flex justify-center pt-8 pb-20 md:pb-10">
-                    <button onClick={handleSave} disabled={loading} className="btn-premium !py-4 md:!py-5 !px-10 md:!px-12 text-lg md:text-xl flex items-center gap-3 shadow-xl shadow-blue-100 w-full md:w-auto">
-                        {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : <Check className="w-6 h-6" />}
-                        {isNew ? t('editor.publish_button') : t('editor.save_button')}
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setIsPreviewOpen(true)}
+                            className="btn-premium !bg-slate-100 !text-slate-600 !rounded-2xl !py-3 flex items-center gap-2 hover:!bg-slate-200"
+                            disabled={questions.length === 0}
+                        >
+                            <Eye className="w-5 h-5" />
+                            <span className="hidden sm:inline">Vista Previa</span>
+                        </button>
+                        <button onClick={handleSave} disabled={loading} className="btn-premium !rounded-2xl !py-3 flex items-center gap-2">
+                            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
+                            <span className="hidden sm:inline">{isNew ? t('editor.publish_button') : t('editor.save_button')}</span>
+                        </button>
+                    </div>
                 </div>
             </main>
 
             <ImportModal isOpen={isImportModalOpen} onClose={() => setIsImportModalOpen(false)} onImport={handleImportQuestions} />
             <AIGeneratorModal isOpen={isAIModalOpen} onClose={() => setIsAIModalOpen(false)} onGenerate={handleAIGenerated} />
+            <QuizPreviewModal
+                isOpen={isPreviewOpen}
+                onClose={() => setIsPreviewOpen(false)}
+                questions={questions}
+                title={title}
+            />
         </div>
     );
 }

@@ -2,8 +2,9 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useQuizStore } from "@/lib/store";
-import { Loader2, Clock, Sparkles, ArrowRight, LogOut } from "lucide-react";
+import { Loader2, Clock, Sparkles, ArrowRight, LogOut, Moon, Sun } from "lucide-react";
 import { getTranslation } from "@/lib/i18n";
+import { useState, useEffect } from "react";
 
 import { StudentPlaySkeleton } from "@/components/Skeleton";
 import AudioController from "@/components/AudioController";
@@ -21,6 +22,15 @@ export default function StudentPlay() {
     const router = useRouter();
     const { participantId, nickname, language, isEliminated } = useQuizStore();
     const t = (key: string) => getTranslation(language, key);
+    const [isDark, setIsDark] = useState(false);
+
+    useEffect(() => {
+        if (isDark) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    }, [isDark]);
 
     const {
         session, participants, currentQuestion, loading,
@@ -35,7 +45,15 @@ export default function StudentPlay() {
     if (loading || !session) return <StudentPlaySkeleton />;
 
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col p-3 md:p-8 items-center justify-center selection:bg-blue-100">
+        <div className={`min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col p-3 md:p-8 items-center justify-center transition-colors duration-500 selection:bg-blue-100`}>
+            {/* Theme Toggle */}
+            <button
+                onClick={() => setIsDark(!isDark)}
+                className="fixed top-4 right-4 z-[70] p-3 bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:scale-110 transition-all"
+            >
+                {isDark ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5" />}
+            </button>
+
             {(session.status === "active" || session.status === "waiting") && !isEliminated && (
                 <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[60] scale-90 sm:scale-100">
                     <Leaderboard
@@ -48,15 +66,15 @@ export default function StudentPlay() {
 
             {session.status === "waiting" && (
                 <div className="max-w-md w-full text-center space-y-10 animate-in zoom-in duration-700 mt-16 md:mt-0">
-                    <div className="bg-white p-12 rounded-[3.5rem] shadow-xl border border-slate-100 flex flex-col items-center gap-8 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50/50 rounded-bl-full -mr-8 -mt-8" />
-                        <div className="w-24 h-24 bg-blue-600 rounded-[2rem] flex items-center justify-center text-white shadow-xl shadow-blue-200 animate-bounce">
+                    <div className="bg-white dark:bg-slate-900 p-12 rounded-[3.5rem] shadow-xl border border-slate-100 dark:border-slate-800 flex flex-col items-center gap-8 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50/50 dark:bg-blue-900/10 rounded-bl-full -mr-8 -mt-8" />
+                        <div className="w-24 h-24 bg-blue-600 rounded-[2rem] flex items-center justify-center text-white shadow-xl shadow-blue-200 dark:shadow-blue-900/20 animate-bounce">
                             <Sparkles className="w-12 h-12" />
                         </div>
                         <div className="space-y-3 relative z-10">
-                            <h1 className="text-4xl font-black text-slate-900 tracking-tight">{t('play.waiting_title')}</h1>
-                            <p className="text-lg text-slate-500 font-medium">
-                                Hola <span className="text-blue-600 font-black">{nickname}</span>, {t('play.waiting_subtitle')}
+                            <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">{t('play.waiting_title')}</h1>
+                            <p className="text-lg text-slate-500 dark:text-slate-400 font-medium">
+                                Hola <span className="text-blue-600 dark:text-blue-400 font-black">{nickname}</span>, {t('play.waiting_subtitle')}
                             </p>
                         </div>
                         <div className="flex items-center gap-2 justify-center relative z-10">

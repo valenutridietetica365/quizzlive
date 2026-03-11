@@ -1,7 +1,9 @@
 "use client";
 
-import { CheckCircle2, Frown, Sparkles, Clock } from "lucide-react";
+import { CheckCircle2, Frown, Clock, Flame } from "lucide-react";
 import Leaderboard from "@/components/Leaderboard";
+import confetti from "canvas-confetti";
+import { useEffect } from "react";
 
 interface AnswerWaitingProps {
     isCorrect: boolean;
@@ -22,6 +24,46 @@ export default function AnswerWaiting({
     t,
     wasLate
 }: AnswerWaitingProps) {
+    useEffect(() => {
+        if (isCorrect && !wasLate) {
+            // Basic burst
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#10b981', '#3b82f6', '#f59e0b']
+            });
+
+            // If high streak, bigger celebration
+            if (currentStreak >= 3) {
+                const duration = 3 * 1000;
+                const end = Date.now() + duration;
+
+                const frame = () => {
+                    confetti({
+                        particleCount: 2,
+                        angle: 60,
+                        spread: 55,
+                        origin: { x: 0 },
+                        colors: ['#f59e0b', '#ef4444']
+                    });
+                    confetti({
+                        particleCount: 2,
+                        angle: 120,
+                        spread: 55,
+                        origin: { x: 1 },
+                        colors: ['#f59e0b', '#ef4444']
+                    });
+
+                    if (Date.now() < end) {
+                        requestAnimationFrame(frame);
+                    }
+                };
+                frame();
+            }
+        }
+    }, [isCorrect, wasLate, currentStreak]);
+
     if (wasLate) {
         return (
             <div className="w-full text-center space-y-10 animate-in zoom-in duration-700">
@@ -72,10 +114,10 @@ export default function AnswerWaiting({
                             : t('play.next_adventure')}
                     </p>
                     {isCorrect && currentStreak > 1 && (
-                        <div className="flex items-center gap-2 px-4 py-1 bg-white/20 rounded-full animate-bounce">
-                            <Sparkles className="w-4 h-4 text-amber-300" />
-                            <span className="text-white font-black text-xs uppercase tracking-widest">
-                                {currentStreak} {t('play.streak_fire')} 🔥
+                        <div className="flex items-center gap-3 px-6 py-2 bg-white/20 backdrop-blur-sm rounded-full animate-bounce shadow-lg border border-white/20">
+                            <Flame className={`w-5 h-5 ${currentStreak >= 5 ? "text-orange-400 animate-pulse" : "text-amber-300"}`} fill="currentColor" />
+                            <span className="text-white font-black text-sm uppercase tracking-widest">
+                                Racha de {currentStreak} 🔥
                             </span>
                         </div>
                     )}
