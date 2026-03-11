@@ -207,7 +207,7 @@ export const generatePDFReport = (data: ReportData, t: (key: string) => string) 
             doc.setTextColor(255, 255, 255);
             doc.setFontSize(18);
             doc.text(data.branding.institution_name || "QUIZZLIVE", 45, 22);
-        } catch (_e) {
+        } catch {
             doc.setTextColor(255, 255, 255);
             doc.setFontSize(22);
             doc.text(data.branding.institution_name || "QUIZZLIVE", 20, 20);
