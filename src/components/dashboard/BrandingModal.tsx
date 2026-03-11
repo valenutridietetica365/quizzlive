@@ -92,6 +92,7 @@ const BrandingModal: React.FC<BrandingModalProps> = ({
                             </div>
                             {logoUrl && (
                                 <div className="w-14 h-14 bg-slate-50 rounded-2xl border border-slate-100 p-2 flex items-center justify-center overflow-hidden shrink-0">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
                                     <img src={logoUrl} alt="Preview" className="max-w-full max-h-full object-contain" />
                                 </div>
                             )}
