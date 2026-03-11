@@ -20,7 +20,8 @@ export const translations = {
             empty: "Vacío",
             active: "Activo",
             page: "Página",
-            of: "de"
+            of: "de",
+            student: "Alumno"
         },
         dashboard: {
             title: "Mis Quizzes",
@@ -42,6 +43,7 @@ export const translations = {
             table_date: "Fecha",
             table_pin: "PIN de Acceso",
             table_results: "Resultados",
+            table_score: "Puntaje",
             history_title: "Historial de Sesiones",
             quizzes_subtitle: "Gestiona tus contenidos y comienza nuevas sesiones.",
             history_subtitle: "Revisa el desempeño de tus alumnos en sesiones pasadas.",
@@ -337,7 +339,8 @@ export const translations = {
             active: "Active",
             logout: "Logout",
             page: "Page",
-            of: "of"
+            of: "of",
+            student: "Student"
         },
         dashboard: {
             title: "My Quizzes",
@@ -359,6 +362,7 @@ export const translations = {
             table_date: "Date",
             table_pin: "Access PIN",
             table_results: "Results",
+            table_score: "Score",
             history_title: "Session History",
             quizzes_subtitle: "Manage your content and start new sessions.",
             history_subtitle: "Review your students' performance in past sessions.",

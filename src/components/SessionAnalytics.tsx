@@ -105,13 +105,19 @@ const SessionAnalytics = React.memo(function SessionAnalytics({ sessionId }: Ses
             }
             
             const row = userMap.get(pId)!;
+            const question = questions.find(q => q.id === qId);
             row.answers[qId] = a.is_correct;
             row.totalScore += a.points_awarded || 0;
+            
+            if (a.is_correct && question) {
+                if (!row.pedagogicalScore) row.pedagogicalScore = 0;
+                row.pedagogicalScore += question.points || 0;
+            }
         });
 
         return Array.from(userMap.values()).map(row => ({
             ...row,
-            grade: calculateChileanGrade(row.totalScore, maxTotalScore, { exigency })
+            grade: calculateChileanGrade(row.pedagogicalScore || 0, maxTotalScore, { exigency })
         })).sort((a, b) => a.studentName.localeCompare(b.studentName));
     }, [answers, participants, exigency, maxTotalScore]);
 

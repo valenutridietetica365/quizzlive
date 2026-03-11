@@ -82,8 +82,16 @@ export const generateExcelReport = (data: ReportData, t: (key: string) => string
         const correct = studentAnswers.filter(a => a.is_correct).length;
         const total = studentAnswers.length;
         const score = studentAnswers.reduce((sum, a) => sum + (a.points_awarded || 0), 0);
+        
+        // Pedagogical Score: Sum of base question weights for correct answers
+        const pedagogicalScore = studentAnswers.reduce((sum, a) => {
+            if (!a.is_correct) return sum;
+            const q = questions.find(question => question.id === a.question_id);
+            return sum + (q?.points || 0);
+        }, 0);
+
         const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
-        const grade = calculateGrade(score);
+        const grade = calculateGrade(pedagogicalScore);
 
         return {
             name: p.nickname,
@@ -236,11 +244,19 @@ export const generatePDFReport = (data: ReportData, t: (key: string) => string) 
 
     const studentGrades = participants.map(p => {
         const pAnswers = answers.filter(a => a.participant_id === p.id);
-        const score = pAnswers.reduce((s, a) => s + a.points_awarded, 0);
+        const gamifiedScore = pAnswers.reduce((s, a) => s + (a.points_awarded || 0), 0);
+        
+        // Pedagogical Score: Sum of base question weights for correct answers
+        const pedagogicalScore = pAnswers.reduce((sum, a) => {
+            if (!a.is_correct) return sum;
+            const q = questions.find(question => question.id === a.question_id);
+            return sum + (q?.points || 0);
+        }, 0);
+
         return {
             name: p.nickname,
-            score: score,
-            grade: calculateGrade(score),
+            score: gamifiedScore,
+            grade: calculateGrade(pedagogicalScore),
             correct: pAnswers.filter(a => a.is_correct).length,
             total: pAnswers.length,
             accuracy: pAnswers.length > 0 ? `${Math.round((pAnswers.filter(a => a.is_correct).length / pAnswers.length) * 100)}%` : '0%'

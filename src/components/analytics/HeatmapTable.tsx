@@ -6,6 +6,7 @@ export interface HeatmapRow {
     participantId: string;
     studentName: string;
     totalScore: number;
+    pedagogicalScore?: number;
     grade?: number;
     answers: Record<string, boolean | null>;
 }
@@ -66,7 +67,7 @@ const HeatmapTable: React.FC<HeatmapTableProps> = ({
                 <div className="min-w-max bg-slate-900/30 rounded-[2rem] border border-white/5 p-2 md:p-4">
                     <div className="flex mb-2">
                         <div className="w-48 flex-shrink-0 p-3 text-slate-400 font-black text-[10px] uppercase tracking-[0.2em] sticky left-0 bg-slate-900/90 backdrop-blur-md rounded-xl z-20">
-                            {t('common.student') || "Alumno"}
+                            {t('common.student')}
                         </div>
                         {useGrading && (
                             <div className="w-20 md:w-24 flex-shrink-0 p-3 text-center text-blue-400 font-black text-[10px] uppercase tracking-widest">{t('analytics.grade')}</div>
