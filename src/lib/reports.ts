@@ -48,7 +48,7 @@ export const generateExcelReport = (data: ReportData, t: (key: string) => string
         return ws;
     };
 
-    const BRANDING_TITLE = "QUIZZLIVE - REPORTE PEDAGÓGICO";
+    const BRANDING_TITLE = "📊 QUIZZLIVE - REPORTE PEDAGÓGICO PROFESIONAL";
     const DATE_STR = new Date(session.finished_at).toLocaleString();
 
     // --- 1. Sheet: Summary ---
@@ -56,20 +56,20 @@ export const generateExcelReport = (data: ReportData, t: (key: string) => string
         [BRANDING_TITLE],
         [t('session.report_summary').toUpperCase()],
         [],
-        [t('session.title'), session.quiz.title],
-        [t('sidebar.classes'), session.quiz.class?.name || 'N/A'],
-        [t('dashboard.table_date'), DATE_STR],
-        [t('dashboard.table_pin'), session.pin],
+        ["📋 " + t('session.title'), session.quiz.title],
+        ["🏫 " + t('sidebar.classes'), session.quiz.class?.name || 'N/A'],
+        ["🗓️ " + t('dashboard.table_date'), DATE_STR],
+        ["🔑 " + t('dashboard.table_pin'), session.pin],
         [],
-        ["INDICADORES CLAVE (KPIs)"],
+        ["🚀 INDICADORES CLAVE (KPIs)"],
         [t('analytics.participation'), `${participants.length} ${t('common.student')}s`],
         [t('analytics.avg_success'), `${Math.round((answers.filter(a => a.is_correct).length / Math.max(1, answers.length)) * 100)}%`],
         [],
-        ["GENERADO AUTOMÁTICAMENTE POR QUIZZLIVE PLATFORM"]
+        ["✨ GENERADO POR QUIZZLIVE PLATFORM"]
     ];
     const summarySheet = createSheet(summaryRows, [
-        { wch: 30 }, // A
-        { wch: 50 }, // B
+        { wch: 35 }, // A
+        { wch: 55 }, // B
     ]);
 
     // --- 2. Sheet: Grades ---
@@ -97,30 +97,45 @@ export const generateExcelReport = (data: ReportData, t: (key: string) => string
 
     const gradesRows: (string | number | boolean | null | undefined)[][] = [
         [BRANDING_TITLE],
-        [t('analytics.grading_title').toUpperCase()],
+        ["🎓 " + t('analytics.grading_title').toUpperCase()],
         [t('analytics.exigency') + ":", `${exig * 100}%`],
         [],
-        [t('session.table_rank'), t('session.table_student'), t('analytics.grade'), t('session.table_score'), t('session.table_correct'), t('session.table_accuracy')]
+        [
+            "Puesto", 
+            t('session.table_student'), 
+            t('analytics.grade'), 
+            t('session.table_score'), 
+            t('session.table_correct'), 
+            t('session.table_accuracy')
+        ]
     ];
 
     studentGrades.forEach((g, idx) => {
-        gradesRows.push([idx + 1, g.name, g.grade.toFixed(1), g.score, `${g.correct}/${g.total}`, g.accuracy]);
+        gradesRows.push([
+            idx + 1, 
+            g.name, 
+            g.grade.toFixed(1), 
+            g.score, 
+            `${g.correct}/${g.total}`, 
+            g.accuracy
+        ]);
     });
 
     const gradesSheet = createSheet(gradesRows, [
         { wch: 10 }, // Rank
-        { wch: 35 }, // Student
-        { wch: 12 }, // Grade
-        { wch: 12 }, // Score
+        { wch: 40 }, // Student
+        { wch: 15 }, // Grade
+        { wch: 15 }, // Score
         { wch: 15 }, // Corrects
-        { wch: 12 }, // Accuracy
+        { wch: 15 }, // Accuracy
     ]);
 
-    // --- 3. Sheet: Response Matrix ---
+    // --- 3. Sheet: Matrix ---
     const matrixHeader = [t('session.table_student'), ...questions.map((_, i) => `Q${i + 1}`)];
-    const matrixRows = [
+    const matrixRows: (string | number | boolean | null | undefined)[][] = [
         [BRANDING_TITLE],
-        ["MATRIZ DE RESPUESTAS DETALLADA"],
+        ["🗺️ MATRIZ DE RESPUESTAS (MAPA DE CALOR)"],
+        ["Leyenda:", "✅ = Correcto", "❌ = Incorrecto", "➖ = No respondió"],
         [],
         matrixHeader
     ];
@@ -129,21 +144,21 @@ export const generateExcelReport = (data: ReportData, t: (key: string) => string
         const row = [p.nickname];
         questions.forEach(q => {
             const answer = answers.find(a => a.participant_id === p.id && a.question_id === q.id);
-            if (!answer) row.push('-');
-            else row.push(answer.is_correct ? 'OK' : 'X');
+            if (!answer) row.push('➖');
+            else row.push(answer.is_correct ? '✅' : '❌');
         });
         matrixRows.push(row);
     });
 
     matrixRows.push([]);
-    matrixRows.push(["REFERENCIA DE PREGUNTAS"]);
+    matrixRows.push(["📍 REFERENCIA DE PREGUNTAS"]);
     questions.forEach((q, i) => {
         matrixRows.push([`Q${i + 1}`, q.question_text]);
     });
 
     const matrixSheet = createSheet(matrixRows, [
-        { wch: 35 }, // Student
-        ...questions.map(() => ({ wch: 10 }))
+        { wch: 40 }, // Student
+        ...questions.map(() => ({ wch: 8 }))
     ]);
 
     const wb = XLSX.utils.book_new();
@@ -151,7 +166,8 @@ export const generateExcelReport = (data: ReportData, t: (key: string) => string
     XLSX.utils.book_append_sheet(wb, gradesSheet, t('session.report_grades'));
     XLSX.utils.book_append_sheet(wb, matrixSheet, t('session.report_matrix'));
 
-    const fileName = `Reporte_${session.quiz.title.replace(/[\\/?:*|"<>]/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
+    const cleanTitle = session.quiz.title.replace(/[\\/?:*|"<>]/g, '').replace(/\s+/g, '_');
+    const fileName = `Reporte_${cleanTitle}_${new Date().toISOString().split('T')[0]}.xlsx`;
     XLSX.writeFile(wb, fileName);
 };
 

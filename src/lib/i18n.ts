@@ -14,7 +14,11 @@ export const translations = {
             points: "puntos",
             students: "alumnos",
             questions: "preguntas",
-            logout: "Salir"
+            logout: "Salir",
+            correct: "Correcto",
+            incorrect: "Incorrecto",
+            empty: "Vacío",
+            active: "Activo"
         },
         dashboard: {
             title: "Mis Quizzes",
@@ -159,9 +163,12 @@ export const translations = {
             no_tags_desc: "Sin etiquetas de tema detectadas en los quizzes",
             mastery_legend: "Leyenda: <50% Crítico (Rojo) | 50-80% En Progreso (Naranja) | >80% Dominado (Verde)",
             grading: "Escala 1.0 - 7.0",
+            grading_title: "Evaluación Formal",
             exigency: "Exigencia",
             max_score: "Puntaje Máximo",
-            grade: "Nota"
+            grade: "Nota",
+            heatmap_title: "Matriz de Resultados",
+            heatmap_subtitle: "Rendimiento detallado por pregunta"
         },
         session: {
             title: "Sesión en Vivo",
@@ -322,24 +329,10 @@ export const translations = {
             points: "points",
             students: "students",
             questions: "questions",
-            'teams': {
-                'desc': 'Group competition.',
-            },
-            'roulette': {
-                'name': 'Roulette Mode',
-                'desc': 'Random participation led by the teacher.',
-                'spin_participant': 'Spin to pick Student',
-                'spin_question': 'Spin to pick Question',
-                'selected_participant': '{name}',
-                'selected_question': 'Your challenge is:',
-                'your_turn': "IT'S YOUR TURN!",
-                'answering': '{name} is answering...',
-                'correct': 'Correct!',
-                'incorrect': 'Incorrect',
-                'manual_points': 'Points to award',
-                'waiting_spin': "Waiting for the teacher to spin the wheel...",
-                'instruction': 'Answer out loud and the teacher will give you points.',
-            },
+            correct: "Correct",
+            incorrect: "Incorrect",
+            empty: "Empty",
+            active: "Active",
             logout: "Logout"
         },
         dashboard: {
@@ -368,6 +361,24 @@ export const translations = {
             new_quiz: "NEW QUIZ",
             report_button: "REPORT",
             error_launching: "Error starting the session",
+            'teams': {
+                'desc': 'Group competition.',
+            },
+            'roulette': {
+                'name': 'Roulette Mode',
+                'desc': 'Random participation led by the teacher.',
+                'spin_participant': 'Spin to pick Student',
+                'spin_question': 'Spin to pick Question',
+                'selected_participant': '{name}',
+                'selected_question': 'Your challenge is:',
+                'your_turn': "IT'S YOUR TURN!",
+                'answering': '{name} is answering...',
+                'correct': 'Correct!',
+                'incorrect': 'Incorrect',
+                'manual_points': 'Points to award',
+                'waiting_spin': "Waiting for the teacher to spin the wheel...",
+                'instruction': 'Answer out loud and the teacher will give you points.',
+            },
             stats_title: "Overview",
             total_quizzes: "Total Quizzes",
             total_sessions: "Total Sessions",
@@ -465,7 +476,10 @@ export const translations = {
             mastery_matrix: "Mastery Matrix",
             topic: "Topic",
             no_tags_desc: "No topic tags detected in quizzes",
-            mastery_legend: "Legend: <50% Critical (Red) | 50-80% In Progress (Orange) | >80% Mastered (Green)"
+            mastery_legend: "Legend: <50% Critical (Red) | 50-80% In Progress (Orange) | >80% Mastered (Green)",
+            grading_title: "Formal Grading",
+            heatmap_title: "Result Matrix",
+            heatmap_subtitle: "Detailed performance by question"
         },
         session: {
             title: "Live Session",
