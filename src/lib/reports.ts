@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { calculateChileanGrade } from './grading';
 
 export interface ReportAnswer {
     is_correct: boolean;
@@ -83,17 +84,7 @@ export const generateExcelReport = (data: ReportData, t: (key: string) => string
     const exig = exigency || 0.6;
     const maxTotalScore = questions.reduce((sum, q) => sum + q.points, 0);
 
-    const calculateGrade = (score: number) => {
-        if (maxTotalScore === 0) return 1.0;
-        const ePoints = maxTotalScore * exig;
-        let grade = 1.0;
-        if (score < ePoints) {
-            grade = 1.0 + 3.0 * (score / ePoints);
-        } else {
-            grade = 4.0 + 3.0 * ((score - ePoints) / (maxTotalScore - ePoints));
-        }
-        return Math.min(7.0, Math.max(1.0, Math.round(grade * 10) / 10));
-    };
+    const calculateGrade = (score: number) => calculateChileanGrade(score, maxTotalScore, { exigency: exig });
 
     const studentGrades = participants.map(p => {
         const studentAnswers = answers.filter(a => a.participant_id === p.id);
@@ -115,11 +106,11 @@ export const generateExcelReport = (data: ReportData, t: (key: string) => string
 
     const gradesRows: (string | number | boolean | null | undefined)[][] = [
         BRANDING,
-        ["", "TABLA DE CALIFICACIONES (ESCALA 1.0 - 7.0)"],
-        ["", "Exigencia:", `${exig * 100}%`],
-        ["", "Fecha:", DATE_STR],
+        ["", t('analytics.grading').toUpperCase()],
+        ["", t('analytics.exigency') + ":", `${exig * 100}%`],
+        ["", t('dashboard.table_date') + ":", DATE_STR],
         [],
-        ["", t('session.table_rank'), t('session.table_student'), "Nota", t('session.table_score'), t('session.table_correct'), t('session.table_accuracy')]
+        ["", t('session.table_rank'), t('session.table_student'), t('analytics.grade'), t('session.table_score'), t('session.table_correct'), t('session.table_accuracy')]
     ];
 
     studentGrades.forEach((g, idx) => {
@@ -226,17 +217,7 @@ export const generatePDFReport = (data: ReportData, t: (key: string) => string) 
     const exig = exigency || 0.6;
     const maxTotalScore = questions.reduce((sum, q) => sum + q.points, 0);
 
-    const calculateGrade = (score: number) => {
-        if (maxTotalScore === 0) return 1.0;
-        const ePoints = maxTotalScore * exig;
-        let grade = 1.0;
-        if (score < ePoints) {
-            grade = 1.0 + 3.0 * (score / ePoints);
-        } else {
-            grade = 4.0 + 3.0 * ((score - ePoints) / (maxTotalScore - ePoints));
-        }
-        return Math.min(7.0, Math.max(1.0, Math.round(grade * 10) / 10));
-    };
+    const calculateGrade = (score: number) => calculateChileanGrade(score, maxTotalScore, { exigency: exig });
 
     autoTable(doc, {
         startY: yPos,

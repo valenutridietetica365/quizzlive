@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
-import { supabase } from "@/lib/supabase";
+import React, { useMemo } from "react";
 import { Users, CheckCircle2, FileSpreadsheet } from "lucide-react";
-
+import { calculateChileanGrade } from "@/lib/grading";
+import { getTranslation } from "@/lib/i18n";
+import { useQuizStore } from "@/lib/store";
+import { useSessionResults } from "@/hooks/useSessionResults";
 
 interface ReportProps {
     sessionId: string;
@@ -30,64 +32,31 @@ interface SupabaseParticipant {
 }
 
 const SessionReport = React.memo(function SessionReport({ sessionId }: ReportProps) {
-    const [participants, setParticipants] = useState<ParticipantData[]>([]);
-    const [maxTotalScore, setMaxTotalScore] = useState(0);
-    const [loading, setLoading] = useState(true);
+    const { language } = useQuizStore();
+    const t = (key: string) => getTranslation(language, key);
+    const { answers, participants, questions, loading, maxTotalScore } = useSessionResults(sessionId);
 
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        // Fetch participants and their scores
-        const { data: partData } = await supabase
-            .from("participants")
-            .select(`
-                id, 
-                nickname, 
-                scores:scores(total_points),
-                answers:answers(question_id, is_correct, points_awarded, answer_text, answered_at)
-            `)
-            .eq("session_id", sessionId);
-
-        if (partData) {
-            // Fetch questions to get max score
-            const { data: questionsData } = await supabase.from("questions").select("points").eq("quiz_id", (partData[0] as any)?.answers?.[0]?.question_id ? (await supabase.from("questions").select("quiz_id").eq("id", (partData[0] as any).answers[0].question_id).single()).data?.quiz_id : "");
-            // Actually, it's better to fetch quiz_id from session
-            const { data: sessionData } = await supabase.from("sessions").select("quiz_id").eq("id", sessionId).single();
-            if (sessionData) {
-                const { data: qData } = await supabase.from("questions").select("points").eq("quiz_id", sessionData.quiz_id);
-                const max = (qData || []).reduce((acc, q) => acc + (q.points || 1000), 0);
-                setMaxTotalScore(max);
-            }
-
-            const formatted = (partData as unknown as SupabaseParticipant[]).map((p) => ({
-                id: p.id,
-                nickname: p.nickname,
-                total_points: p.scores?.[0]?.total_points ?? 0,
-                answers: p.answers || []
-            }));
-            setParticipants(formatted.sort((a, b) => b.total_points - a.total_points));
-        }
-        setLoading(false);
-    }, [sessionId]);
-
-    useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+    const sortedParticipants = useMemo(() => {
+        return participants.map(p => {
+            const pAnswers = answers.filter(a => a.participant_id === p.id);
+            const totalPoints = pAnswers.reduce((sum, a) => sum + (a.points_awarded || 0), 0);
+            return {
+                ...p,
+                total_points: totalPoints,
+                answers: pAnswers
+            };
+        }).sort((a, b) => b.total_points - a.total_points);
+    }, [participants, answers]);
 
     const exportToCSV = () => {
-        if (participants.length === 0) return;
+        if (sortedParticipants.length === 0) return;
 
         const calculateGrade = (score: number) => {
-            if (maxTotalScore === 0) return 1.0;
-            const exig = 0.6; // Default 60% for quick CSV
-            const ePoints = maxTotalScore * exig;
-            let grade = 1.0;
-            if (score < ePoints) grade = 1.0 + 3.0 * (score / ePoints);
-            else grade = 4.0 + 3.0 * ((score - ePoints) / (maxTotalScore - ePoints));
-            return Math.min(7.0, Math.max(1.0, Math.round(grade * 10) / 10));
+            return calculateChileanGrade(score, maxTotalScore, { exigency: 0.6 });
         };
 
-        const headers = ["Nickname", "Puntos Totales", "Nota (60%)", "Correctas", "% Éxito"];
-        const rows = participants.map(p => {
+        const headers = [t('common.student'), t('session.table_score'), `${t('analytics.grade')} (60%)`, t('session.table_correct'), t('session.table_accuracy')];
+        const rows = sortedParticipants.map(p => {
             const correctCount = p.answers.filter(a => a.is_correct).length;
             const successRate = p.answers.length > 0 ? ((correctCount / p.answers.length) * 100).toFixed(1) : 0;
             const grade = calculateGrade(p.total_points);
@@ -152,15 +121,15 @@ const SessionReport = React.memo(function SessionReport({ sessionId }: ReportPro
                 <table className="w-full text-left border-collapse">
                     <thead>
                         <tr className="bg-slate-900/50">
-                            <th className="p-4 text-xs font-black text-slate-500 uppercase tracking-widest">Participante</th>
-                            <th className="p-4 text-xs font-black text-slate-500 uppercase tracking-widest text-center">Nota (60%)</th>
-                            <th className="p-4 text-xs font-black text-slate-500 uppercase tracking-widest text-center">Puntos</th>
-                            <th className="p-4 text-xs font-black text-slate-500 uppercase tracking-widest text-center">Correctas</th>
-                            <th className="p-4 text-xs font-black text-slate-500 uppercase tracking-widest text-center">Efectividad</th>
+                            <th className="p-4 text-xs font-black text-slate-500 uppercase tracking-widest">{t('common.student')}</th>
+                            <th className="p-4 text-xs font-black text-slate-500 uppercase tracking-widest text-center">{t('analytics.grade')} (60%)</th>
+                            <th className="p-4 text-xs font-black text-slate-500 uppercase tracking-widest text-center">{t('session.table_score')}</th>
+                            <th className="p-4 text-xs font-black text-slate-500 uppercase tracking-widest text-center">{t('session.table_correct')}</th>
+                            <th className="p-4 text-xs font-black text-slate-500 uppercase tracking-widest text-center">{t('session.table_accuracy')}</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
-                        {participants.map((p) => {
+                        {sortedParticipants.map((p) => {
                             const correctCount = p.answers.filter(a => a.is_correct).length;
                             const totalQuestions = p.answers.length;
                             const percentage = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
@@ -177,12 +146,7 @@ const SessionReport = React.memo(function SessionReport({ sessionId }: ReportPro
                                     </td>
                                     <td className="p-4 text-center">
                                         {(() => {
-                                            const exig = 0.6;
-                                            const ePoints = maxTotalScore * exig;
-                                            let grade = 1.0;
-                                            if (p.total_points < ePoints) grade = 1.0 + 3.0 * (p.total_points / ePoints);
-                                            else grade = 4.0 + 3.0 * ((p.total_points - ePoints) / (maxTotalScore - ePoints));
-                                            const finalGrade = Math.min(7.0, Math.max(1.0, Math.round(grade * 10) / 10));
+                                            const finalGrade = calculateChileanGrade(p.total_points, maxTotalScore, { exigency: 0.6 });
                                             return (
                                                 <span className={`text-sm font-black px-3 py-1 rounded-lg ${finalGrade >= 4.0 ? 'bg-blue-500/20 text-blue-400' : 'bg-rose-500/20 text-rose-400'}`}>
                                                     {finalGrade.toFixed(1)}
@@ -215,7 +179,7 @@ const SessionReport = React.memo(function SessionReport({ sessionId }: ReportPro
                 </table>
             </div>
 
-            {participants.length === 0 && (
+            {sortedParticipants.length === 0 && (
                 <div className="text-center py-12 bg-slate-900/20 rounded-3xl border-2 border-dashed border-white/5">
                     <Users className="w-12 h-12 text-slate-700 mx-auto mb-4" />
                     <p className="text-slate-500 font-black uppercase tracking-widest text-sm">No hay datos de participación</p>

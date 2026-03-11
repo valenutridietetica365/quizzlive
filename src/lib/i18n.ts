@@ -157,7 +157,11 @@ export const translations = {
             mastery_matrix: "Matriz de Maestría",
             topic: "Tema",
             no_tags_desc: "Sin etiquetas de tema detectadas en los quizzes",
-            mastery_legend: "Leyenda: <50% Crítico (Rojo) | 50-80% En Progreso (Naranja) | >80% Dominado (Verde)"
+            mastery_legend: "Leyenda: <50% Crítico (Rojo) | 50-80% En Progreso (Naranja) | >80% Dominado (Verde)",
+            grading: "Escala 1.0 - 7.0",
+            exigency: "Exigencia",
+            max_score: "Puntaje Máximo",
+            grade: "Nota"
         },
         session: {
             title: "Sesión en Vivo",

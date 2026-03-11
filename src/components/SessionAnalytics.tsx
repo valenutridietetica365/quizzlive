@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { Loader2, Target, FileDown } from "lucide-react";
 import { toast } from "sonner";
@@ -11,6 +11,9 @@ import KPISection from "@/components/analytics/KPISection";
 import InsightsPanel from "@/components/analytics/InsightsPanel";
 import QuestionsChart from "@/components/analytics/QuestionsChart";
 import { generateExcelReport, generatePDFReport, ReportAnswer, ReportData, ReportParticipant, ReportQuestion } from "@/lib/reports";
+import { calculateChileanGrade } from "@/lib/grading";
+import { useSessionResults } from "@/hooks/useSessionResults";
+import HeatmapTable, { HeatmapRow } from "@/components/analytics/HeatmapTable";
 
 interface SessionAnalyticsProps {
     sessionId: string;
@@ -36,13 +39,7 @@ interface ExportAnswer {
     } | null;
 }
 
-interface HeatmapRow {
-    participantId: string;
-    studentName: string;
-    totalScore: number;
-    grade?: number;
-    answers: Record<string, boolean | null>;
-}
+// HeatmapRow moved to HeatmapTable.tsx
 
 interface ReportSessionData {
     id: string;
@@ -58,178 +55,100 @@ interface ReportSessionData {
 
 const SessionAnalytics = React.memo(function SessionAnalytics({ sessionId }: SessionAnalyticsProps) {
     const { language } = useQuizStore();
-    const [data, setData] = useState<QuestionStat[]>([]);
-    const [heatmapData, setHeatmapData] = useState<{ rows: HeatmapRow[], questions: { id: string, name: string, points: number }[] }>({ rows: [], questions: [] });
-    const [loading, setLoading] = useState(true);
+    const { answers, participants, questions, session, loading: dataLoading, maxTotalScore } = useSessionResults(sessionId);
     const [useGrading, setUseGrading] = useState(false);
     const [exigency, setExigency] = useState(0.6); // 60% by default
     const t = (key: string) => getTranslation(language, key);
 
     const calculateGrade = (score: number, maxScore: number, exig: number) => {
-        if (maxScore === 0) return 1.0;
-        const ePoints = maxScore * exig;
-        let grade = 1.0;
-        if (score < ePoints) {
-            grade = 1.0 + 3.0 * (score / ePoints);
-        } else {
-            grade = 4.0 + 3.0 * ((score - ePoints) / (maxScore - ePoints));
-        }
-        return Math.min(7.0, Math.max(1.0, Math.round(grade * 10) / 10));
+        return calculateChileanGrade(score, maxScore, { exigency: exig });
     };
 
     const downloadProfessionalReport = async () => {
-        try {
-            setLoading(true);
-            // 1. Fetch complete data for the report
-            const { data: sessionData, error: sessionError } = await supabase
-                .from("sessions")
-                .select(`
-                    id, pin, created_at, finished_at,
-                    quiz:quizzes(title, class:classes(name))
-                `)
-                .eq("id", sessionId)
-                .single();
-
-            const { data: answersData, error: answersError } = await supabase
-                .from("answers")
-                .select("is_correct, points_awarded, question_id, participant_id")
-                .eq("session_id", sessionId);
-
-            const { data: participantsData, error: participantsError } = await supabase
-                .from("participants")
-                .select("id, nickname")
-                .eq("session_id", sessionId);
-
-            const { data: questionsData, error: questionsError } = await supabase
-                .from("questions")
-                .select("id, question_text, points")
-                .eq("quiz_id", (sessionData as unknown as ReportSessionData)?.quiz?.id || "")
-                .order('sort_order', { ascending: true });
-
-            if (sessionError || answersError || participantsError || questionsError || !sessionData) {
-                throw new Error("Error al obtener datos para el reporte");
-            }
-
-            // 2. Generate and download
-            generateExcelReport({
-                session: sessionData as unknown as ReportData['session'],
-                answers: answersData as unknown as ReportAnswer[],
-                participants: participantsData as unknown as ReportParticipant[],
-                questions: questionsData as unknown as ReportQuestion[],
-                exigency: exigency
-            }, t);
-
-            toast.success("Reporte generado con éxito (Excel)");
-        } catch (error: unknown) {
-            const message = error instanceof Error ? error.message : "Error al generar reporte";
-            toast.error(message);
-        } finally {
-            setLoading(false);
-        }
+        if (!session) return;
+        generateExcelReport({
+            session: session as unknown as ReportData['session'],
+            answers,
+            participants,
+            questions,
+            exigency
+        }, t);
+        toast.success("Reporte generado con éxito (Excel)");
     };
 
     const downloadPDFReportAction = async () => {
-        try {
-            setLoading(true);
-            // 1. Fetch complete data
-            const { data: sessionData, error: sessionError } = await supabase
-                .from("sessions")
-                .select(`
-                    id, pin, created_at, finished_at,
-                    quiz:quizzes(id, title, class:classes(name))
-                `)
-                .eq("id", sessionId)
-                .single();
-
-            const { data: answersData, error: answersError } = await supabase
-                .from("answers")
-                .select("is_correct, points_awarded, question_id, participant_id")
-                .eq("session_id", sessionId);
-
-            const { data: participantsData, error: participantsError } = await supabase
-                .from("participants")
-                .select("id, nickname")
-                .eq("session_id", sessionId);
-
-            const { data: questionsData, error: questionsError } = await supabase
-                .from("questions")
-                .select("id, question_text, points")
-                .eq("quiz_id", (sessionData as unknown as ReportSessionData)?.quiz?.id || "")
-                .order('sort_order', { ascending: true });
-
-            if (sessionError || answersError || participantsError || questionsError || !sessionData) {
-                throw new Error("Error al obtener datos para el reporte");
-            }
-
-            // 2. Generate PDF
-            generatePDFReport({
-                session: sessionData as unknown as ReportData['session'],
-                answers: answersData as unknown as ReportAnswer[],
-                participants: participantsData as unknown as ReportParticipant[],
-                questions: questionsData as unknown as ReportQuestion[],
-                exigency: exigency
-            }, t);
-
-            toast.success("Reporte generado con éxito (PDF)");
-        } catch (error: unknown) {
-            const message = error instanceof Error ? error.message : "Error al generar PDF";
-            toast.error(message);
-        } finally {
-            setLoading(false);
-        }
+        if (!session) return;
+        generatePDFReport({
+            session: session as unknown as ReportData['session'],
+            answers,
+            participants,
+            questions,
+            exigency
+        }, t);
+        toast.success("Reporte generado con éxito (PDF)");
     };
 
-    useEffect(() => {
-        const fetchAnalytics = async () => {
-            const { data: answers } = await supabase.from("answers").select("is_correct, question_id, questions(question_text), participants(id, nickname, team)").eq("session_id", sessionId);
-            if (answers) {
-                const typedAnswers = answers as unknown as ExportAnswer[];
-
-                // Chart Data
-                const stats = typedAnswers.reduce<Record<string, QuestionStat>>((acc, curr) => {
-                    const qId = curr.question_id;
-                    const qText = curr.questions?.question_text ?? "Pregunta";
-                    if (!acc[qId]) { acc[qId] = { name: qText.substring(0, 15) + "...", fullName: qText, correct: 0, total: 0, percentage: 0 }; }
-                    acc[qId].total += 1;
-                    if (curr.is_correct) acc[qId].correct += 1;
-                    return acc;
-                }, {});
-                const chartData = Object.values(stats).map((q) => ({ ...q, percentage: Math.round((q.correct / q.total) * 100) }));
-                setData(chartData);
-
-                // Heatmap Data
-                const { data: questionsData } = await supabase.from("questions").select("id, question_text, points").eq("quiz_id", (typedAnswers[0] as any)?.questions?.quiz_id || "");
-                const sortedQuestions = (questionsData || []).map(q => ({ id: q.id, name: q.question_text.substring(0, 10) + "...", points: q.points || 1000 }));
-                const maxTotalScore = sortedQuestions.reduce((acc, q) => acc + q.points, 0);
-
-                const userMap = new Map<string, HeatmapRow>();
-                typedAnswers.forEach(a => {
-                    const qId = a.question_id;
-                    const pId = a.participants?.id || "unknown";
-                    const pName = a.participants?.nickname || "Anónimo";
-                    if (!userMap.has(pId)) userMap.set(pId, { participantId: pId, studentName: pName, totalScore: 0, answers: {} });
-                    
-                    const row = userMap.get(pId)!;
-                    row.answers[qId] = a.is_correct;
-                    row.totalScore += a.points_awarded || 0;
-                });
-
-                const rows = Array.from(userMap.values()).map(row => ({
-                    ...row,
-                    grade: calculateGrade(row.totalScore, maxTotalScore, exigency)
-                })).sort((a, b) => a.studentName.localeCompare(b.studentName));
-
-                setHeatmapData({ rows, questions: sortedQuestions });
+    // --- Data Processing (Memoized) ---
+    const chartData = useMemo(() => {
+        if (!answers.length) return [];
+        const stats = answers.reduce<Record<string, QuestionStat>>((acc, curr) => {
+            const qId = curr.question_id;
+            const qText = questions.find(q => q.id === qId)?.question_text ?? "Pregunta";
+            if (!acc[qId]) { 
+                acc[qId] = { 
+                    name: qText.substring(0, 15) + "...", 
+                    fullName: qText, 
+                    correct: 0, 
+                    total: 0, 
+                    percentage: 0 
+                }; 
             }
-            setLoading(false);
-        };
-        fetchAnalytics();
-    }, [sessionId, exigency]);
+            acc[qId].total += 1;
+            if (curr.is_correct) acc[qId].correct += 1;
+            return acc;
+        }, {});
+        return Object.values(stats).map((q) => ({ 
+            ...q, 
+            percentage: Math.round((q.correct / q.total) * 100) 
+        }));
+    }, [answers, questions]);
 
-    if (loading) return <div className="flex justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>;
+    const processedHeatmapRows = useMemo(() => {
+        if (!answers.length) return [];
+        const userMap = new Map<string, HeatmapRow>();
+        
+        answers.forEach(a => {
+            const qId = a.question_id;
+            const pId = a.participant_id || "unknown";
+            const pName = participants.find(p => p.id === pId)?.nickname || "Anónimo";
+            
+            if (!userMap.has(pId)) {
+                userMap.set(pId, { 
+                    participantId: pId, 
+                    studentName: pName, 
+                    totalScore: 0, 
+                    answers: {} 
+                });
+            }
+            
+            const row = userMap.get(pId)!;
+            row.answers[qId] = a.is_correct;
+            row.totalScore += a.points_awarded || 0;
+        });
 
-    const avgSuccess = data.length > 0 ? Math.round(data.reduce((a, b) => a + b.percentage, 0) / data.length) : 0;
-    const bestQuestionName = [...data].sort((a, b) => b.percentage - a.percentage)[0]?.name ?? "---";
+        return Array.from(userMap.values()).map(row => ({
+            ...row,
+            grade: calculateChileanGrade(row.totalScore, maxTotalScore, { exigency })
+        })).sort((a, b) => a.studentName.localeCompare(b.studentName));
+    }, [answers, questions, participants, exigency, maxTotalScore]);
+
+    // Derived Stats
+    const avgSuccess = chartData.length > 0 
+        ? Math.round(chartData.reduce((a, b) => a + b.percentage, 0) / chartData.length) 
+        : 0;
+    
+    const bestQuestionName = [...chartData].sort((a: QuestionStat, b: QuestionStat) => b.percentage - a.percentage)[0]?.name ?? "---";
+    const totalParticipants = processedHeatmapRows.length;
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -241,108 +160,37 @@ const SessionAnalytics = React.memo(function SessionAnalytics({ sessionId }: Ses
                 <div className="flex items-center gap-3">
                     <button
                         onClick={downloadProfessionalReport}
-                        disabled={loading}
+                        disabled={dataLoading}
                         className="bg-emerald-600 text-white px-6 py-3 rounded-2xl font-black text-sm hover:bg-emerald-700 transition-all active:scale-95 shadow-lg shadow-emerald-500/20 flex items-center gap-2 disabled:opacity-50"
                     >
-                        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+                        {dataLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
                         Excel
                     </button>
                     <button
                         onClick={downloadPDFReportAction}
-                        disabled={loading}
+                        disabled={dataLoading}
                         className="bg-slate-900 text-white px-6 py-3 rounded-2xl font-black text-sm hover:bg-slate-800 transition-all active:scale-95 shadow-lg shadow-slate-900/20 flex items-center gap-2 disabled:opacity-50"
                     >
-                        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+                        {dataLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
                         PDF
                     </button>
                 </div>
             </div>
 
-            <KPISection avgSuccess={avgSuccess} totalParticipants={data[0]?.total ?? 0} bestQuestionName={bestQuestionName} t={t} />
-            <InsightsPanel data={data} t={t} />
-            <QuestionsChart data={data} t={t} />
+            <KPISection avgSuccess={avgSuccess} totalParticipants={totalParticipants} bestQuestionName={bestQuestionName} t={t} />
+            <InsightsPanel data={chartData} t={t} />
+            <QuestionsChart data={chartData} t={t} />
 
             {/* Heatmap Section */}
-            {heatmapData.rows.length > 0 && heatmapData.questions.length > 0 && (
-                <div className="bg-slate-900/50 p-6 md:p-8 rounded-[3rem] border border-white/5 shadow-2xl mt-8 animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-300">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-                        <div className="space-y-1">
-                            <h3 className="text-xl font-black flex items-center gap-3 text-white">
-                                <Target className="w-6 h-6 text-purple-500" /> {t('analytics.heatmap_title') || "Matriz de Resultados Oficiales"}
-                            </h3>
-                            <div className="flex items-center gap-4">
-                                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">{t('analytics.heatmap_subtitle') || "Calificaciones y rendimiento por alumno"}</p>
-                                <div className="h-4 w-px bg-slate-800" />
-                                <button 
-                                    onClick={() => setUseGrading(!useGrading)}
-                                    className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border transition-all ${useGrading ? "bg-blue-600 border-blue-500 text-white" : "bg-slate-800 border-slate-700 text-slate-400"}`}
-                                >
-                                    {useGrading ? "Escala 1.0-7.0 Activa" : "Mostrar Notas"}
-                                </button>
-                                {useGrading && (
-                                    <div className="flex items-center gap-2 bg-slate-800 p-1 rounded-lg border border-white/5">
-                                        <button onClick={() => setExigency(0.5)} className={`px-2 py-0.5 rounded text-[10px] font-black ${exigency === 0.5 ? "bg-blue-500 text-white" : "text-slate-500 hover:text-slate-300"}`}>50%</button>
-                                        <button onClick={() => setExigency(0.6)} className={`px-2 py-0.5 rounded text-[10px] font-black ${exigency === 0.6 ? "bg-blue-500 text-white" : "text-slate-500 hover:text-slate-300"}`}>60%</button>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                        <div className="flex gap-4 text-xs font-bold uppercase tracking-widest text-slate-400 bg-slate-900/80 p-3 rounded-2xl border border-white/5">
-                            <span className="flex items-center gap-2"><div className="w-3 h-3 bg-emerald-500 shadow-lg shadow-emerald-500/20 rounded-sm"></div> Correcto</span>
-                            <span className="flex items-center gap-2"><div className="w-3 h-3 bg-rose-500 shadow-lg shadow-rose-500/20 rounded-sm"></div> Falso</span>
-                            <span className="flex items-center gap-2"><div className="w-3 h-3 bg-slate-800 border border-slate-700 rounded-sm"></div> Vacio</span>
-                        </div>
-                    </div>
-
-                    <div className="overflow-x-auto pb-4 custom-scrollbar">
-                        <div className="min-w-max bg-slate-900/30 rounded-[2rem] border border-white/5 p-2 md:p-4">
-                            <div className="flex mb-2">
-                                <div className="w-48 flex-shrink-0 p-3 text-slate-400 font-black text-[10px] uppercase tracking-[0.2em] sticky left-0 bg-slate-900/90 backdrop-blur-md rounded-xl z-20">
-                                    {t('common.student') || "Alumno"}
-                                </div>
-                                {useGrading && (
-                                    <div className="w-20 md:w-24 flex-shrink-0 p-3 text-center text-blue-400 font-black text-[10px] uppercase tracking-widest">Nota</div>
-                                )}
-                                <div className="w-20 md:w-24 flex-shrink-0 p-3 text-center text-amber-500 font-black text-[10px] uppercase tracking-widest">Puntos</div>
-                                {heatmapData.questions.map((q, idx) => (
-                                    <div key={q.id} className="w-20 md:w-24 flex-shrink-0 p-3 text-center text-slate-400 font-bold text-xs truncate" title={q.name}>P{idx + 1}</div>
-                                ))}
-                            </div>
-                            <div className="space-y-2">
-                                {heatmapData.rows.map(row => (
-                                    <div key={row.participantId} className="flex group hover:bg-slate-800/30 rounded-2xl transition-all">
-                                        <div className="w-48 flex-shrink-0 p-3 font-black text-slate-200 text-sm truncate sticky left-0 bg-slate-900/95 backdrop-blur-md group-hover:bg-slate-800 rounded-xl z-10 transition-colors shadow-[4px_0_24px_rgba(0,0,0,0.2)]" title={row.studentName}>
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-[10px] text-slate-400 border border-slate-700">{row.studentName.charAt(0).toUpperCase()}</div>
-                                                <span className="truncate">{row.studentName}</span>
-                                            </div>
-                                        </div>
-                                        {useGrading && (
-                                            <div className="w-20 md:w-24 flex-shrink-0 p-3 text-center flex items-center justify-center">
-                                                <span className={`text-sm font-black px-3 py-1 rounded-lg ${row.grade! >= 4.0 ? 'bg-blue-500/20 text-blue-400' : 'bg-rose-500/20 text-rose-400'}`}>{row.grade?.toFixed(1)}</span>
-                                            </div>
-                                        )}
-                                        <div className="w-20 md:w-24 flex-shrink-0 p-3 text-center flex items-center justify-center">
-                                            <span className="text-xs font-bold text-slate-400">{row.totalScore.toLocaleString()}</span>
-                                        </div>
-                                        {heatmapData.questions.map(q => {
-                                            const isCorrect = row.answers[q.id];
-                                            return (
-                                                <div key={q.id} className="w-20 md:w-24 flex-shrink-0 p-1.5 md:p-2">
-                                                    <div className={`w-full h-10 md:h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${isCorrect === true ? 'bg-emerald-500/10 border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.1)] group-hover:bg-emerald-500/20' : isCorrect === false ? 'bg-rose-500/10 border border-rose-500/30 shadow-[0_0_15px_rgba(244,63,94,0.1)] group-hover:bg-rose-500/20' : 'bg-slate-800/50 border border-slate-700/50'}`} title={`${row.studentName} - ${q.name}: ${isCorrect === true ? 'Correcto' : isCorrect === false ? 'Incorrecto' : 'No respondió'}`}>
-                                                        {isCorrect === true && <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,1)]"></div>}
-                                                        {isCorrect === false && <div className="w-2 h-2 rounded-full bg-rose-400 shadow-[0_0_10px_rgba(251,113,133,1)]"></div>}
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <HeatmapTable 
+                rows={processedHeatmapRows} 
+                questions={questions} 
+                useGrading={useGrading} 
+                exigency={exigency} 
+                t={t}
+                onToggleGrading={() => setUseGrading(!useGrading)}
+                onSetExigency={setExigency}
+            />
         </div>
     );
 });
