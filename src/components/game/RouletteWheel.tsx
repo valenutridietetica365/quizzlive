@@ -32,7 +32,7 @@ export default function RouletteWheel({ items, onFinish, spinning, winnerIndex }
             return `${colors[i % colors.length]} ${start}deg ${end}deg`;
         });
         return `conic-gradient(${parts.join(', ')})`;
-    }, [items.length, colors]);
+    }, [items, colors]);
 
     useEffect(() => {
         if (spinning && !isAnimating && winnerIndex !== undefined && winnerIndex !== null) {

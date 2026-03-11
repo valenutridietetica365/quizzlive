@@ -301,7 +301,7 @@ export const translations = {
             unexpected_error: "Ocurrió un error inesperado",
             invitation_code_label: "Código de Invitación",
             invitation_code_placeholder: "Ingresa el código secreto",
-            error_invalid_invitation: "El código de invitación no es válido"
+            error_email_not_allowed: "Este correo no está autorizado para crear una cuenta."
         }
     },
     en: {
@@ -604,7 +604,7 @@ export const translations = {
             unexpected_error: "An unexpected error occurred",
             invitation_code_label: "Invitation Code",
             invitation_code_placeholder: "Enter secret code",
-            error_invalid_invitation: "The invitation code is invalid"
+            error_email_not_allowed: "This email is not authorized to create an account."
         }
     }
 };
