@@ -55,7 +55,7 @@ export const useSessionResults = (sessionId: string) => {
             const [answersRes, participantsRes, questionsRes] = await Promise.all([
                 supabase.from("answers").select("is_correct, points_awarded, question_id, participant_id").eq("session_id", sessionId),
                 supabase.from("participants").select("id, nickname").eq("session_id", sessionId),
-                supabase.from("questions").select("id, question_text, points").eq("quiz_id", (sessionData as any).quiz?.id || "").order('sort_order', { ascending: true })
+                supabase.from("questions").select("id, question_text, points").eq("quiz_id", (sessionData as unknown as SessionResultsData['session'])?.quiz?.id || "").order('sort_order', { ascending: true })
             ]);
 
             if (answersRes.error) throw answersRes.error;

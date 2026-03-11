@@ -164,7 +164,7 @@ export function usePlaySession(id: string) {
             supabase.removeChannel(sessionChannel);
             supabase.removeChannel(rouletteChannel);
         };
-    }, [id, nickname, participantId, session?.status, fetchInitialState, fetchParticipants, fetchTotalScore, handleNewQuestion, totalScore, fetchingScore]);
+    }, [id, nickname, participantId, session?.status, fetchInitialState, fetchParticipants, fetchTotalScore, handleNewQuestion, totalScore, fetchingScore, router]);
 
     const submitAnswer = useCallback(async (answer: string) => {
         if (answered || isSubmitting || !currentQuestion) return;

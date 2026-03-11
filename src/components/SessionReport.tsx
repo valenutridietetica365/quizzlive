@@ -11,19 +11,6 @@ interface ReportProps {
     sessionId: string;
 }
 
-interface ParticipantData {
-    id: string;
-    nickname: string;
-    total_points: number;
-    answers: {
-        question_id: string;
-        is_correct: boolean;
-        points_awarded: number;
-        answer_text: string;
-        answered_at: string;
-    }[];
-}
-
 const SessionReport = React.memo(function SessionReport({ sessionId }: ReportProps) {
     const { language } = useQuizStore();
     const t = (key: string) => getTranslation(language, key);
