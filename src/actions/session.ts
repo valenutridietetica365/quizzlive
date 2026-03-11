@@ -3,6 +3,16 @@
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { revalidatePath } from "next/cache";
 
+interface SessionWithQuiz {
+    id: string;
+    quiz: { teacher_id: string } | { teacher_id: string }[];
+}
+
+function getTeacherId(session: SessionWithQuiz): string {
+    const quiz = Array.isArray(session.quiz) ? session.quiz[0] : session.quiz;
+    return quiz?.teacher_id ?? '';
+}
+
 export async function startSession(quizId: string, mode: string, config: Record<string, unknown> = {}) {
     const supabase = createSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -43,7 +53,7 @@ export async function finishSession(sessionId: string) {
         .eq("id", sessionId)
         .single();
 
-    if (!session || (session.quiz as unknown as { teacher_id: string }).teacher_id !== user.id) {
+    if (!session || getTeacherId(session as SessionWithQuiz) !== user.id) {
         throw new Error("Unauthorized: you don't own this session");
     }
 
@@ -69,7 +79,7 @@ export async function deleteHistory(sessionId: string) {
         .eq("id", sessionId)
         .single();
 
-    if (!session || (session.quiz as unknown as { teacher_id: string }).teacher_id !== user.id) {
+    if (!session || getTeacherId(session as SessionWithQuiz) !== user.id) {
         throw new Error("Unauthorized: you don't own this session");
     }
 
@@ -92,7 +102,7 @@ export async function deleteMultipleHistory(sessionIds: string[]) {
         .select("id, quiz:quizzes!inner(teacher_id)")
         .in("id", sessionIds);
 
-    const unauthorized = sessions?.some(s => (s.quiz as unknown as { teacher_id: string }).teacher_id !== user.id);
+    const unauthorized = sessions?.some(s => getTeacherId(s as SessionWithQuiz) !== user.id);
     if (unauthorized || !sessions || sessions.length !== sessionIds.length) {
         throw new Error("Unauthorized: you don't own all these sessions");
     }

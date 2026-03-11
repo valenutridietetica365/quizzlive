@@ -1,14 +1,21 @@
 import { NextResponse } from "next/server";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
+    // Auth check: only authenticated teachers can generate questions
+    const supabase = createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        return NextResponse.json({ error: "Unauthorized", details: "You must be logged in to generate questions." }, { status: 401 });
+    }
+
     const apiKey = process.env.GEMINI_API_KEY;
-    const version = "REST-v1.6-Gemini3";
 
     if (!apiKey || apiKey.trim().length < 20) {
         return NextResponse.json({
-            error: `Clave no detectada (${version})`,
+            error: "Clave no detectada",
             details: "Por favor, añade GEMINI_API_KEY en Vercel y haz un REDEPLOY."
         }, { status: 500 });
     }
@@ -107,14 +114,14 @@ export async function POST(req: Request) {
         }
 
         return NextResponse.json({
-            error: `Error Final (${version})`,
+            error: "Error Final",
             details: `Ningún modelo funcionó. El último error fue: "${lastError}". \n\nTIP: Tu clave empieza por "${apiKey.substring(0, 5)}...". Revisa en AI Studio que tengas permiso para el modelo 'Gemini 3 Flash (Preview)'.`
         }, { status: 500 });
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Error crítico desconocido";
         return NextResponse.json({
-            error: `Error Crítico de Servidor (${version})`,
+            error: "Error Crítico de Servidor",
             details: errorMessage
         }, { status: 500 });
     }

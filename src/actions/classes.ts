@@ -59,7 +59,9 @@ export async function removeStudentFromClass(studentId: string) {
         .eq("id", studentId)
         .single();
 
-    if (!student || (student.class as unknown as { teacher_id: string }).teacher_id !== user.id) {
+    const classData = student?.class as { teacher_id: string } | { teacher_id: string }[] | null;
+    const teacherId = Array.isArray(classData) ? classData[0]?.teacher_id : classData?.teacher_id;
+    if (!student || teacherId !== user.id) {
         throw new Error("Unauthorized: you don't own this student's class");
     }
 

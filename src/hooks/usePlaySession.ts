@@ -114,10 +114,16 @@ export function usePlaySession(id: string) {
         } catch (err) { console.error("Error fetching score:", err); } finally { setFetchingScore(false); }
     }, [id, participantId]);
 
+    // Effect 1: Auth guard + initial data fetch
     useEffect(() => {
         if (!nickname || !participantId) { router.push("/join"); return; }
         fetchInitialState();
-        if (session?.status === "finished" && totalScore === null && !fetchingScore) fetchTotalScore();
+        fetchParticipants();
+    }, [id, nickname, participantId, fetchInitialState, fetchParticipants, router]);
+
+    // Effect 2: Realtime subscriptions (stable deps only)
+    useEffect(() => {
+        if (!nickname || !participantId) return;
 
         const sessionChannel = supabase.channel(`play_session_${id}`)
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'sessions', filter: `id=eq.${id}` }, (payload) => {
@@ -159,12 +165,18 @@ export function usePlaySession(id: string) {
             })
             .subscribe();
 
-        fetchParticipants();
         return () => {
             supabase.removeChannel(sessionChannel);
             supabase.removeChannel(rouletteChannel);
         };
-    }, [id, nickname, participantId, session?.status, fetchInitialState, fetchParticipants, fetchTotalScore, handleNewQuestion, totalScore, fetchingScore, router]);
+    }, [id, nickname, participantId, handleNewQuestion, fetchParticipants, fetchTotalScore]);
+
+    // Effect 3: Fetch score when session finishes
+    useEffect(() => {
+        if (session?.status === "finished" && totalScore === null && !fetchingScore) {
+            fetchTotalScore();
+        }
+    }, [session?.status, totalScore, fetchingScore, fetchTotalScore]);
 
     const submitAnswer = useCallback(async (answer: string) => {
         if (answered || isSubmitting || !currentQuestion) return;

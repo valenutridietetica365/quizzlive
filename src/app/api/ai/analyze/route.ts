@@ -1,8 +1,16 @@
 import { NextResponse } from "next/server";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
+    // Auth check: only authenticated teachers can use AI
+    const supabase = createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        return NextResponse.json({ error: "Unauthorized", details: "You must be logged in to use AI features." }, { status: 401 });
+    }
+
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey || apiKey.trim().length < 20) {
