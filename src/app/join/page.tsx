@@ -66,16 +66,20 @@ function JoinContent() {
             .from("sessions")
             .select(`
                 id,
-                quiz:quizzes!inner(class_id, class:classes(id, name, students(*)))
+                quiz:quizzes!inner(class_id, class:classes(id, name, students(*))),
+                participants(student_id)
             `)
             .eq("pin", currentPin)
             .single();
 
         if (session) {
-            const s = session as unknown as JoinSessionResponse;
+            const s = session as any;
             if (s.quiz?.class) {
+                const joinedStudentIds = new Set(s.participants?.map((p: any) => p.student_id).filter(Boolean));
+                const availableStudents = (s.quiz.class.students || []).filter((student: any) => !joinedStudentIds.has(student.id));
+                
                 setClassInfo(s.quiz.class);
-                setStudents(s.quiz.class.students || []);
+                setStudents(availableStudents);
             } else {
                 setClassInfo(null);
                 setStudents([]);

@@ -39,6 +39,8 @@ interface ExportAnswer {
 interface HeatmapRow {
     participantId: string;
     studentName: string;
+    totalScore: number;
+    grade?: number;
     answers: Record<string, boolean | null>;
 }
 
@@ -57,9 +59,23 @@ interface ReportSessionData {
 const SessionAnalytics = React.memo(function SessionAnalytics({ sessionId }: SessionAnalyticsProps) {
     const { language } = useQuizStore();
     const [data, setData] = useState<QuestionStat[]>([]);
-    const [heatmapData, setHeatmapData] = useState<{ rows: HeatmapRow[], questions: { id: string, name: string }[] }>({ rows: [], questions: [] });
+    const [heatmapData, setHeatmapData] = useState<{ rows: HeatmapRow[], questions: { id: string, name: string, points: number }[] }>({ rows: [], questions: [] });
     const [loading, setLoading] = useState(true);
+    const [useGrading, setUseGrading] = useState(false);
+    const [exigency, setExigency] = useState(0.6); // 60% by default
     const t = (key: string) => getTranslation(language, key);
+
+    const calculateGrade = (score: number, maxScore: number, exig: number) => {
+        if (maxScore === 0) return 1.0;
+        const ePoints = maxScore * exig;
+        let grade = 1.0;
+        if (score < ePoints) {
+            grade = 1.0 + 3.0 * (score / ePoints);
+        } else {
+            grade = 4.0 + 3.0 * ((score - ePoints) / (maxScore - ePoints));
+        }
+        return Math.min(7.0, Math.max(1.0, Math.round(grade * 10) / 10));
+    };
 
     const downloadProfessionalReport = async () => {
         try {
@@ -86,7 +102,7 @@ const SessionAnalytics = React.memo(function SessionAnalytics({ sessionId }: Ses
 
             const { data: questionsData, error: questionsError } = await supabase
                 .from("questions")
-                .select("id, question_text")
+                .select("id, question_text, points")
                 .eq("quiz_id", (sessionData as unknown as ReportSessionData)?.quiz?.id || "")
                 .order('sort_order', { ascending: true });
 
@@ -99,7 +115,8 @@ const SessionAnalytics = React.memo(function SessionAnalytics({ sessionId }: Ses
                 session: sessionData as unknown as ReportData['session'],
                 answers: answersData as unknown as ReportAnswer[],
                 participants: participantsData as unknown as ReportParticipant[],
-                questions: questionsData as unknown as ReportQuestion[]
+                questions: questionsData as unknown as ReportQuestion[],
+                exigency: exigency
             }, t);
 
             toast.success("Reporte generado con éxito (Excel)");
@@ -136,7 +153,7 @@ const SessionAnalytics = React.memo(function SessionAnalytics({ sessionId }: Ses
 
             const { data: questionsData, error: questionsError } = await supabase
                 .from("questions")
-                .select("id, question_text")
+                .select("id, question_text, points")
                 .eq("quiz_id", (sessionData as unknown as ReportSessionData)?.quiz?.id || "")
                 .order('sort_order', { ascending: true });
 
@@ -149,7 +166,8 @@ const SessionAnalytics = React.memo(function SessionAnalytics({ sessionId }: Ses
                 session: sessionData as unknown as ReportData['session'],
                 answers: answersData as unknown as ReportAnswer[],
                 participants: participantsData as unknown as ReportParticipant[],
-                questions: questionsData as unknown as ReportQuestion[]
+                questions: questionsData as unknown as ReportQuestion[],
+                exigency: exigency
             }, t);
 
             toast.success("Reporte generado con éxito (PDF)");
@@ -180,25 +198,33 @@ const SessionAnalytics = React.memo(function SessionAnalytics({ sessionId }: Ses
                 setData(chartData);
 
                 // Heatmap Data
-                const questionMap = new Map<string, string>();
+                const { data: questionsData } = await supabase.from("questions").select("id, question_text, points").eq("quiz_id", (typedAnswers[0] as any)?.questions?.quiz_id || "");
+                const sortedQuestions = (questionsData || []).map(q => ({ id: q.id, name: q.question_text.substring(0, 10) + "...", points: q.points || 1000 }));
+                const maxTotalScore = sortedQuestions.reduce((acc, q) => acc + q.points, 0);
+
                 const userMap = new Map<string, HeatmapRow>();
                 typedAnswers.forEach(a => {
                     const qId = a.question_id;
-                    const qText = a.questions?.question_text || "Q";
-                    questionMap.set(qId, qText.substring(0, 10) + "...");
                     const pId = a.participants?.id || "unknown";
                     const pName = a.participants?.nickname || "Anónimo";
-                    if (!userMap.has(pId)) userMap.set(pId, { participantId: pId, studentName: pName, answers: {} });
-                    userMap.get(pId)!.answers[qId] = a.is_correct;
+                    if (!userMap.has(pId)) userMap.set(pId, { participantId: pId, studentName: pName, totalScore: 0, answers: {} });
+                    
+                    const row = userMap.get(pId)!;
+                    row.answers[qId] = a.is_correct;
+                    row.totalScore += a.points_awarded || 0;
                 });
-                const uniqueQuestions = Array.from(questionMap.entries()).map(([id, name]) => ({ id, name }));
-                const rows = Array.from(userMap.values()).sort((a, b) => a.studentName.localeCompare(b.studentName));
-                setHeatmapData({ rows, questions: uniqueQuestions });
+
+                const rows = Array.from(userMap.values()).map(row => ({
+                    ...row,
+                    grade: calculateGrade(row.totalScore, maxTotalScore, exigency)
+                })).sort((a, b) => a.studentName.localeCompare(b.studentName));
+
+                setHeatmapData({ rows, questions: sortedQuestions });
             }
             setLoading(false);
         };
         fetchAnalytics();
-    }, [sessionId]);
+    }, [sessionId, exigency]);
 
     if (loading) return <div className="flex justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>;
 
@@ -242,9 +268,24 @@ const SessionAnalytics = React.memo(function SessionAnalytics({ sessionId }: Ses
                     <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
                         <div className="space-y-1">
                             <h3 className="text-xl font-black flex items-center gap-3 text-white">
-                                <Target className="w-6 h-6 text-purple-500" /> {t('analytics.heatmap_title') || "Mapa de Calor de la Clase"}
+                                <Target className="w-6 h-6 text-purple-500" /> {t('analytics.heatmap_title') || "Matriz de Resultados Oficiales"}
                             </h3>
-                            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">{t('analytics.heatmap_subtitle') || "Rendimiento detallado por alumno y pregunta"}</p>
+                            <div className="flex items-center gap-4">
+                                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">{t('analytics.heatmap_subtitle') || "Calificaciones y rendimiento por alumno"}</p>
+                                <div className="h-4 w-px bg-slate-800" />
+                                <button 
+                                    onClick={() => setUseGrading(!useGrading)}
+                                    className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border transition-all ${useGrading ? "bg-blue-600 border-blue-500 text-white" : "bg-slate-800 border-slate-700 text-slate-400"}`}
+                                >
+                                    {useGrading ? "Escala 1.0-7.0 Activa" : "Mostrar Notas"}
+                                </button>
+                                {useGrading && (
+                                    <div className="flex items-center gap-2 bg-slate-800 p-1 rounded-lg border border-white/5">
+                                        <button onClick={() => setExigency(0.5)} className={`px-2 py-0.5 rounded text-[10px] font-black ${exigency === 0.5 ? "bg-blue-500 text-white" : "text-slate-500 hover:text-slate-300"}`}>50%</button>
+                                        <button onClick={() => setExigency(0.6)} className={`px-2 py-0.5 rounded text-[10px] font-black ${exigency === 0.6 ? "bg-blue-500 text-white" : "text-slate-500 hover:text-slate-300"}`}>60%</button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                         <div className="flex gap-4 text-xs font-bold uppercase tracking-widest text-slate-400 bg-slate-900/80 p-3 rounded-2xl border border-white/5">
                             <span className="flex items-center gap-2"><div className="w-3 h-3 bg-emerald-500 shadow-lg shadow-emerald-500/20 rounded-sm"></div> Correcto</span>
@@ -259,6 +300,10 @@ const SessionAnalytics = React.memo(function SessionAnalytics({ sessionId }: Ses
                                 <div className="w-48 flex-shrink-0 p-3 text-slate-400 font-black text-[10px] uppercase tracking-[0.2em] sticky left-0 bg-slate-900/90 backdrop-blur-md rounded-xl z-20">
                                     {t('common.student') || "Alumno"}
                                 </div>
+                                {useGrading && (
+                                    <div className="w-20 md:w-24 flex-shrink-0 p-3 text-center text-blue-400 font-black text-[10px] uppercase tracking-widest">Nota</div>
+                                )}
+                                <div className="w-20 md:w-24 flex-shrink-0 p-3 text-center text-amber-500 font-black text-[10px] uppercase tracking-widest">Puntos</div>
                                 {heatmapData.questions.map((q, idx) => (
                                     <div key={q.id} className="w-20 md:w-24 flex-shrink-0 p-3 text-center text-slate-400 font-bold text-xs truncate" title={q.name}>P{idx + 1}</div>
                                 ))}
@@ -271,6 +316,14 @@ const SessionAnalytics = React.memo(function SessionAnalytics({ sessionId }: Ses
                                                 <div className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-[10px] text-slate-400 border border-slate-700">{row.studentName.charAt(0).toUpperCase()}</div>
                                                 <span className="truncate">{row.studentName}</span>
                                             </div>
+                                        </div>
+                                        {useGrading && (
+                                            <div className="w-20 md:w-24 flex-shrink-0 p-3 text-center flex items-center justify-center">
+                                                <span className={`text-sm font-black px-3 py-1 rounded-lg ${row.grade! >= 4.0 ? 'bg-blue-500/20 text-blue-400' : 'bg-rose-500/20 text-rose-400'}`}>{row.grade?.toFixed(1)}</span>
+                                            </div>
+                                        )}
+                                        <div className="w-20 md:w-24 flex-shrink-0 p-3 text-center flex items-center justify-center">
+                                            <span className="text-xs font-bold text-slate-400">{row.totalScore.toLocaleString()}</span>
                                         </div>
                                         {heatmapData.questions.map(q => {
                                             const isCorrect = row.answers[q.id];

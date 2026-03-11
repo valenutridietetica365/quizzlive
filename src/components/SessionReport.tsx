@@ -31,6 +31,7 @@ interface SupabaseParticipant {
 
 const SessionReport = React.memo(function SessionReport({ sessionId }: ReportProps) {
     const [participants, setParticipants] = useState<ParticipantData[]>([]);
+    const [maxTotalScore, setMaxTotalScore] = useState(0);
     const [loading, setLoading] = useState(true);
 
     const fetchData = useCallback(async () => {
@@ -47,6 +48,16 @@ const SessionReport = React.memo(function SessionReport({ sessionId }: ReportPro
             .eq("session_id", sessionId);
 
         if (partData) {
+            // Fetch questions to get max score
+            const { data: questionsData } = await supabase.from("questions").select("points").eq("quiz_id", (partData[0] as any)?.answers?.[0]?.question_id ? (await supabase.from("questions").select("quiz_id").eq("id", (partData[0] as any).answers[0].question_id).single()).data?.quiz_id : "");
+            // Actually, it's better to fetch quiz_id from session
+            const { data: sessionData } = await supabase.from("sessions").select("quiz_id").eq("id", sessionId).single();
+            if (sessionData) {
+                const { data: qData } = await supabase.from("questions").select("points").eq("quiz_id", sessionData.quiz_id);
+                const max = (qData || []).reduce((acc, q) => acc + (q.points || 1000), 0);
+                setMaxTotalScore(max);
+            }
+
             const formatted = (partData as unknown as SupabaseParticipant[]).map((p) => ({
                 id: p.id,
                 nickname: p.nickname,
@@ -65,13 +76,25 @@ const SessionReport = React.memo(function SessionReport({ sessionId }: ReportPro
     const exportToCSV = () => {
         if (participants.length === 0) return;
 
-        const headers = ["Nickname", "Puntos Totales", "Correctas", "% Éxito"];
+        const calculateGrade = (score: number) => {
+            if (maxTotalScore === 0) return 1.0;
+            const exig = 0.6; // Default 60% for quick CSV
+            const ePoints = maxTotalScore * exig;
+            let grade = 1.0;
+            if (score < ePoints) grade = 1.0 + 3.0 * (score / ePoints);
+            else grade = 4.0 + 3.0 * ((score - ePoints) / (maxTotalScore - ePoints));
+            return Math.min(7.0, Math.max(1.0, Math.round(grade * 10) / 10));
+        };
+
+        const headers = ["Nickname", "Puntos Totales", "Nota (60%)", "Correctas", "% Éxito"];
         const rows = participants.map(p => {
             const correctCount = p.answers.filter(a => a.is_correct).length;
             const successRate = p.answers.length > 0 ? ((correctCount / p.answers.length) * 100).toFixed(1) : 0;
+            const grade = calculateGrade(p.total_points);
             return [
                 p.nickname,
                 p.total_points,
+                grade.toFixed(1),
                 correctCount,
                 successRate
             ];
@@ -130,6 +153,7 @@ const SessionReport = React.memo(function SessionReport({ sessionId }: ReportPro
                     <thead>
                         <tr className="bg-slate-900/50">
                             <th className="p-4 text-xs font-black text-slate-500 uppercase tracking-widest">Participante</th>
+                            <th className="p-4 text-xs font-black text-slate-500 uppercase tracking-widest text-center">Nota (60%)</th>
                             <th className="p-4 text-xs font-black text-slate-500 uppercase tracking-widest text-center">Puntos</th>
                             <th className="p-4 text-xs font-black text-slate-500 uppercase tracking-widest text-center">Correctas</th>
                             <th className="p-4 text-xs font-black text-slate-500 uppercase tracking-widest text-center">Efectividad</th>
@@ -151,7 +175,22 @@ const SessionReport = React.memo(function SessionReport({ sessionId }: ReportPro
                                             <span className="font-black text-white">{p.nickname}</span>
                                         </div>
                                     </td>
-                                    <td className="p-4 text-center font-black text-blue-400 tabular-nums">{p.total_points.toLocaleString()}</td>
+                                    <td className="p-4 text-center">
+                                        {(() => {
+                                            const exig = 0.6;
+                                            const ePoints = maxTotalScore * exig;
+                                            let grade = 1.0;
+                                            if (p.total_points < ePoints) grade = 1.0 + 3.0 * (p.total_points / ePoints);
+                                            else grade = 4.0 + 3.0 * ((p.total_points - ePoints) / (maxTotalScore - ePoints));
+                                            const finalGrade = Math.min(7.0, Math.max(1.0, Math.round(grade * 10) / 10));
+                                            return (
+                                                <span className={`text-sm font-black px-3 py-1 rounded-lg ${finalGrade >= 4.0 ? 'bg-blue-500/20 text-blue-400' : 'bg-rose-500/20 text-rose-400'}`}>
+                                                    {finalGrade.toFixed(1)}
+                                                </span>
+                                            );
+                                        })()}
+                                    </td>
+                                    <td className="p-4 text-center font-black text-slate-400 tabular-nums">{p.total_points.toLocaleString()}</td>
                                     <td className="p-4 text-center">
                                         <div className="flex items-center justify-center gap-1 font-black text-white">
                                             <CheckCircle2 className="w-4 h-4 text-emerald-500" />

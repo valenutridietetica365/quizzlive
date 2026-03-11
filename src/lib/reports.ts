@@ -12,6 +12,7 @@ export interface ReportAnswer {
 export interface ReportQuestion {
     id: string;
     question_text: string;
+    points: number;
 }
 
 export interface ReportParticipant {
@@ -33,10 +34,11 @@ export interface ReportData {
     answers: ReportAnswer[];
     questions: ReportQuestion[];
     participants: ReportParticipant[];
+    exigency?: number;
 }
 
 export const generateExcelReport = (data: ReportData, t: (key: string) => string) => {
-    const { session, answers, questions, participants } = data;
+    const { session, answers, questions, participants, exigency } = data;
 
     // --- Helper for professional sheet creation ---
     const createSheet = (rows: (string | number | boolean | null | undefined)[][], colWidths: XLSX.ColInfo[]) => {
@@ -78,16 +80,33 @@ export const generateExcelReport = (data: ReportData, t: (key: string) => string
     ]);
 
     // --- 2. Sheet: Grades ---
+    const exig = exigency || 0.6;
+    const maxTotalScore = questions.reduce((sum, q) => sum + q.points, 0);
+
+    const calculateGrade = (score: number) => {
+        if (maxTotalScore === 0) return 1.0;
+        const ePoints = maxTotalScore * exig;
+        let grade = 1.0;
+        if (score < ePoints) {
+            grade = 1.0 + 3.0 * (score / ePoints);
+        } else {
+            grade = 4.0 + 3.0 * ((score - ePoints) / (maxTotalScore - ePoints));
+        }
+        return Math.min(7.0, Math.max(1.0, Math.round(grade * 10) / 10));
+    };
+
     const studentGrades = participants.map(p => {
         const studentAnswers = answers.filter(a => a.participant_id === p.id);
         const correct = studentAnswers.filter(a => a.is_correct).length;
         const total = studentAnswers.length;
         const score = studentAnswers.reduce((sum, a) => sum + a.points_awarded, 0);
         const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
+        const grade = calculateGrade(score);
 
         return {
             name: p.nickname,
             score,
+            grade,
             correct,
             total,
             accuracy: `${accuracy}%`
@@ -96,20 +115,22 @@ export const generateExcelReport = (data: ReportData, t: (key: string) => string
 
     const gradesRows: (string | number | boolean | null | undefined)[][] = [
         BRANDING,
-        ["", "TABLA DE NOTAS Y RENDIMIENTO"],
+        ["", "TABLA DE CALIFICACIONES (ESCALA 1.0 - 7.0)"],
+        ["", "Exigencia:", `${exig * 100}%`],
         ["", "Fecha:", DATE_STR],
         [],
-        ["", t('session.table_rank'), t('session.table_student'), t('session.table_score'), t('session.table_correct'), t('session.table_accuracy')]
+        ["", t('session.table_rank'), t('session.table_student'), "Nota", t('session.table_score'), t('session.table_correct'), t('session.table_accuracy')]
     ];
 
     studentGrades.forEach((g, idx) => {
-        gradesRows.push(["", idx + 1, g.name, g.score, `${g.correct}/${g.total}`, g.accuracy]);
+        gradesRows.push(["", idx + 1, g.name, g.grade.toFixed(1), g.score, `${g.correct}/${g.total}`, g.accuracy]);
     });
 
     const gradesSheet = createSheet(gradesRows, [
         { wch: 2 }, // A
         { wch: 8 }, // Rank
         { wch: 30 }, // Student
+        { wch: 10 }, // Grade
         { wch: 12 }, // Score
         { wch: 15 }, // Corrects
         { wch: 12 }, // Accuracy
@@ -160,7 +181,7 @@ export const generateExcelReport = (data: ReportData, t: (key: string) => string
 };
 
 export const generatePDFReport = (data: ReportData, t: (key: string) => string) => {
-    const { session, answers, questions, participants } = data;
+    const { session, answers, questions, participants, exigency } = data;
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
     const dateStr = new Date(session.finished_at).toLocaleString();
@@ -202,10 +223,25 @@ export const generatePDFReport = (data: ReportData, t: (key: string) => string) 
     const totalAnswers = Math.max(1, answers.length);
     const avgSuccess = Math.round((correctCount / totalAnswers) * 100);
 
+    const exig = exigency || 0.6;
+    const maxTotalScore = questions.reduce((sum, q) => sum + q.points, 0);
+
+    const calculateGrade = (score: number) => {
+        if (maxTotalScore === 0) return 1.0;
+        const ePoints = maxTotalScore * exig;
+        let grade = 1.0;
+        if (score < ePoints) {
+            grade = 1.0 + 3.0 * (score / ePoints);
+        } else {
+            grade = 4.0 + 3.0 * ((score - ePoints) / (maxTotalScore - ePoints));
+        }
+        return Math.min(7.0, Math.max(1.0, Math.round(grade * 10) / 10));
+    };
+
     autoTable(doc, {
         startY: yPos,
-        head: [[t('analytics.participation'), t('analytics.avg_success'), 'Puntaje Total Máximo']],
-        body: [[`${participants.length} Alumnos`, `${avgSuccess}%`, answers.reduce((s, a) => s + a.points_awarded, 0).toLocaleString()]],
+        head: [[t('analytics.participation'), t('analytics.avg_success'), 'Exigencia', 'Puntaje Máximo']],
+        body: [[`${participants.length} Alumnos`, `${avgSuccess}%`, `${exig * 100}%`, maxTotalScore.toLocaleString()]],
         theme: 'grid',
         headStyles: { fillColor: [59, 130, 246], fontStyle: 'bold' }, // blue-500
     });
@@ -215,13 +251,15 @@ export const generatePDFReport = (data: ReportData, t: (key: string) => string) 
     yPos = docWithTable.lastAutoTable.finalY + 15;
     doc.setFontSize(13);
     doc.setFont("helvetica", "bold");
-    doc.text("TABLA DE CALIFICACIONES Y RANKING", 20, yPos);
+    doc.text("TABLA DE CALIFICACIONES (ESCALA 1.0 - 7.0)", 20, yPos);
 
     const studentGrades = participants.map(p => {
         const pAnswers = answers.filter(a => a.participant_id === p.id);
+        const score = pAnswers.reduce((s, a) => s + a.points_awarded, 0);
         return {
             name: p.nickname,
-            score: pAnswers.reduce((s, a) => s + a.points_awarded, 0),
+            score: score,
+            grade: calculateGrade(score),
             correct: pAnswers.filter(a => a.is_correct).length,
             total: pAnswers.length,
             accuracy: pAnswers.length > 0 ? `${Math.round((pAnswers.filter(a => a.is_correct).length / pAnswers.length) * 100)}%` : '0%'
@@ -230,10 +268,17 @@ export const generatePDFReport = (data: ReportData, t: (key: string) => string) 
 
     autoTable(doc, {
         startY: yPos + 5,
-        head: [[t('session.table_rank'), t('session.table_student'), t('session.table_score'), t('session.table_correct'), t('session.table_accuracy')]],
-        body: studentGrades.map((g, i) => [i + 1, g.name, g.score, `${g.correct}/${g.total}`, g.accuracy]),
+        head: [[t('session.table_rank'), t('session.table_student'), 'Nota', t('session.table_score'), t('session.table_correct'), t('session.table_accuracy')]],
+        body: studentGrades.map((g, i) => [i + 1, g.name, g.grade.toFixed(1), g.score, `${g.correct}/${g.total}`, g.accuracy]),
         styles: { fontSize: 9 },
         headStyles: { fillColor: [30, 41, 59] }, // slate-800
+        didParseCell: (data) => {
+            if (data.section === 'body' && data.column.index === 2) {
+                const grade = parseFloat(data.cell.text[0]);
+                if (grade >= 4.0) data.cell.styles.textColor = [59, 130, 246]; // blue-500
+                else data.cell.styles.textColor = [244, 63, 94]; // rose-500
+            }
+        }
     });
 
     // --- 5. Response Matrix (Heatmap) ---
