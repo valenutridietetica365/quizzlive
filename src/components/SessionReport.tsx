@@ -22,13 +22,19 @@ const SessionReport = React.memo(function SessionReport({ sessionId }: ReportPro
         return participants.map(p => {
             const pAnswers = answers.filter(a => a.participant_id === p.id);
             const totalPoints = pAnswers.reduce((sum, a) => sum + (a.points_awarded || 0), 0);
+            const pedagogicalScore = pAnswers.reduce((sum, a) => {
+                if (!a.is_correct) return sum;
+                const q = questions.find(question => question.id === a.question_id);
+                return sum + (q?.points || 0);
+            }, 0);
             return {
                 ...p,
                 total_points: totalPoints,
+                pedagogical_points: pedagogicalScore,
                 answers: pAnswers
             };
         }).sort((a, b) => b.total_points - a.total_points);
-    }, [participants, answers]);
+    }, [participants, answers, questions]);
 
     const exportToXLSX = () => {
         if (!session || sortedParticipants.length === 0) return;
@@ -109,7 +115,7 @@ const SessionReport = React.memo(function SessionReport({ sessionId }: ReportPro
                                     </td>
                                     <td className="p-4 text-center">
                                         {(() => {
-                                            const finalGrade = calculateChileanGrade(p.total_points, maxTotalScore, { exigency: 0.6 });
+                                            const finalGrade = calculateChileanGrade(p.pedagogical_points || 0, maxTotalScore, { exigency: 0.6 });
                                             return (
                                                 <span className={`text-sm font-black px-3 py-1 rounded-lg ${finalGrade >= 4.0 ? 'bg-blue-500/20 text-blue-400' : 'bg-rose-500/20 text-rose-400'}`}>
                                                     {finalGrade.toFixed(1)}
