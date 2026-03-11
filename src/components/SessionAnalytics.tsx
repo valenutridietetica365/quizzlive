@@ -9,7 +9,7 @@ import { useQuizStore } from "@/lib/store";
 import KPISection from "@/components/analytics/KPISection";
 import InsightsPanel from "@/components/analytics/InsightsPanel";
 import QuestionsChart from "@/components/analytics/QuestionsChart";
-import { generateExcelReport, generatePDFReport, ReportData, ReportQuestion } from "@/lib/reports";
+import { generateExcelReport, generatePDFReport, ReportData } from "@/lib/reports";
 import { calculateChileanGrade } from "@/lib/grading";
 import { useSessionResults } from "@/hooks/useSessionResults";
 import HeatmapTable, { HeatmapRow } from "@/components/analytics/HeatmapTable";
@@ -28,17 +28,7 @@ export interface QuestionStat {
 
 // HeatmapRow moved to HeatmapTable.tsx
 
-interface ReportSessionData {
-    id: string;
-    pin: string;
-    created_at: string;
-    finished_at: string;
-    quiz: {
-        id: string;
-        title: string;
-        class: { name: string } | null;
-    } | null;
-}
+// HeatmapRow moved to HeatmapTable.tsx
 
 const SessionAnalytics = React.memo(function SessionAnalytics({ sessionId }: SessionAnalyticsProps) {
     const { language } = useQuizStore();
@@ -46,10 +36,6 @@ const SessionAnalytics = React.memo(function SessionAnalytics({ sessionId }: Ses
     const [useGrading, setUseGrading] = useState(false);
     const [exigency, setExigency] = useState(0.6); // 60% by default
     const t = (key: string) => getTranslation(language, key);
-
-    const calculateGrade = (score: number, maxScore: number, exig: number) => {
-        return calculateChileanGrade(score, maxScore, { exigency: exig });
-    };
 
     const downloadProfessionalReport = async () => {
         if (!session) return;
@@ -127,7 +113,7 @@ const SessionAnalytics = React.memo(function SessionAnalytics({ sessionId }: Ses
             ...row,
             grade: calculateChileanGrade(row.totalScore, maxTotalScore, { exigency })
         })).sort((a, b) => a.studentName.localeCompare(b.studentName));
-    }, [answers, questions, participants, exigency, maxTotalScore]);
+    }, [answers, participants, exigency, maxTotalScore]);
 
     // Derived Stats
     const avgSuccess = chartData.length > 0 

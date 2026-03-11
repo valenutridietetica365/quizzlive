@@ -24,17 +24,10 @@ interface ParticipantData {
     }[];
 }
 
-interface SupabaseParticipant {
-    id: string;
-    nickname: string;
-    scores: { total_points: number }[];
-    answers: ParticipantData["answers"];
-}
-
 const SessionReport = React.memo(function SessionReport({ sessionId }: ReportProps) {
     const { language } = useQuizStore();
     const t = (key: string) => getTranslation(language, key);
-    const { answers, participants, questions, loading, maxTotalScore } = useSessionResults(sessionId);
+    const { answers, participants, loading, maxTotalScore } = useSessionResults(sessionId);
 
     const sortedParticipants = useMemo(() => {
         return participants.map(p => {
