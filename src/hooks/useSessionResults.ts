@@ -6,7 +6,17 @@ export interface SessionResultsData {
     answers: ReportAnswer[];
     participants: ReportParticipant[];
     questions: ReportQuestion[];
-    session: any | null;
+    session: {
+        id: string;
+        pin: string;
+        created_at: string;
+        finished_at: string;
+        quiz: {
+            id: string;
+            title: string;
+            class: { name: string } | null;
+        } | null;
+    } | null;
     loading: boolean;
     error: string | null;
     maxTotalScore: number;
@@ -53,14 +63,15 @@ export const useSessionResults = (sessionId: string) => {
             if (questionsRes.error) throw questionsRes.error;
 
             setData({
-                session: sessionData as any, // Cast to maintain compatibility with ReportData
+                session: sessionData as SessionResultsData['session'],
                 answers: (answersRes.data || []) as ReportAnswer[],
                 participants: (participantsRes.data || []) as ReportParticipant[],
                 questions: (questionsRes.data || []) as ReportQuestion[],
             });
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Error fetching session results:", err);
-            setError(err.message || "Failed to load session results");
+            const message = err instanceof Error ? err.message : "Failed to load session results";
+            setError(message);
         } finally {
             setLoading(false);
         }

@@ -9,16 +9,16 @@ import { toast } from "sonner";
 import { getTranslation } from "@/lib/i18n";
 import LanguageSelector from "@/components/LanguageSelector";
 
-interface JoinSessionResponse {
+interface SupabaseJoinSession {
     id: string;
     quiz: {
-        class_id: string | null;
         class: {
             id: string;
             name: string;
             students: { id: string; name: string }[];
         } | null;
     } | null;
+    participants: { student_id: string | null }[];
 }
 
 function JoinContent() {
@@ -73,10 +73,10 @@ function JoinContent() {
             .single();
 
         if (session) {
-            const s = session as any;
+            const s = session as unknown as SupabaseJoinSession;
             if (s.quiz?.class) {
-                const joinedStudentIds = new Set(s.participants?.map((p: any) => p.student_id).filter(Boolean));
-                const availableStudents = (s.quiz.class.students || []).filter((student: any) => !joinedStudentIds.has(student.id));
+                const joinedStudentIds = new Set(s.participants?.map(p => p.student_id).filter(Boolean));
+                const availableStudents = (s.quiz.class.students || []).filter(student => !joinedStudentIds.has(student.id));
                 
                 setClassInfo(s.quiz.class);
                 setStudents(availableStudents);

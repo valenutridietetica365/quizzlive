@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
-import { supabase } from "@/lib/supabase";
-import { Loader2, Target, FileDown } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import { Loader2, FileDown } from "lucide-react";
 import { toast } from "sonner";
 import { getTranslation } from "@/lib/i18n";
 import { useQuizStore } from "@/lib/store";
@@ -10,7 +9,7 @@ import { useQuizStore } from "@/lib/store";
 import KPISection from "@/components/analytics/KPISection";
 import InsightsPanel from "@/components/analytics/InsightsPanel";
 import QuestionsChart from "@/components/analytics/QuestionsChart";
-import { generateExcelReport, generatePDFReport, ReportAnswer, ReportData, ReportParticipant, ReportQuestion } from "@/lib/reports";
+import { generateExcelReport, generatePDFReport, ReportData, ReportQuestion } from "@/lib/reports";
 import { calculateChileanGrade } from "@/lib/grading";
 import { useSessionResults } from "@/hooks/useSessionResults";
 import HeatmapTable, { HeatmapRow } from "@/components/analytics/HeatmapTable";
@@ -25,18 +24,6 @@ export interface QuestionStat {
     correct: number;
     total: number;
     percentage: number;
-}
-
-interface ExportAnswer {
-    is_correct: boolean;
-    question_id: string;
-    points_awarded: number;
-    questions: { question_text: string } | null;
-    participants: {
-        id: string;
-        nickname: string;
-        team: string | null;
-    } | null;
 }
 
 // HeatmapRow moved to HeatmapTable.tsx
