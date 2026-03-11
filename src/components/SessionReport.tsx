@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { FileSpreadsheet, Loader2, Users, CheckCircle2 } from "lucide-react";
+import { FileSpreadsheet, Users, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { generateExcelReport, ReportAnswer, ReportParticipant, ReportQuestion } from "@/lib/reports";
 import { calculateChileanGrade } from "@/lib/grading";
@@ -34,7 +34,7 @@ const SessionReport = React.memo(function SessionReport({ sessionId }: ReportPro
         if (!session || sortedParticipants.length === 0) return;
 
         generateExcelReport({
-            session: session as any,
+            session: session as unknown as Parameters<typeof generateExcelReport>[0]['session'],
             answers: answers as ReportAnswer[],
             participants: participants as ReportParticipant[],
             questions: questions as ReportQuestion[],
