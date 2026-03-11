@@ -47,6 +47,13 @@ export const translations = {
             history_title: "Historial de Sesiones",
             quizzes_subtitle: "Gestiona tus contenidos y comienza nuevas sesiones.",
             history_subtitle: "Revisa el desempeño de tus alumnos en sesiones pasadas.",
+            branding_title: "Mi Institución",
+            branding_subtitle: "Personaliza tus reportes con logo y colores corporativos.",
+            upload_logo: "Subir Logo",
+            brand_color: "Color Institucional",
+            signature: "Firma Digital",
+            save_branding: "Guardar Cambios",
+            branding_success: "Branding actualizado correctamente",
             new_quiz: "NUEVO QUIZ",
             report_button: "INFORME",
             error_launching: "Error al iniciar la sesión",
@@ -172,7 +179,11 @@ export const translations = {
             max_score: "Puntaje Máximo",
             grade: "Nota",
             heatmap_title: "Matriz de Resultados",
-            heatmap_subtitle: "Rendimiento detallado por pregunta"
+            heatmap_subtitle: "Rendimiento detallado por pregunta",
+            ai_insight: "Insight IA",
+            ai_analyzing: "Analizando con IA...",
+            ai_error: "Error en el análisis",
+            ai_report_title: "Análisis Pedagógico con IA"
         },
         session: {
             title: "Sesión en Vivo",
@@ -366,6 +377,13 @@ export const translations = {
             history_title: "Session History",
             quizzes_subtitle: "Manage your content and start new sessions.",
             history_subtitle: "Review your students' performance in past sessions.",
+            branding_title: "My Institution",
+            branding_subtitle: "Customize your reports with institutional logo and colors.",
+            upload_logo: "Upload Logo",
+            brand_color: "Institutional Color",
+            signature: "Digital Signature",
+            save_branding: "Save Changes",
+            branding_success: "Branding updated successfully",
             new_quiz: "NEW QUIZ",
             report_button: "REPORT",
             error_launching: "Error starting the session",
@@ -487,7 +505,11 @@ export const translations = {
             mastery_legend: "Legend: <50% Critical (Red) | 50-80% In Progress (Orange) | >80% Mastered (Green)",
             grading_title: "Formal Grading",
             heatmap_title: "Result Matrix",
-            heatmap_subtitle: "Detailed performance by question"
+            heatmap_subtitle: "Detailed performance by question",
+            ai_insight: "AI Insight",
+            ai_analyzing: "Analyzing with AI...",
+            ai_error: "Analysis error",
+            ai_report_title: "AI Pedagogical Analysis"
         },
         session: {
             title: "Live Session",

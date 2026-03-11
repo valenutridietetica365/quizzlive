@@ -1,6 +1,7 @@
 import React from 'react';
-import { Target } from 'lucide-react';
+import { Target, Sparkles } from 'lucide-react';
 import { ReportQuestion } from '@/lib/reports';
+import AIInsightModal from './AIInsightModal';
 
 export interface HeatmapRow {
     participantId: string;
@@ -19,6 +20,7 @@ interface HeatmapTableProps {
     t: (key: string) => string;
     onToggleGrading: () => void;
     onSetExigency: (exigency: number) => void;
+    quizTitle?: string;
 }
 
 const HeatmapTable: React.FC<HeatmapTableProps> = ({
@@ -28,8 +30,10 @@ const HeatmapTable: React.FC<HeatmapTableProps> = ({
     exigency,
     t,
     onToggleGrading,
-    onSetExigency
+    onSetExigency,
+    quizTitle = "Quiz"
 }) => {
+    const [isAIModalOpen, setIsAIModalOpen] = React.useState(false);
     if (rows.length === 0 || questions.length === 0) return null;
 
     return (
@@ -61,7 +65,24 @@ const HeatmapTable: React.FC<HeatmapTableProps> = ({
                     <span className="flex items-center gap-2"><div className="w-3 h-3 bg-rose-500 shadow-lg shadow-rose-500/20 rounded-sm"></div> {t('common.incorrect') || "Falso"}</span>
                     <span className="flex items-center gap-2"><div className="w-3 h-3 bg-slate-800 border border-slate-700 rounded-sm"></div> {t('common.empty') || "Vacio"}</span>
                 </div>
+                
+                <button 
+                    onClick={() => setIsAIModalOpen(true)}
+                    className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white px-5 py-2.5 rounded-2xl text-xs font-black transition-all active:scale-95 shadow-lg shadow-purple-500/20 group"
+                >
+                    <Sparkles className="w-4 h-4 group-hover:animate-pulse" />
+                    {t('analytics.ai_insight')}
+                </button>
             </div>
+
+            <AIInsightModal 
+                isOpen={isAIModalOpen} 
+                onClose={() => setIsAIModalOpen(false)}
+                quizTitle={quizTitle}
+                questions={questions}
+                heatmapData={rows}
+                t={t}
+            />
 
             <div className="overflow-x-auto pb-4 custom-scrollbar">
                 <div className="min-w-max bg-slate-900/30 rounded-[2rem] border border-white/5 p-2 md:p-4">

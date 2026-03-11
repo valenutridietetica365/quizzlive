@@ -36,6 +36,11 @@ export interface ReportData {
     questions: ReportQuestion[];
     participants: ReportParticipant[];
     exigency?: number;
+    branding?: {
+        institution_name?: string | null;
+        logo_url?: string | null;
+        brand_color?: string | null;
+    };
 }
 
 export const generateExcelReport = (data: ReportData, t: (key: string) => string) => {
@@ -48,7 +53,9 @@ export const generateExcelReport = (data: ReportData, t: (key: string) => string
         return ws;
     };
 
-    const BRANDING_TITLE = "📊 QUIZZLIVE - REPORTE PEDAGÓGICO PROFESIONAL";
+    const BRANDING_TITLE = data.branding?.institution_name 
+        ? `${data.branding.institution_name.toUpperCase()} - REPORTE PEDAGÓGICO`
+        : "📊 QUIZZLIVE - REPORTE PEDAGÓGICO PROFESIONAL";
     const DATE_STR = new Date(session.finished_at).toLocaleString();
 
     // --- 1. Sheet: Summary ---
@@ -186,17 +193,35 @@ export const generatePDFReport = (data: ReportData, t: (key: string) => string) 
     const dateStr = new Date(session.finished_at).toLocaleString();
 
     // --- 1. Header & Branding ---
+    const brandColor = data.branding?.brand_color || '#3b82f6';
+    const rgb = hexToRgb(brandColor);
+
     doc.setFillColor(15, 23, 42); // slate-900
     doc.rect(0, 0, pageWidth, 40, 'F');
 
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(22);
-    doc.setFont("helvetica", "bold");
-    doc.text("QUIZZLIVE", 20, 20);
+    if (data.branding?.logo_url) {
+        // We'll try to add the image if possible. In a production env, 
+        // normally we should ensure the image is pre-loaded or base64.
+        try {
+            doc.addImage(data.branding.logo_url, 'PNG', 20, 10, 20, 20);
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(18);
+            doc.text(data.branding.institution_name || "QUIZZLIVE", 45, 22);
+        } catch (e) {
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(22);
+            doc.text(data.branding.institution_name || "QUIZZLIVE", 20, 20);
+        }
+    } else {
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(22);
+        doc.setFont("helvetica", "bold");
+        doc.text("QUIZZLIVE", 20, 20);
+    }
 
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.text("REPORTE PEDAGÓGICO PROFESIONAL", 20, 28);
+    doc.text(t('analytics.ai_report_title').toUpperCase() || "REPORTE PEDAGÓGICO PROFESIONAL", 20, 28);
 
     // Header Info Box (Right)
     doc.setFontSize(9);
@@ -230,9 +255,9 @@ export const generatePDFReport = (data: ReportData, t: (key: string) => string) 
     autoTable(doc, {
         startY: yPos,
         head: [[t('analytics.participation'), t('analytics.avg_success'), t('analytics.exigency'), t('analytics.max_score')]],
-        body: [[`${participants.length} ${t('common.students')}`, `${avgSuccess}%`, `${exig * 100}%`, maxTotalScore.toLocaleString()]],
+        body: [[`${participants.length} ${t('common.student')}s`, `${avgSuccess}%`, `${exig * 100}%`, maxTotalScore.toLocaleString()]],
         theme: 'grid',
-        headStyles: { fillColor: [59, 130, 246], fontStyle: 'bold' }, // blue-500
+        headStyles: { fillColor: rgb, fontStyle: 'bold' }, 
     });
 
     // --- 4. Rankings Table ---
@@ -341,3 +366,11 @@ export const generatePDFReport = (data: ReportData, t: (key: string) => string) 
 
     doc.save(`Reporte_${session.quiz.title.replace(/\s+/g, '_')}_${new Date(session.finished_at).toISOString().split('T')[0]}.pdf`);
 };
+
+// Helper to convert HEX to RGB for jsPDF
+function hexToRgb(hex: string): [number, number, number] {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return [r, g, b];
+}

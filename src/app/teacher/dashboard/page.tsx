@@ -17,6 +17,8 @@ import QuizCard from "@/components/dashboard/QuizCard";
 import HistoryTable from "@/components/dashboard/HistoryTable";
 import ClassManager from "@/components/dashboard/ClassManager";
 import ModeSelectionModal from "@/components/dashboard/ModeSelectionModal";
+import BrandingModal from "@/components/dashboard/BrandingModal";
+import { Shield } from "lucide-react";
 
 const StatsHeader = ({ stats, t }: { stats: { quizzes: number; sessions: number; avg: number }, t: (key: string) => string }) => (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-4 animate-in fade-in slide-in-from-top-4 duration-1000">
@@ -41,13 +43,14 @@ export default function TeacherDashboard() {
         user, loading, quizzes, classes, history, liveSessions, folders,
         finishSession, deleteQuiz, deleteHistory, deleteMultipleHistory,
         createClass, deleteClass, createFolder, deleteFolder,
-        addStudent, removeStudent, startSession
+        addStudent, removeStudent, startSession, updateBranding
     } = useDashboardData();
 
     const [activeTab, setActiveTab] = useState<"quizzes" | "history" | "classes">("quizzes");
     const [selectedQuizTag, setSelectedQuizTag] = useState<string>("All");
     const [selectedFolderId, setSelectedFolderId] = useState<string>("All");
     const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
+    const [isBrandingModalOpen, setIsBrandingModalOpen] = useState(false);
     const [selectedHistoryTag, setSelectedHistoryTag] = useState<string>("All");
     const [selectedGlobalClassId, setSelectedGlobalClassId] = useState<string>("All");
     const [confirmModal, setConfirmModal] = useState<{ open: boolean, quizId: string | null, historyIds: string[] | null, folderId: string | null }>({
@@ -284,6 +287,14 @@ export default function TeacherDashboard() {
                             <tab.icon className="w-4 md:w-5 h-4 md:h-5" /><span className="hidden sm:inline md:inline">{tab.label}</span>
                         </button>
                     ))}
+                    
+                    <button 
+                        onClick={() => setIsBrandingModalOpen(true)}
+                        className="hidden md:flex items-center gap-3 px-4 py-3.5 rounded-2xl font-black transition-all text-slate-400 hover:bg-slate-50 hover:text-slate-600 mt-2"
+                    >
+                        <Shield className="w-5 h-5" />
+                        <span>{t('dashboard.branding_title')}</span>
+                    </button>
                 </nav>
                 <div className="flex md:flex-col items-center md:items-stretch gap-2 md:pt-6 md:border-t md:border-slate-50">
                     <div className="hidden md:block px-4">
@@ -370,6 +381,14 @@ export default function TeacherDashboard() {
                 confirmText={t('common.delete')}
                 isDanger
             />
+            <ModeSelectionModal
+                isOpen={modeModal.open}
+                onClose={() => setModeModal({ open: false, quizId: null })}
+                onStart={(mode, config) => {
+                    if (modeModal.quizId) startSession(modeModal.quizId, mode, config as unknown as GameModeConfig);
+                    setModeModal({ open: false, quizId: null });
+                }}
+            />
             {isFolderModalOpen && (
                 <CreateFolderModal
                     isOpen={isFolderModalOpen}
@@ -378,13 +397,12 @@ export default function TeacherDashboard() {
                     t={t}
                 />
             )}
-            <ModeSelectionModal
-                isOpen={modeModal.open}
-                onClose={() => setModeModal({ open: false, quizId: null })}
-                onStart={(mode, config) => {
-                    if (modeModal.quizId) startSession(modeModal.quizId, mode, config as unknown as GameModeConfig);
-                    setModeModal({ open: false, quizId: null });
-                }}
+            <BrandingModal 
+                isOpen={isBrandingModalOpen}
+                onClose={() => setIsBrandingModalOpen(false)}
+                user={user}
+                onSave={updateBranding}
+                t={t}
             />
         </div>
     );

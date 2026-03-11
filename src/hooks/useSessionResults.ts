@@ -15,6 +15,11 @@ export interface SessionResultsData {
             id: string;
             title: string;
             class: { name: string } | null;
+            teacher?: {
+                institution_name: string | null;
+                logo_url: string | null;
+                brand_color: string | null;
+            };
         } | null;
     } | null;
     loading: boolean;
@@ -44,7 +49,11 @@ export const useSessionResults = (sessionId: string) => {
                 .from("sessions")
                 .select(`
                     id, pin, created_at, finished_at,
-                    quiz:quizzes(id, title, class:classes(name))
+                    quiz:quizzes(
+                        id, title, 
+                        class:classes(name),
+                        teacher:teachers(institution_name, logo_url, brand_color)
+                    )
                 `)
                 .eq("id", sessionId)
                 .single();

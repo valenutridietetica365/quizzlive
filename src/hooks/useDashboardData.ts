@@ -38,6 +38,10 @@ export type DashboardStudent = {
 export interface DashboardUser {
     id: string;
     email?: string;
+    institution_name?: string | null;
+    logo_url?: string | null;
+    brand_color?: string | null;
+    signature_url?: string | null;
 }
 
 export function useDashboardData() {
@@ -125,16 +129,27 @@ export function useDashboardData() {
     // --- Init ---
     useEffect(() => {
         const checkUser = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) { router.push("/teacher/login"); return; }
-            setUser(user);
-            if (!dashboardLoaded || useQuizStore.getState().dashboardUserId !== user.id) {
+            const { data: { user: authUser } } = await supabase.auth.getUser();
+            if (!authUser) { router.push("/teacher/login"); return; }
+            
+            // Fetch profile data (branding)
+            const { data: profile } = await supabase
+                .from("teachers")
+                .select("*")
+                .eq("id", authUser.id)
+                .single();
+
+            setUser({
+                ...authUser,
+                ...profile
+            });
+            if (!dashboardLoaded || (authUser && useQuizStore.getState().dashboardUserId !== authUser.id)) {
                 await Promise.all([
-                    fetchQuizzes(user.id), fetchFolders(user.id),
-                    fetchHistory(user.id), fetchLiveSessions(user.id), fetchClasses(user.id)
+                    fetchQuizzes(authUser.id), fetchFolders(authUser.id),
+                    fetchHistory(authUser.id), fetchLiveSessions(authUser.id), fetchClasses(authUser.id)
                 ]);
                 setDashboardLoaded(true);
-                useQuizStore.getState().setDashboardData({ dashboardUserId: user.id });
+                useQuizStore.getState().setDashboardData({ dashboardUserId: authUser.id });
             }
             setLoading(false);
         };
@@ -244,6 +259,23 @@ export function useDashboardData() {
         }
     };
 
+    const updateBrandingHandler = async (branding: Partial<DashboardUser>) => {
+        if (!user) return;
+        try {
+            const { error } = await supabase
+                .from("teachers")
+                .update(branding)
+                .eq("id", user.id);
+            
+            if (error) throw error;
+            
+            setUser(prev => prev ? { ...prev, ...branding } : null);
+            toast.success("Branding actualizado");
+        } catch {
+            toast.error("Error al actualizar branding");
+        }
+    };
+
     return {
         // Data
         user, loading, language, quizzes, classes, history, liveSessions, folders,
@@ -253,6 +285,7 @@ export function useDashboardData() {
         createClass: createClassHandler, deleteClass: deleteClassHandler, createFolder: createFolderHandler,
         deleteFolder: deleteFolderHandler, addStudent: addStudentHandler, removeStudent: removeStudentHandler,
         startSession: startSessionHandler,
+        updateBranding: updateBrandingHandler,
         // Refresh helpers
         fetchHistory
     };

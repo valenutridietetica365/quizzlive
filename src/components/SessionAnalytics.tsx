@@ -38,25 +38,27 @@ const SessionAnalytics = React.memo(function SessionAnalytics({ sessionId }: Ses
     const t = (key: string) => getTranslation(language, key);
 
     const downloadProfessionalReport = async () => {
-        if (!session) return;
+        if (!session || !session.quiz) return;
         generateExcelReport({
             session: session as unknown as ReportData['session'],
             answers,
             participants,
             questions,
-            exigency
+            exigency,
+            branding: session.quiz.teacher
         }, t);
         toast.success("Reporte generado con éxito (Excel)");
     };
 
     const downloadPDFReportAction = async () => {
-        if (!session) return;
+        if (!session || !session.quiz) return;
         generatePDFReport({
             session: session as unknown as ReportData['session'],
             answers,
             participants,
             questions,
-            exigency
+            exigency,
+            branding: session.quiz.teacher
         }, t);
         toast.success("Reporte generado con éxito (PDF)");
     };
@@ -169,6 +171,7 @@ const SessionAnalytics = React.memo(function SessionAnalytics({ sessionId }: Ses
                 t={t}
                 onToggleGrading={() => setUseGrading(!useGrading)}
                 onSetExigency={setExigency}
+                quizTitle={session?.quiz?.title}
             />
         </div>
     );
