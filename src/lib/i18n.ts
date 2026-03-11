@@ -18,7 +18,9 @@ export const translations = {
             correct: "Correcto",
             incorrect: "Incorrecto",
             empty: "Vacío",
-            active: "Activo"
+            active: "Activo",
+            page: "Página",
+            of: "de"
         },
         dashboard: {
             title: "Mis Quizzes",
@@ -333,7 +335,9 @@ export const translations = {
             incorrect: "Incorrect",
             empty: "Empty",
             active: "Active",
-            logout: "Logout"
+            logout: "Logout",
+            page: "Page",
+            of: "of"
         },
         dashboard: {
             title: "My Quizzes",

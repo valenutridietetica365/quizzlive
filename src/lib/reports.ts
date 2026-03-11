@@ -215,14 +215,14 @@ export const generatePDFReport = (data: ReportData, t: (key: string) => string) 
     const avgSuccess = Math.round((correctCount / totalAnswers) * 100);
 
     const exig = exigency || 0.6;
-    const maxTotalScore = questions.reduce((sum, q) => sum + q.points, 0);
+    const maxTotalScore = questions.reduce((sum, q) => sum + (q.points || 0), 0);
 
     const calculateGrade = (score: number) => calculateChileanGrade(score, maxTotalScore, { exigency: exig });
 
     autoTable(doc, {
         startY: yPos,
-        head: [[t('analytics.participation'), t('analytics.avg_success'), 'Exigencia', 'Puntaje Máximo']],
-        body: [[`${participants.length} Alumnos`, `${avgSuccess}%`, `${exig * 100}%`, maxTotalScore.toLocaleString()]],
+        head: [[t('analytics.participation'), t('analytics.avg_success'), t('analytics.exigency'), t('analytics.max_score')]],
+        body: [[`${participants.length} ${t('common.students')}`, `${avgSuccess}%`, `${exig * 100}%`, maxTotalScore.toLocaleString()]],
         theme: 'grid',
         headStyles: { fillColor: [59, 130, 246], fontStyle: 'bold' }, // blue-500
     });
@@ -232,7 +232,7 @@ export const generatePDFReport = (data: ReportData, t: (key: string) => string) 
     yPos = docWithTable.lastAutoTable.finalY + 15;
     doc.setFontSize(13);
     doc.setFont("helvetica", "bold");
-    doc.text("TABLA DE CALIFICACIONES (ESCALA 1.0 - 7.0)", 20, yPos);
+    doc.text(`${t('session.report_grades').toUpperCase()} (1.0 - 7.0)`, 20, yPos);
 
     const studentGrades = participants.map(p => {
         const pAnswers = answers.filter(a => a.participant_id === p.id);
@@ -268,7 +268,7 @@ export const generatePDFReport = (data: ReportData, t: (key: string) => string) 
     doc.addPage();
     doc.setFontSize(13);
     doc.setFont("helvetica", "bold");
-    doc.text("MATRIZ DE RESPUESTAS POR PREGUNTA", 20, 20);
+    doc.text(t('session.report_matrix').toUpperCase(), 20, 20);
 
     const matrixHead = [t('session.table_student'), ...questions.map((_, i) => `P${i + 1}`)];
     const matrixBody = participants.sort((a, b) => a.nickname.localeCompare(b.nickname)).map(p => {
@@ -276,7 +276,7 @@ export const generatePDFReport = (data: ReportData, t: (key: string) => string) 
         questions.forEach(q => {
             const ans = answers.find(a => a.participant_id === p.id && a.question_id === q.id);
             if (!ans) row.push('-');
-            else row.push(ans.is_correct ? 'CORR' : 'INC');
+            else row.push(ans.is_correct ? '√' : 'X');
         });
         return row;
     });
@@ -289,10 +289,10 @@ export const generatePDFReport = (data: ReportData, t: (key: string) => string) 
         headStyles: { fillColor: [30, 41, 59] },
         didParseCell: (data) => {
             if (data.section === 'body' && data.column.index > 0) {
-                if (data.cell.text[0] === 'CORR') {
+                if (data.cell.text[0] === '√') {
                     data.cell.styles.textColor = [16, 185, 129]; // emerald-500
                     data.cell.styles.fontStyle = 'bold';
-                } else if (data.cell.text[0] === 'INC') {
+                } else if (data.cell.text[0] === 'X') {
                     data.cell.styles.textColor = [244, 63, 94]; // rose-500
                     data.cell.styles.fontStyle = 'bold';
                 }
@@ -303,7 +303,7 @@ export const generatePDFReport = (data: ReportData, t: (key: string) => string) 
     // Question Legend
     yPos = docWithTable.lastAutoTable.finalY + 10;
     doc.setFontSize(10);
-    doc.text("Leyenda de Preguntas:", 20, yPos);
+    doc.text(`${t('common.questions')} (ID):`, 20, yPos);
 
     questions.forEach((q, i) => {
         if (yPos > 270) { doc.addPage(); yPos = 20; }
@@ -320,7 +320,7 @@ export const generatePDFReport = (data: ReportData, t: (key: string) => string) 
         doc.setPage(i);
         doc.setFontSize(8);
         doc.setTextColor(150);
-        doc.text(`Página ${i} de ${pageCount} - Generado por QuizzLive`, pageWidth / 2, 290, { align: 'center' });
+        doc.text(`${t('common.page')} ${i} ${t('common.of')} ${pageCount}`, pageWidth / 2, 290, { align: 'center' });
     }
 
     doc.save(`Reporte_${session.quiz.title.replace(/\s+/g, '_')}_${new Date(session.finished_at).toISOString().split('T')[0]}.pdf`);
