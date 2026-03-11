@@ -63,7 +63,7 @@ export const useSessionResults = (sessionId: string) => {
             if (questionsRes.error) throw questionsRes.error;
 
             setData({
-                session: sessionData as SessionResultsData['session'],
+                session: sessionData as unknown as SessionResultsData['session'],
                 answers: (answersRes.data || []) as ReportAnswer[],
                 participants: (participantsRes.data || []) as ReportParticipant[],
                 questions: (questionsRes.data || []) as ReportQuestion[],
