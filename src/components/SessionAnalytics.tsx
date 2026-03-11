@@ -121,7 +121,7 @@ const SessionAnalytics = React.memo(function SessionAnalytics({ sessionId }: Ses
             ...row,
             grade: calculateChileanGrade(row.pedagogicalScore || 0, maxTotalScore, { exigency })
         })).sort((a, b) => a.studentName.localeCompare(b.studentName));
-    }, [answers, participants, exigency, maxTotalScore]);
+    }, [answers, participants, exigency, maxTotalScore, questions]);
 
     // Derived Stats
     const avgSuccess = chartData.length > 0 

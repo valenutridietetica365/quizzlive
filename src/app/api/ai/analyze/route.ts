@@ -4,7 +4,6 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
     const apiKey = process.env.GEMINI_API_KEY;
-    const version = "InsightIA-v1.0";
 
     if (!apiKey || apiKey.trim().length < 20) {
         return NextResponse.json({
@@ -27,8 +26,8 @@ export async function POST(req: Request) {
                 Act as a master pedagogical analyst. You are analyzing the results of a quiz titled "${quizTitle}".
                 
                 DATA PROVIDED:
-                - Questions: ${JSON.stringify(questions.map((q: any) => ({ text: q.question_text, points: q.points })))}
-                - Results: ${JSON.stringify(heatmapData.map((row: any) => ({ 
+                - Questions: ${JSON.stringify(questions.map((q: { question_text: string, points: number }) => ({ text: q.question_text, points: q.points })))}
+                - Results: ${JSON.stringify(heatmapData.map((row: { studentName: string, pedagogicalScore: number, answers: Record<string, boolean> }) => ({ 
                     student: row.studentName, 
                     score: row.pedagogicalScore, 
                     answers: row.answers 

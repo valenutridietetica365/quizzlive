@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Sparkles, X, Loader2, AlertCircle } from 'lucide-react';
 import { ReportQuestion } from '@/lib/reports';
 import { HeatmapRow } from './HeatmapTable';
@@ -24,7 +24,7 @@ const AIInsightModal: React.FC<AIInsightModalProps> = ({
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const generateAnalysis = async () => {
+    const generateAnalysis = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
@@ -37,23 +37,23 @@ const AIInsightModal: React.FC<AIInsightModalProps> = ({
                     heatmapData
                 })
             });
-
+ 
             const data = await response.json();
             if (!response.ok) throw new Error(data.details || data.error);
-
+ 
             setAnalysis(data.analysis);
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : String(err));
         } finally {
             setLoading(false);
         }
-    };
+    }, [quizTitle, questions, heatmapData]);
 
     React.useEffect(() => {
         if (isOpen && !analysis && !loading) {
             generateAnalysis();
         }
-    }, [isOpen]);
+    }, [isOpen, analysis, loading, generateAnalysis]);
 
     if (!isOpen) return null;
 
