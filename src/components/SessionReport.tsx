@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { Users, CheckCircle2, FileSpreadsheet } from "lucide-react";
+import { FileSpreadsheet, Loader2, Users, CheckCircle2 } from "lucide-react";
+import { toast } from "sonner";
+import { generateExcelReport, ReportAnswer, ReportParticipant, ReportQuestion } from "@/lib/reports";
 import { calculateChileanGrade } from "@/lib/grading";
 import { getTranslation } from "@/lib/i18n";
 import { useQuizStore } from "@/lib/store";
@@ -14,7 +16,7 @@ interface ReportProps {
 const SessionReport = React.memo(function SessionReport({ sessionId }: ReportProps) {
     const { language } = useQuizStore();
     const t = (key: string) => getTranslation(language, key);
-    const { answers, participants, loading, maxTotalScore } = useSessionResults(sessionId);
+    const { answers, participants, questions, session, loading, maxTotalScore } = useSessionResults(sessionId);
 
     const sortedParticipants = useMemo(() => {
         return participants.map(p => {
@@ -28,37 +30,18 @@ const SessionReport = React.memo(function SessionReport({ sessionId }: ReportPro
         }).sort((a, b) => b.total_points - a.total_points);
     }, [participants, answers]);
 
-    const exportToCSV = () => {
-        if (sortedParticipants.length === 0) return;
+    const exportToXLSX = () => {
+        if (!session || sortedParticipants.length === 0) return;
 
-        const calculateGrade = (score: number) => {
-            return calculateChileanGrade(score, maxTotalScore, { exigency: 0.6 });
-        };
+        generateExcelReport({
+            session: session as any,
+            answers: answers as ReportAnswer[],
+            participants: participants as ReportParticipant[],
+            questions: questions as ReportQuestion[],
+            exigency: 0.6
+        }, t);
 
-        const headers = [t('common.student'), t('session.table_score'), `${t('analytics.grade')} (60%)`, t('session.table_correct'), t('session.table_accuracy')];
-        const rows = sortedParticipants.map(p => {
-            const correctCount = p.answers.filter(a => a.is_correct).length;
-            const successRate = p.answers.length > 0 ? ((correctCount / p.answers.length) * 100).toFixed(1) : 0;
-            const grade = calculateGrade(p.total_points);
-            return [
-                p.nickname,
-                p.total_points,
-                grade.toFixed(1),
-                correctCount,
-                successRate
-            ];
-        });
-
-        const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
-        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-        const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        link.setAttribute("href", url);
-        link.setAttribute("download", `report_session_${sessionId.substring(0, 8)}.csv`);
-        link.style.visibility = "hidden";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        toast.success(t('common.success') || "Reporte generado");
     };
 
     if (loading) return (
@@ -88,11 +71,11 @@ const SessionReport = React.memo(function SessionReport({ sessionId }: ReportPro
                         Imprimir / PDF
                     </button>
                     <button
-                        onClick={exportToCSV}
+                        onClick={exportToXLSX}
                         className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-black transition-all active:scale-95 shadow-lg shadow-emerald-900/20"
                     >
                         <FileSpreadsheet className="w-4 h-4" />
-                        Exportar Excel (CSV)
+                        Exportar Excel
                     </button>
                 </div>
             </div>

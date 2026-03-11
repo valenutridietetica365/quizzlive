@@ -45,52 +45,43 @@ export const generateExcelReport = (data: ReportData, t: (key: string) => string
     const createSheet = (rows: (string | number | boolean | null | undefined)[][], colWidths: XLSX.ColInfo[]) => {
         const ws = XLSX.utils.aoa_to_sheet(rows);
         ws['!cols'] = colWidths;
-
-        // Merged Title Header - Dinámico según el ancho de la tabla
-        const maxCol = colWidths.length - 1;
-        const merge = { s: { r: 0, c: 1 }, e: { r: 0, c: Math.max(2, maxCol) } };
-        if (!ws['!merges']) ws['!merges'] = [];
-        ws['!merges'].push(merge);
-
         return ws;
     };
 
-    const BRANDING = ["", "QUIZZLIVE - REPORTE PEDAGÓGICO"];
+    const BRANDING_TITLE = "QUIZZLIVE - REPORTE PEDAGÓGICO";
     const DATE_STR = new Date(session.finished_at).toLocaleString();
 
     // --- 1. Sheet: Summary ---
-    const summaryRows: (string | number | boolean | null | undefined)[][] = [
-        BRANDING,
-        ["", "ESTADÍSTICAS GENERALES DE LA SESIÓN"],
+    const summaryRows = [
+        [BRANDING_TITLE],
+        [t('session.report_summary').toUpperCase()],
         [],
-        ["", t('session.title'), session.quiz.title],
-        ["", t('sidebar.classes'), session.quiz.class?.name || 'N/A'],
-        ["", t('dashboard.table_date'), DATE_STR],
-        ["", t('dashboard.table_pin'), session.pin],
+        [t('session.title'), session.quiz.title],
+        [t('sidebar.classes'), session.quiz.class?.name || 'N/A'],
+        [t('dashboard.table_date'), DATE_STR],
+        [t('dashboard.table_pin'), session.pin],
         [],
-        ["", "INDICADORES CLAVE (KPIs)"],
-        ["", t('analytics.participation'), `${participants.length} Alumnos`],
-        ["", t('analytics.avg_success'), `${Math.round((answers.filter(a => a.is_correct).length / Math.max(1, answers.length)) * 100)}%`],
+        ["INDICADORES CLAVE (KPIs)"],
+        [t('analytics.participation'), `${participants.length} ${t('common.student')}s`],
+        [t('analytics.avg_success'), `${Math.round((answers.filter(a => a.is_correct).length / Math.max(1, answers.length)) * 100)}%`],
         [],
-        ["", "GENERADO AUTOMÁTICAMENTE POR QUIZZLIVE PLATFORM"]
+        ["GENERADO AUTOMÁTICAMENTE POR QUIZZLIVE PLATFORM"]
     ];
     const summarySheet = createSheet(summaryRows, [
-        { wch: 2 }, // A (Margin)
-        { wch: 25 }, // B (Label)
-        { wch: 50 }, // C (Value)
+        { wch: 30 }, // A
+        { wch: 50 }, // B
     ]);
 
     // --- 2. Sheet: Grades ---
     const exig = exigency || 0.6;
-    const maxTotalScore = questions.reduce((sum, q) => sum + q.points, 0);
-
+    const maxTotalScore = questions.reduce((sum, q) => sum + (q.points || 0), 0);
     const calculateGrade = (score: number) => calculateChileanGrade(score, maxTotalScore, { exigency: exig });
 
     const studentGrades = participants.map(p => {
         const studentAnswers = answers.filter(a => a.participant_id === p.id);
         const correct = studentAnswers.filter(a => a.is_correct).length;
         const total = studentAnswers.length;
-        const score = studentAnswers.reduce((sum, a) => sum + a.points_awarded, 0);
+        const score = studentAnswers.reduce((sum, a) => sum + (a.points_awarded || 0), 0);
         const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
         const grade = calculateGrade(score);
 
@@ -105,69 +96,62 @@ export const generateExcelReport = (data: ReportData, t: (key: string) => string
     }).sort((a, b) => b.score - a.score);
 
     const gradesRows: (string | number | boolean | null | undefined)[][] = [
-        BRANDING,
-        ["", t('analytics.grading').toUpperCase()],
-        ["", t('analytics.exigency') + ":", `${exig * 100}%`],
-        ["", t('dashboard.table_date') + ":", DATE_STR],
+        [BRANDING_TITLE],
+        [t('analytics.grading_title').toUpperCase()],
+        [t('analytics.exigency') + ":", `${exig * 100}%`],
         [],
-        ["", t('session.table_rank'), t('session.table_student'), t('analytics.grade'), t('session.table_score'), t('session.table_correct'), t('session.table_accuracy')]
+        [t('session.table_rank'), t('session.table_student'), t('analytics.grade'), t('session.table_score'), t('session.table_correct'), t('session.table_accuracy')]
     ];
 
     studentGrades.forEach((g, idx) => {
-        gradesRows.push(["", idx + 1, g.name, g.grade.toFixed(1), g.score, `${g.correct}/${g.total}`, g.accuracy]);
+        gradesRows.push([idx + 1, g.name, g.grade.toFixed(1), g.score, `${g.correct}/${g.total}`, g.accuracy]);
     });
 
     const gradesSheet = createSheet(gradesRows, [
-        { wch: 2 }, // A
-        { wch: 8 }, // Rank
-        { wch: 30 }, // Student
-        { wch: 10 }, // Grade
+        { wch: 10 }, // Rank
+        { wch: 35 }, // Student
+        { wch: 12 }, // Grade
         { wch: 12 }, // Score
         { wch: 15 }, // Corrects
         { wch: 12 }, // Accuracy
     ]);
 
-    // --- 3. Sheet: Response Matrix (Heatmap) ---
-    const matrixHeader = ["", t('session.table_student'), ...questions.map((_, i) => `Q${i + 1}`)];
-    const matrixRows: (string | number | boolean | null | undefined)[][] = [
-        BRANDING,
-        ["", "MATRIZ DETALLADA DE RESPUESTAS (MAPA DE CALOR)"],
-        ["", "Indicación:", "CORRECT = Acierto, INCORRECT = Fallo, - = No respondió"],
+    // --- 3. Sheet: Response Matrix ---
+    const matrixHeader = [t('session.table_student'), ...questions.map((_, i) => `Q${i + 1}`)];
+    const matrixRows = [
+        [BRANDING_TITLE],
+        ["MATRIZ DE RESPUESTAS DETALLADA"],
         [],
         matrixHeader
     ];
 
     participants.sort((a, b) => a.nickname.localeCompare(b.nickname)).forEach(p => {
-        const row = ["", p.nickname];
+        const row = [p.nickname];
         questions.forEach(q => {
             const answer = answers.find(a => a.participant_id === p.id && a.question_id === q.id);
             if (!answer) row.push('-');
-            else row.push(answer.is_correct ? 'CORRECT' : 'INCORRECT');
+            else row.push(answer.is_correct ? 'OK' : 'X');
         });
         matrixRows.push(row);
     });
 
-    // Add Legend at the bottom
     matrixRows.push([]);
-    matrixRows.push(["", "LEYENDA DE PREGUNTAS"]);
+    matrixRows.push(["REFERENCIA DE PREGUNTAS"]);
     questions.forEach((q, i) => {
-        matrixRows.push(["", `Q${i + 1}`, q.question_text]);
+        matrixRows.push([`Q${i + 1}`, q.question_text]);
     });
 
     const matrixSheet = createSheet(matrixRows, [
-        { wch: 2 }, // A
-        { wch: 30 }, // Student
+        { wch: 35 }, // Student
         ...questions.map(() => ({ wch: 10 }))
     ]);
 
-    // --- Create Workbook and Download ---
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, summarySheet, t('session.report_summary'));
     XLSX.utils.book_append_sheet(wb, gradesSheet, t('session.report_grades'));
     XLSX.utils.book_append_sheet(wb, matrixSheet, t('session.report_matrix'));
 
-    // Trigger Download
-    const fileName = `Reporte_${session.quiz.title.replace(/\s+/g, '_')}_${new Date(session.finished_at).toISOString().split('T')[0]}.xlsx`;
+    const fileName = `Reporte_${session.quiz.title.replace(/[\\/?:*|"<>]/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
     XLSX.writeFile(wb, fileName);
 };
 
