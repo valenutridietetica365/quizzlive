@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, Trash2, Users, ChevronRight, GraduationCap, Target, Trophy, TrendingUp } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ChevronRight, GraduationCap, Target, Trophy } from "lucide-react";
 import { DashboardClass, DashboardStudent } from "@/hooks/useDashboardData";
 import PerformanceChart from "@/components/PerformanceChart";
 import { supabase } from "@/lib/supabase";
-import { useEffect } from "react";
+import { ClassStudentsTab } from "./classes/ClassTabs";
+import ClassList from "./classes/ClassList";
 
 interface StudentParticipation {
     id: string;
@@ -31,7 +32,7 @@ interface ClassManagerProps {
     t: (key: string) => string;
     onCreateClass: (name: string) => void;
     onDeleteClass: (id: string) => void;
-    onAddStudent: (classId: string, name: string) => Promise<unknown>;
+    onAddStudent: (classId: string, name: string) => Promise<DashboardStudent | null>;
     onRemoveStudent: (studentId: string, classId: string) => void;
 }
 
@@ -118,17 +119,15 @@ export default function ClassManager({ classes, t, onCreateClass, onDeleteClass,
         if (student.id) fetchStudentStats(student.id);
     };
 
+    const handleSelectClass = (cls: DashboardClass) => {
+        setSelectedClass(cls);
+        setViewMode("students");
+    };
+
     const handleCreateClass = () => {
         if (!newClassName.trim()) return;
         onCreateClass(newClassName.trim());
         setNewClassName("");
-    };
-
-    const handleAddStudent = async () => {
-        if (!selectedClass || !newStudentName.trim()) return;
-        await onAddStudent(selectedClass.id, newStudentName.trim());
-        // Refresh the selected class view from the classes prop
-        setNewStudentName("");
     };
 
     // Keep selectedClass in sync with the classes prop
@@ -136,249 +135,174 @@ export default function ClassManager({ classes, t, onCreateClass, onDeleteClass,
 
     return (
         <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="space-y-1">
-                        <h2 className="text-xl font-black text-slate-900 uppercase tracking-widest leading-none">{t('sidebar.classes')}</h2>
-                        <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Crea grupos permanentes para tus alumnos</p>
-                    </div>
-                    <div className="flex gap-2">
-                        <input
-                            type="text"
-                            value={newClassName}
-                            onChange={(e) => setNewClassName(e.target.value)}
-                            placeholder="Nombre de la clase (ej. 3º B)"
-                            className="flex-1 md:w-64 bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 rounded-xl px-4 py-3 font-bold text-sm"
-                            onKeyDown={(e) => e.key === 'Enter' && handleCreateClass()}
-                        />
-                        <button
-                            onClick={handleCreateClass}
-                            className="bg-slate-900 text-white p-3 rounded-xl hover:bg-blue-600 transition-all active:scale-95"
-                        >
-                            <Plus className="w-6 h-6" />
-                        </button>
-                    </div>
-                </div>
+            <ClassList 
+                classes={classes}
+                t={t}
+                newClassName={newClassName}
+                setNewClassName={setNewClassName}
+                onCreateClass={handleCreateClass}
+                onDeleteClass={onDeleteClass}
+                onSelectClass={handleSelectClass}
+            />
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {classes.map((cls) => (
-                        <div key={cls.id} className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 group relative hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 transition-all cursor-pointer" onClick={() => setSelectedClass(cls)}>
-                            <div className="space-y-3">
-                                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-blue-600 shadow-sm group-hover:bg-blue-600 group-hover:text-white transition-all">
-                                    <Users className="w-6 h-6" />
+            {currentClass && (
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+                        <div className="p-8 md:p-12 space-y-8">
+                            <div className="flex justify-between items-start">
+                                <div className="space-y-2">
+                                    <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tight">{currentClass.name}</h2>
+                                    <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">{t('dashboard.classes.subtitle')}</p>
                                 </div>
-                                <div>
-                                    <h3 className="font-black text-xl text-slate-900">{cls.name}</h3>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{cls.students?.length || 0} Alumnos</p>
-                                </div>
-                            </div>
-                            <button
-                                onClick={(e) => { e.stopPropagation(); onDeleteClass(cls.id); }}
-                                className="absolute top-6 right-6 p-2 text-slate-300 hover:text-red-500 transition-colors"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                            </button>
-                        </div>
-                    ))}
-                </div>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setViewMode("students")}
+                                        className={`px-6 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all duration-300 ${viewMode === "students" ? "bg-blue-600 text-white shadow-lg shadow-blue-200" : "bg-white text-slate-400 hover:bg-slate-50 border border-slate-200"}`}
+                                    >
+                                        {t('dashboard.classes.modal_students')}
+                                    </button>
+                                    <button
+                                        onClick={() => setViewMode("evolution")}
+                                        className={`px-6 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all duration-300 ${viewMode === "evolution" ? "bg-blue-600 text-white shadow-lg shadow-blue-200" : "bg-white text-slate-400 hover:bg-slate-50 border border-slate-200"}`}
+                                    >
+                                        {t('dashboard.classes.modal_evolution')}
+                                    </button>
 
-                {currentClass && (
-                    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                        <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-                            <div className="p-8 md:p-12 space-y-8">
-                                <div className="flex justify-between items-start">
-                                    <div className="space-y-2">
-                                        <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tight">{currentClass.name}</h2>
-                                        <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">Gestión de Alumnos</p>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => setViewMode("students")}
-                                            className={`px-6 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all duration-300 ${viewMode === "students" ? "bg-blue-600 text-white shadow-lg shadow-blue-200" : "bg-white text-slate-400 hover:bg-slate-50 border border-slate-200"}`}
-                                        >
-                                            Alumnos
-                                        </button>
-                                        <button
-                                            onClick={() => setViewMode("evolution")}
-                                            className={`px-6 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all duration-300 ${viewMode === "evolution" ? "bg-blue-600 text-white shadow-lg shadow-blue-200" : "bg-white text-slate-400 hover:bg-slate-50 border border-slate-200"}`}
-                                        >
-                                            {t('analytics.evolution_view')}
-                                        </button>
-
-                                        <button
-                                            onClick={() => setViewMode("mastery")}
-                                            className={`px-6 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all duration-300 ${viewMode === "mastery" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200" : "bg-white text-slate-400 hover:bg-slate-50 border border-slate-200"}`}
-                                        >
-                                            {t('dashboard.mastery_matrix')}
-                                        </button>
-                                    </div>
-                                    <button onClick={() => { setSelectedClass(null); setViewMode("students"); }} className="p-4 bg-slate-50 rounded-2xl text-slate-400 hover:text-slate-900 transition-all">
-                                        <ChevronRight className="w-6 h-6 rotate-180" />
+                                    <button
+                                        onClick={() => setViewMode("mastery")}
+                                        className={`px-6 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all duration-300 ${viewMode === "mastery" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200" : "bg-white text-slate-400 hover:bg-slate-50 border border-slate-200"}`}
+                                    >
+                                        {t('dashboard.classes.modal_mastery')}
                                     </button>
                                 </div>
-
-                                <div className="bg-white rounded-[3rem] p-8 shadow-sm border border-slate-100 min-h-[400px]">
-                                    {viewMode === 'students' ? (
-                                        <>
-                                            <div className="flex gap-2">
-                                                <input
-                                                    type="text"
-                                                    value={newStudentName}
-                                                    onChange={(e) => setNewStudentName(e.target.value)}
-                                                    placeholder="Nombre completo del alumno"
-                                                    className="flex-1 bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 rounded-2xl px-6 py-4 font-bold"
-                                                    onKeyDown={(e) => e.key === 'Enter' && handleAddStudent()}
-                                                />
-                                                <button
-                                                    onClick={handleAddStudent}
-                                                    className="bg-blue-600 text-white px-8 rounded-2xl font-black hover:bg-blue-700 transition-all active:scale-95 shadow-lg shadow-blue-100"
-                                                >
-                                                    Añadir
-                                                </button>
-                                            </div>
-
-                                            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 no-scrollbar">
-                                                {currentClass.students?.length === 0 ? (
-                                                    <div className="text-center py-12 bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200">
-                                                        <p className="text-slate-400 font-bold uppercase text-xs tracking-widest">No hay alumnos en esta clase</p>
-                                                    </div>
-                                                ) : (
-                                                    currentClass.students?.map((student) => (
-                                                        <div key={student.id} className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-white hover:shadow-lg transition-all cursor-pointer" onClick={() => handleSelectStudent(student)}>
-                                                            <div className="flex items-center gap-4">
-                                                                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 font-black">
-                                                                    {student.name.charAt(0).toUpperCase()}
-                                                                </div>
-                                                                <span className="font-black text-slate-900">{student.name}</span>
-                                                            </div>
-                                                            <div className="flex items-center gap-2">
-                                                                <button onClick={(e) => { e.stopPropagation(); handleSelectStudent(student); }} className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all">
-                                                                    <TrendingUp className="w-5 h-5" />
-                                                                </button>
-                                                                <button onClick={(e) => { e.stopPropagation(); onRemoveStudent(student.id!, currentClass.id); }} className="p-2 text-slate-300 hover:text-red-500 transition-colors">
-                                                                    <Trash2 className="w-5 h-5" />
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    ))
-                                                )}
-                                            </div>
-                                        </>
-                                    ) : viewMode === "evolution" ? (
-                                        <ClassEvolutionView classId={currentClass.id} t={t} />
-                                    ) : (
-                                        <ClassMasteryMatrix classId={currentClass.id} students={currentClass.students || []} t={t} />
-                                    )}
-                                </div>
+                                <button onClick={() => { setSelectedClass(null); setViewMode("students"); }} className="p-4 bg-slate-50 rounded-2xl text-slate-400 hover:text-slate-900 transition-all">
+                                    <ChevronRight className="w-6 h-6 rotate-180" />
+                                </button>
                             </div>
-                        </div>
-                    </div>
-                )}
 
-                {/* Student Profile Modal */}
-                {selectedStudent && (
-                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[60] flex items-center justify-center p-4">
-                        <div className="bg-white w-full max-w-4xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col">
-                            <div className="p-8 md:p-12 space-y-8 overflow-y-auto no-scrollbar">
-                                <div className="flex justify-between items-start">
-                                    <div className="flex items-center gap-6">
-                                        <div className="w-16 h-16 bg-blue-600 rounded-[1.5rem] flex items-center justify-center text-white text-2xl font-black shadow-lg shadow-blue-200">
-                                            {selectedStudent.name.charAt(0).toUpperCase()}
-                                        </div>
-                                        <div className="space-y-1">
-                                            <h2 className="text-3xl font-black text-slate-900 tracking-tight">{selectedStudent.name}</h2>
-                                            <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">{t('analytics.student_profile')}</p>
-                                        </div>
-                                    </div>
-                                    <button onClick={() => { setSelectedStudent(null); setStudentStats(null); }} className="p-4 bg-slate-50 rounded-2xl text-slate-400 hover:text-slate-900 transition-all">
-                                        <ChevronRight className="w-6 h-6 rotate-180" />
-                                    </button>
-                                </div>
-
-                                {loadingStats ? (
-                                    <div className="flex flex-col items-center justify-center py-20 gap-4">
-                                        <div className="w-12 h-12 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin" />
-                                        <p className="text-slate-400 font-black uppercase text-xs tracking-widest">{t('common.loading')}</p>
-                                    </div>
-                                ) : studentStats ? (
-                                    <div className="space-y-10">
-                                        {/* KPIs */}
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                                            <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 flex items-center gap-4">
-                                                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-blue-600 shadow-sm"><GraduationCap className="w-6 h-6" /></div>
-                                                <div>
-                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('analytics.sessions_played')}</p>
-                                                    <p className="text-2xl font-black text-slate-900">{studentStats.sessions}</p>
-                                                </div>
-                                            </div>
-                                            <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 flex items-center gap-4">
-                                                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-emerald-600 shadow-sm"><Target className="w-6 h-6" /></div>
-                                                <div>
-                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('analytics.avg_score')}</p>
-                                                    <p className="text-2xl font-black text-slate-900">{studentStats.avgSuccess}%</p>
-                                                </div>
-                                            </div>
-                                            <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 flex items-center gap-4">
-                                                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-amber-500 shadow-sm"><Trophy className="w-6 h-6" /></div>
-                                                <div>
-                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('analytics.perfect_quizzes')}</p>
-                                                    <p className="text-2xl font-black text-slate-900">{studentStats.perfectQuizzes}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Chart */}
-                                        <div className="space-y-4">
-                                            <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest pl-2">{t('analytics.performance_trend')}</h3>
-                                            <PerformanceChart
-                                                data={studentStats.history}
-                                                label={t('analytics.evolution_title')}
-                                                t={t}
-                                            />
-                                        </div>
-
-                                        {/* Mastery */}
-                                        <div className="space-y-4">
-                                            <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest pl-2">{t('analytics.topic_mastery')}</h3>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                {Object.entries(studentStats.mastery).length === 0 ? (
-                                                    <div className="col-span-full py-8 text-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
-                                                        <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">Sin datos de temas aún</p>
-                                                    </div>
-                                                ) : (
-                                                    Object.entries(studentStats.mastery).map(([tag, data]) => {
-                                                        const pct = Math.round((data.correct / data.total) * 100);
-                                                        return (
-                                                            <div key={tag} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-3">
-                                                                <div className="flex justify-between items-center">
-                                                                    <span className="font-black text-slate-900 uppercase text-xs tracking-tight">{tag}</span>
-                                                                    <span className={`text-[10px] font-black px-2 py-1 rounded-lg ${pct > 80 ? 'bg-emerald-100 text-emerald-600' : pct > 50 ? 'bg-amber-100 text-amber-600' : 'bg-red-100 text-red-600'}`}>
-                                                                        {pct}%
-                                                                    </span>
-                                                                </div>
-                                                                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                                                                    <div
-                                                                        className={`h-full rounded-full transition-all duration-1000 ${pct > 80 ? 'bg-emerald-500' : pct > 50 ? 'bg-amber-500' : 'bg-red-500'}`}
-                                                                        style={{ width: `${pct}%` }}
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
+                            <div className="bg-white rounded-[3rem] p-8 shadow-sm border border-slate-100 min-h-[400px]">
+                                {viewMode === 'students' ? (
+                                    <ClassStudentsTab 
+                                        classId={currentClass.id}
+                                        students={currentClass.students || []}
+                                        t={t}
+                                        newStudentName={newStudentName}
+                                        setNewStudentName={setNewStudentName}
+                                        onAddStudent={onAddStudent}
+                                        onRemoveStudent={onRemoveStudent}
+                                        onSelectStudent={handleSelectStudent}
+                                    />
+                                ) : viewMode === "evolution" ? (
+                                    <ClassEvolutionView classId={currentClass.id} t={t} />
                                 ) : (
-                                    <div className="text-center py-20 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200">
-                                        <p className="text-slate-400 font-bold uppercase text-xs tracking-widest">No hay datos suficientes para generar el perfil</p>
-                                    </div>
+                                    <ClassMasteryMatrix classId={currentClass.id} students={currentClass.students || []} t={t} />
                                 )}
                             </div>
                         </div>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
+
+            {/* Student Profile Modal */}
+            {selectedStudent && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[60] flex items-center justify-center p-4">
+                    <div className="bg-white w-full max-w-4xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col">
+                        <div className="p-8 md:p-12 space-y-8 overflow-y-auto no-scrollbar">
+                            <div className="flex justify-between items-start">
+                                <div className="flex items-center gap-6">
+                                    <div className="w-16 h-16 bg-blue-600 rounded-[1.5rem] flex items-center justify-center text-white text-2xl font-black shadow-lg shadow-blue-200">
+                                        {selectedStudent.name.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div className="space-y-1">
+                                        <h2 className="text-3xl font-black text-slate-900 tracking-tight">{selectedStudent.name}</h2>
+                                        <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">{t('analytics.student_profile')}</p>
+                                    </div>
+                                </div>
+                                <button onClick={() => { setSelectedStudent(null); setStudentStats(null); }} className="p-4 bg-slate-50 rounded-2xl text-slate-400 hover:text-slate-900 transition-all">
+                                    <ChevronRight className="w-6 h-6 rotate-180" />
+                                </button>
+                            </div>
+
+                            {loadingStats ? (
+                                <div className="flex flex-col items-center justify-center py-20 gap-4">
+                                    <div className="w-12 h-12 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin" />
+                                    <p className="text-slate-400 font-black uppercase text-xs tracking-widest">{t('common.loading')}</p>
+                                </div>
+                            ) : studentStats ? (
+                                <div className="space-y-10">
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                                        <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 flex items-center gap-4">
+                                            <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-blue-600 shadow-sm"><GraduationCap className="w-6 h-6" /></div>
+                                            <div>
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('analytics.sessions_played')}</p>
+                                                <p className="text-2xl font-black text-slate-900">{studentStats.sessions}</p>
+                                            </div>
+                                        </div>
+                                        <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 flex items-center gap-4">
+                                            <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-emerald-600 shadow-sm"><Target className="w-6 h-6" /></div>
+                                            <div>
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('analytics.avg_score')}</p>
+                                                <p className="text-2xl font-black text-slate-900">{studentStats.avgSuccess}%</p>
+                                            </div>
+                                        </div>
+                                        <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 flex items-center gap-4">
+                                            <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-amber-500 shadow-sm"><Trophy className="w-6 h-6" /></div>
+                                            <div>
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('analytics.perfect_quizzes')}</p>
+                                                <p className="text-2xl font-black text-slate-900">{studentStats.perfectQuizzes}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest pl-2">{t('analytics.performance_trend')}</h3>
+                                        <PerformanceChart
+                                            data={studentStats.history}
+                                            label={t('analytics.evolution_title')}
+                                            t={t}
+                                        />
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest pl-2">{t('analytics.topic_mastery')}</h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {Object.entries(studentStats.mastery).length === 0 ? (
+                                                <div className="col-span-full py-8 text-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+                                                    <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">{t('analytics.no_tags_desc')}</p>
+                                                </div>
+                                            ) : (
+                                                Object.entries(studentStats.mastery).map(([tag, data]) => {
+                                                    const pct = Math.round((data.correct / data.total) * 100);
+                                                    return (
+                                                        <div key={tag} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-3">
+                                                            <div className="flex justify-between items-center">
+                                                                <span className="font-black text-slate-900 uppercase text-xs tracking-tight">{tag}</span>
+                                                                <span className={`text-[10px] font-black px-2 py-1 rounded-lg ${pct > 80 ? 'bg-emerald-100 text-emerald-600' : pct > 50 ? 'bg-amber-100 text-amber-600' : 'bg-red-100 text-red-600'}`}>
+                                                                    {pct}%
+                                                                </span>
+                                                            </div>
+                                                            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                                <div
+                                                                    className={`h-full rounded-full transition-all duration-1000 ${pct > 80 ? 'bg-emerald-500' : pct > 50 ? 'bg-amber-500' : 'bg-red-500'}`}
+                                                                    style={{ width: `${pct}%` }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="text-center py-20 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200">
+                                    <p className="text-slate-400 font-bold uppercase text-xs tracking-widest">No hay datos suficientes para generar el perfil</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -392,7 +316,6 @@ function ClassMasteryMatrix({ classId, students, t }: { classId: string, student
         const fetchMasteryData = async () => {
             setLoading(true);
             try {
-                // Fetch all participants and their sessions/answers for this class
                 const { data } = await supabase
                     .from('participants')
                     .select(`
@@ -446,7 +369,7 @@ function ClassMasteryMatrix({ classId, students, t }: { classId: string, student
                             matrix.push({
                                 student: student.name,
                                 topic,
-                                score: stats && stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : -1 // -1 for no data
+                                score: stats && stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : -1
                             });
                         });
                     });
@@ -465,7 +388,7 @@ function ClassMasteryMatrix({ classId, students, t }: { classId: string, student
     }, [classId, students]);
 
     const getCellColor = (score: number) => {
-        if (score === -1) return "bg-slate-50 text-slate-300"; // No data
+        if (score === -1) return "bg-slate-50 text-slate-300";
         if (score < 50) return "bg-rose-100 text-rose-700 font-bold";
         if (score < 80) return "bg-amber-100 text-amber-700 font-bold";
         return "bg-emerald-100 text-emerald-700 font-bold";
@@ -477,7 +400,7 @@ function ClassMasteryMatrix({ classId, students, t }: { classId: string, student
         return (
             <div className="py-20 text-center">
                 <Target className="mx-auto text-slate-200 mb-4" size={48} />
-                <p className="text-slate-400 font-bold uppercase text-xs tracking-widest">{t('dashboard.no_tags_desc')}</p>
+                <p className="text-slate-400 font-bold uppercase text-xs tracking-widest">{t('analytics.no_tags_desc')}</p>
             </div>
         );
     }
@@ -485,15 +408,15 @@ function ClassMasteryMatrix({ classId, students, t }: { classId: string, student
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-end pr-2">
-                <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">{t('dashboard.mastery_matrix')}</h3>
-                <span className="text-[10px] text-slate-400 font-bold uppercase">{t('dashboard.mastery_legend')}</span>
+                <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">{t('analytics.mastery_matrix')}</h3>
+                <span className="text-[10px] text-slate-400 font-bold uppercase">{t('analytics.mastery_legend')}</span>
             </div>
 
             <div className="overflow-x-auto pb-4 custom-scrollbar">
                 <table className="w-full border-separate border-spacing-2">
                     <thead>
                         <tr>
-                            <th className="p-3 text-left text-[10px] font-black uppercase text-slate-400 w-48 sticky left-0 bg-white z-10">{t('dashboard.table_student')}</th>
+                            <th className="p-3 text-left text-[10px] font-black uppercase text-slate-400 w-48 sticky left-0 bg-white z-10">{t('common.student')}</th>
                             {topics.map(topic => (
                                 <th key={topic} className="p-3 text-center text-[10px] font-black uppercase text-slate-500 bg-slate-50 rounded-xl min-w-[100px]">
                                     {topic}
@@ -536,7 +459,7 @@ function ClassEvolutionView({ classId, t }: { classId: string, t: (k: string) =>
                     participants (count)
                 `)
                 .eq('status', 'finished')
-                .eq('quizzes.class_id', classId) // Filter by class_id through quizzes link
+                .eq('quizzes.class_id', classId)
                 .order('finished_at', { ascending: true });
 
             if (data) {
@@ -562,11 +485,6 @@ function ClassEvolutionView({ classId, t }: { classId: string, t: (k: string) =>
                 label={t('analytics.participation')}
                 t={t}
             />
-            <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100">
-                <p className="text-blue-900 text-sm font-bold leading-relaxed">
-                    💡 Esta gráfica muestra la participación histórica de la clase. Las analíticas detalladas por tema se basan en los tags de tus cuestionarios.
-                </p>
-            </div>
         </div>
     );
 }

@@ -82,7 +82,22 @@
     "all_folders": "All",
     "uncategorized": "Uncategorized",
     "delete_folder_confirm": "Delete folder?",
-    "delete_folder_desc": "Quizzes inside will not be deleted, they will just move to Uncategorized."
+    "delete_folder_desc": "Quizzes inside will not be deleted, they will just move to Uncategorized.",
+    "classes": {
+        "title": "Class Management",
+        "subtitle": "Create permanent groups for your students",
+        "name_placeholder": "Class name (e.g., 3rd B)",
+        "students_count": "{count} Students",
+        "modal_students": "Students",
+        "modal_evolution": "Evolution",
+        "modal_mastery": "Matrix",
+        "add_student_placeholder": "Student full name",
+        "add_student_button": "Add",
+        "bulk_import_button": "Bulk Import",
+        "bulk_import_placeholder": "Paste name list here (one per line)...",
+        "bulk_import_confirm": "Import {count} students",
+        "no_students": "No students in this class"
+    }
   },
   "sidebar": {
     "my_quizzes": "My Quizzes",
@@ -168,7 +183,7 @@
     "performance_trend": "Performance Trend",
     "mastery_matrix": "Mastery Matrix",
     "topic": "Topic",
-    "no_tags_desc": "No topic tags detected in quizzes",
+    "no_tags_desc": "Not enough data for this section yet. Make sure to add 'tags' to your quizzes.",
     "mastery_legend": "Legend: <50% Critical (Red) | 50-80% In Progress (Orange) | >80% Mastered (Green)",
     "grading_title": "Formal Grading",
     "heatmap_title": "Result Matrix",

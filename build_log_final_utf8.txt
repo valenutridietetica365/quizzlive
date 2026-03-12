@@ -1,0 +1,33 @@
+﻿
+> quiz-platform@0.1.0 build
+> next build
+
+  Ôû▓ Next.js 14.2.16
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+ Ô£ô Compiled successfully
+   Linting and checking validity of types ...
+node.exe : 
+En línea: 1 Carácter: 1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [  
+  ], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Failed to compile.
+
+./src/components/SectionErrorBoundary.tsx
+15:11  Error: 'TranslationsType' is defined but never 
+used.  @typescript-eslint/no-unused-vars
+
+./src/types/json.d.ts
+2:18  Error: Unexpected any. Specify a different type.  
+@typescript-eslint/no-explicit-any
+
+info  - Need to disable some ESLint rules? Learn more 
+here: https://nextjs.org/docs/basic-features/eslint#disab
+ling-rules

@@ -82,7 +82,22 @@
     "all_folders": "Todos",
     "uncategorized": "Sin Carpeta",
     "delete_folder_confirm": "¿Eliminar carpeta?",
-    "delete_folder_desc": "Los cuestionarios dentro no se borrarán, solo se quedarán sin carpeta."
+    "delete_folder_desc": "Los cuestionarios dentro no se borrarán, solo se quedarán sin carpeta.",
+    "classes": {
+        "title": "Gestión de Clases",
+        "subtitle": "Crea grupos permanentes para tus alumnos",
+        "name_placeholder": "Nombre de la clase (ej. 3º B)",
+        "students_count": "{count} Alumnos",
+        "modal_students": "Alumnos",
+        "modal_evolution": "Evolución",
+        "modal_mastery": "Matriz",
+        "add_student_placeholder": "Nombre completo del alumno",
+        "add_student_button": "Añadir",
+        "bulk_import_button": "Importación Masiva",
+        "bulk_import_placeholder": "Pega aquí la lista de nombres (uno por línea)...",
+        "bulk_import_confirm": "Importar {count} alumnos",
+        "no_students": "No hay alumnos en esta clase"
+    }
   },
   "sidebar": {
     "my_quizzes": "Mis Quizzes",
@@ -168,7 +183,7 @@
     "performance_trend": "Tendencia de Desempeño",
     "mastery_matrix": "Matriz de Maestría",
     "topic": "Tema",
-    "no_tags_desc": "Sin etiquetas de tema detectadas en los quizzes",
+    "no_tags_desc": "No hay datos suficientes para esta sección aún. Asegúrate de añadir 'tags' a tus cuestionarios.",
     "mastery_legend": "Leyenda: <50% Crítico (Rojo) | 50-80% En Progreso (Naranja) | >80% Dominado (Verde)",
     "grading": "Escala 1.0 - 7.0",
     "grading_title": "Evaluación Formal",
@@ -213,7 +228,7 @@
     "in_game": "En Juego",
     "waiting_status": "Esperando",
     "resume": "Reanudar",
-    "filter_by_class: ": "Filtro por Clase",
+    "filter_by_class": "Filtrar por Clase",
     "finish_session": "Finalizar sesión",
     "download_report": "Descargar Reporte",
     "download_pdf": "Descargar PDF",
