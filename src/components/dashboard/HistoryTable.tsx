@@ -72,37 +72,47 @@ export default function HistoryTable({
                 .from("sessions")
                 .select(`
                     id, pin, created_at, finished_at,
-                    quiz:quizzes(id, title, class:classes(name))
+                    quiz:quizzes(
+                        id, title,
+                        teacher:teachers(institution_name, logo_url, brand_color)
+                    )
                 `)
                 .eq("id", session.id)
                 .single();
 
-            const { data: answersData, error: answersError } = await supabase
-                .from("answers")
-                .select("is_correct, points_awarded, question_id, participant_id")
-                .eq("session_id", session.id);
+            if (sessionError || !sessionData) throw new Error("Error al obtener sesión");
 
-            const { data: participantsData, error: participantsError } = await supabase
-                .from("participants")
-                .select("id, nickname")
-                .eq("session_id", session.id);
+            const quizObj = (sessionData as any).quiz;
+            const quizId = quizObj?.id;
 
-            const { data: questionsData, error: questionsError } = await supabase
-                .from("questions")
-                .select("id, question_text, points")
-                .eq("quiz_id", (sessionData as unknown as SessionDataWithQuiz)?.quiz?.id || "")
-                .order('sort_order', { ascending: true });
+            if (!quizId) throw new Error("No se encontró el cuestionario asociado");
 
-            if (sessionError || answersError || participantsError || questionsError || !sessionData) {
-                throw new Error("Error al obtener datos");
+            const [answersRes, participantsRes, questionsRes] = await Promise.all([
+                supabase.from("answers").select("is_correct, points_awarded, question_id, participant_id").eq("session_id", session.id),
+                supabase.from("participants").select("id, nickname").eq("session_id", session.id),
+                supabase.from("questions").select("id, question_text, points").eq("quiz_id", quizId).order('sort_order', { ascending: true })
+            ]);
+
+            if (answersRes.error || participantsRes.error || questionsRes.error) {
+                throw new Error("Error al obtener datos de participación");
             }
 
             // 2. Generate
             const payload: ReportData = {
-                session: sessionData as unknown as ReportData['session'],
-                answers: answersData as unknown as ReportAnswer[],
-                participants: participantsData as unknown as ReportParticipant[],
-                questions: questionsData as unknown as ReportQuestion[]
+                session: {
+                    id: sessionData.id,
+                    pin: sessionData.pin,
+                    created_at: sessionData.created_at,
+                    finished_at: sessionData.finished_at,
+                    quiz: {
+                        title: quizObj.title,
+                        class: null // Omitting class due to multiple relationship ambiguity
+                    }
+                },
+                answers: (answersRes.data || []) as unknown as ReportAnswer[],
+                participants: (participantsRes.data || []) as unknown as ReportParticipant[],
+                questions: (questionsRes.data || []) as unknown as ReportQuestion[],
+                branding: quizObj.teacher
             };
 
             if (format === 'excel') {
