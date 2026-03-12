@@ -162,8 +162,8 @@ export default function QuestionView({
                         </div>
                     )}
 
-                    <div className="text-center space-y-1 px-1">
-                        <h2 className="text-base md:text-3xl font-black text-slate-800 tracking-tight leading-tight">
+                    <div className="text-center space-y-1 px-4 mb-4">
+                        <h2 className="text-xl md:text-3xl font-black text-slate-800 dark:text-white tracking-tight leading-tight">
                             {currentQuestion.question_text}
                         </h2>
                     </div>
