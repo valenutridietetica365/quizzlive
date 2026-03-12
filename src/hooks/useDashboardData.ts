@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
@@ -14,7 +15,8 @@ export interface Quiz {
     id: string;
     title: string;
     tags: string[];
-    class_id?: string | null;
+    class_id?: string | null; // Keep for legacy/UI compatibility
+    class_ids?: string[];     // New multi-class field
     folder_id?: string | null;
     questions: { id: string }[];
 }
@@ -99,8 +101,19 @@ export function useDashboardData() {
 
     const fetchQuizzes = useCallback(async (userId: string) => {
         const { data, error } = await supabase
-            .from("quizzes").select("*, questions(id)").eq("teacher_id", userId).order("created_at", { ascending: false });
-        if (!error) setQuizzes(data || []);
+            .from("quizzes")
+            .select("*, questions(id), quiz_classes(class_id)")
+            .eq("teacher_id", userId)
+            .order("created_at", { ascending: false });
+        
+        if (!error && data) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const formatted = data.map((q: any) => ({
+                ...q,
+                class_ids: q.quiz_classes?.map((qc: any) => qc.class_id) || []
+            }));
+            setQuizzes(formatted);
+        }
     }, [setQuizzes]);
 
     const fetchHistory = useCallback(async (userId: string, page = 0) => {
@@ -113,16 +126,20 @@ export function useDashboardData() {
 
         const { data, error } = await supabase
             .from("sessions")
-            .select(`id, pin, created_at, finished_at, quiz:quizzes!inner(title, teacher_id, tags, class_id), participants:participants(count)`)
+            .select(`id, pin, created_at, finished_at, quiz:quizzes!inner(title, teacher_id, tags, class_id, quiz_classes(class_id)), participants:participants(count)`)
             .eq("quiz.teacher_id", userId).eq("status", "finished")
             .order("finished_at", { ascending: false })
             .range(from, to);
 
         if (!error && data) {
-            const formatted: FinishedSession[] = (data as unknown as SupabaseSessionResponse[]).map(s => ({
-                id: s.id, pin: s.pin, created_at: s.created_at, finished_at: s.finished_at,
-                quiz: { title: s.quiz.title, tags: s.quiz.tags, class_id: s.quiz.class_id },
-                _count: { participants: s.participants?.[0]?.count || 0 }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const formatted: FinishedSession[] = (data as unknown as SupabaseSessionResponse[]).map((h: any) => ({
+                id: h.id, pin: h.pin, created_at: h.created_at, finished_at: h.finished_at,
+                quiz: {
+                    title: h.quiz.title, tags: h.quiz.tags, class_id: h.quiz.class_id,
+                    class_ids: h.quiz?.quiz_classes?.map((qc: any) => qc.class_id) || []
+                },
+                _count: { participants: h.participants?.[0]?.count || 0 }
             }));
             
             if (page === 0) {
@@ -150,10 +167,21 @@ export function useDashboardData() {
         yesterday.setHours(yesterday.getHours() - 24);
         const { data, error } = await supabase
             .from("sessions")
-            .select(`id, pin, status, created_at, quiz:quizzes!inner(title, teacher_id, class_id)`)
+            .select(`id, pin, status, created_at, quiz:quizzes!inner(title, teacher_id, class_id, quiz_classes(class_id))`)
             .eq("quiz.teacher_id", userId).in("status", ["waiting", "active"])
             .gte("created_at", yesterday.toISOString()).order("created_at", { ascending: false });
-        if (!error) setLiveSessions(data as unknown as LiveSession[] || []);
+        
+        if (!error && data) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const formatted = data.map((s: any) => ({
+                ...s,
+                quiz: {
+                    ...s.quiz,
+                    class_ids: s.quiz?.quiz_classes?.map((qc: any) => qc.class_id) || []
+                }
+            }));
+            setLiveSessions(formatted as any);
+        }
     }, [setLiveSessions]);
 
     // --- Init ---

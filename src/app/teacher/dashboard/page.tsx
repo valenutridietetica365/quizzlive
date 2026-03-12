@@ -76,7 +76,7 @@ export default function TeacherDashboard() {
     const allTags = ["All", ...Array.from(new Set(quizzes.flatMap(q => q.tags || [])))];
     const filteredQuizzes = quizzes.filter(q => {
         const matchesTag = selectedQuizTag === "All" || q.tags?.includes(selectedQuizTag);
-        const matchesClass = selectedGlobalClassId === "All" || q.class_id === selectedGlobalClassId;
+        const matchesClass = selectedGlobalClassId === "All" || q.class_ids?.includes(selectedGlobalClassId) || q.class_id === selectedGlobalClassId;
         const matchesFolder = selectedFolderId === "All" || q.folder_id === selectedFolderId || (selectedFolderId === "Uncategorized" && !q.folder_id);
         const matchesSearch = !searchTerm || q.title.toLowerCase().includes(searchTerm.toLowerCase());
         return matchesTag && matchesClass && matchesFolder && matchesSearch;
@@ -85,11 +85,11 @@ export default function TeacherDashboard() {
     const allHistoryTags = ["All", ...Array.from(new Set(history.flatMap(h => h.quiz.tags || [])))];
     const filteredHistory = history.filter(h => {
         const matchesTag = selectedHistoryTag === "All" || h.quiz.tags?.includes(selectedHistoryTag);
-        const matchesClass = selectedGlobalClassId === "All" || h.quiz.class_id === selectedGlobalClassId;
+        const matchesClass = selectedGlobalClassId === "All" || h.quiz.class_ids?.includes(selectedGlobalClassId) || h.quiz.class_id === selectedGlobalClassId;
         return matchesTag && matchesClass;
     });
 
-    const filteredLiveSessions = liveSessions.filter(s => selectedGlobalClassId === "All" || s.quiz.class_id === selectedGlobalClassId);
+    const filteredLiveSessions = liveSessions.filter(s => selectedGlobalClassId === "All" || s.quiz.class_ids?.includes(selectedGlobalClassId) || s.quiz.class_id === selectedGlobalClassId);
 
     const handleLogout = async () => {
         const { supabase } = await import("@/lib/supabase");

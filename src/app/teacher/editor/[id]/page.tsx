@@ -88,7 +88,7 @@ export default function QuizEditor() {
     const [title, setTitle] = useState("");
     const [tags, setTags] = useState<string[]>([]);
     const [newTag, setNewTag] = useState("");
-    const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+    const [selectedClassIds, setSelectedClassIds] = useState<string[]>([]);
     const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
     const [classes, setClasses] = useState<Class[]>([]);
     const folders = useQuizStore((state) => state.dashboardFolders) as { id: string, name: string }[];
@@ -125,7 +125,12 @@ export default function QuizEditor() {
         if (quizError || !quiz) { router.push("/teacher/dashboard"); return; }
         setTitle(quiz.title);
         setTags(quiz.tags || []);
-        setSelectedClassId(quiz.class_id);
+        // class_ids comes from the join table via compute in fetchQuizzes, 
+        // but here we are fetching a single quiz.
+        // Let's adjust the query to include quiz_classes.
+        const { data: assignments } = await supabase.from("quiz_classes").select("class_id").eq("quiz_id", id);
+        if (assignments) setSelectedClassIds(assignments.map(a => a.class_id));
+        
         setSelectedFolderId(quiz.folder_id);
         const validQuestions = (quiz.questions as unknown[]).map((q) => {
             try { return QuestionSchema.parse(q); }
@@ -233,7 +238,7 @@ export default function QuizEditor() {
             await saveQuizData(isNew, isNew ? null : id as string, {
                 title,
                 tags: tagsToSave,
-                class_id: selectedClassId || null,
+                class_ids: selectedClassIds,
                 folder_id: selectedFolderId || null,
                 questions
             });
@@ -258,7 +263,7 @@ export default function QuizEditor() {
                 title={title} setTitle={setTitle}
                 tags={tags} setTags={setTags}
                 newTag={newTag} setNewTag={setNewTag}
-                selectedClassId={selectedClassId} setSelectedClassId={setSelectedClassId}
+                selectedClassIds={selectedClassIds} setSelectedClassIds={setSelectedClassIds}
                 selectedFolderId={selectedFolderId} setSelectedFolderId={setSelectedFolderId}
                 classes={classes} folders={folders}
                 isNew={isNew} loading={loading}

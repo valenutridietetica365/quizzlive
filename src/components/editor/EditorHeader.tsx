@@ -11,8 +11,8 @@ interface EditorHeaderProps {
     setTags: (v: string[]) => void;
     newTag: string;
     setNewTag: (v: string) => void;
-    selectedClassId: string | null;
-    setSelectedClassId: (v: string | null) => void;
+    selectedClassIds: string[];
+    setSelectedClassIds: (v: string[]) => void;
     selectedFolderId: string | null;
     setSelectedFolderId: (v: string | null) => void;
     classes: Class[];
@@ -27,7 +27,7 @@ interface EditorHeaderProps {
 
 export default function EditorHeader({
     title, setTitle, tags, setTags, newTag, setNewTag,
-    selectedClassId, setSelectedClassId, selectedFolderId, setSelectedFolderId,
+    selectedClassIds, setSelectedClassIds, selectedFolderId, setSelectedFolderId,
     classes, folders, isNew, loading, onSave, onImport, onAI, t
 }: EditorHeaderProps) {
     const router = useRouter();
@@ -64,11 +64,32 @@ export default function EditorHeader({
             </div>
             {/* Row 2: Controls */}
             <div className="max-w-5xl mx-auto px-4 md:px-6 pb-3 flex items-center gap-2 md:gap-3 overflow-x-auto no-scrollbar">
-                <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 flex-shrink-0">
+                <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 flex-shrink-0 max-w-[200px] overflow-hidden">
                     <Users className="w-4 h-4 text-slate-400" />
-                    <select value={selectedClassId || ""} onChange={(e) => setSelectedClassId(e.target.value || null)} className="bg-transparent border-none focus:ring-0 text-[10px] font-black uppercase tracking-widest text-slate-600 p-0 pr-6">
-                        <option value="">{t('editor.no_class')}</option>
-                        {classes.map(cls => <option key={cls.id} value={cls.id}>{cls.name}</option>)}
+                    <div className="flex gap-1 overflow-x-auto no-scrollbar items-center">
+                        {selectedClassIds.length === 0 ? (
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 whitespace-nowrap">{t('editor.no_class')}</span>
+                        ) : (
+                            selectedClassIds.map(cid => (
+                                <span key={cid} className="bg-slate-900 text-white text-[9px] font-black px-2 py-0.5 rounded-lg flex items-center gap-1 shrink-0">
+                                    {classes.find(c => c.id === cid)?.name || '...'}
+                                    <button onClick={() => setSelectedClassIds(selectedClassIds.filter(id => id !== cid))} className="hover:text-red-300">
+                                        <Plus className="w-2.5 h-2.5 rotate-45" />
+                                    </button>
+                                </span>
+                            ))
+                        )}
+                    </div>
+                    <select 
+                        value="" 
+                        onChange={(e) => {
+                            const val = e.target.value;
+                            if (val && !selectedClassIds.includes(val)) setSelectedClassIds([...selectedClassIds, val]);
+                        }} 
+                        className="bg-transparent border-none focus:ring-0 text-[10px] font-black uppercase tracking-widest text-slate-600 p-0 pr-4 w-6 appearance-none"
+                    >
+                        <option value="" disabled>+</option>
+                        {classes.filter(c => c.id && !selectedClassIds.includes(c.id)).map(cls => <option key={cls.id} value={cls.id}>{cls.name}</option>)}
                     </select>
                 </div>
                 <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 flex-shrink-0">

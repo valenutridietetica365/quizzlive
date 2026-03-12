@@ -31,7 +31,17 @@ export default function QuizCard({ quiz, classes, t, onPlay, onDelete, onDuplica
                         <span className="bg-slate-100 px-3 py-1 rounded-full text-[10px] font-black text-slate-400 uppercase tracking-widest">
                             {quiz.questions.length} {t('common.questions')}
                         </span>
-                        {quiz.class_id && classes.find(c => c.id === quiz.class_id) && (
+                        {quiz.class_ids && quiz.class_ids.length > 0 && quiz.class_ids.map(cid => {
+                            const cls = classes.find(c => c.id === cid);
+                            if (!cls) return null;
+                            return (
+                                <span key={cid} className="bg-slate-900 px-3 py-1 rounded-full text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-1">
+                                    <Users className="w-3 h-3" />
+                                    {cls.name}
+                                </span>
+                            );
+                        })}
+                        {!quiz.class_ids && quiz.class_id && classes.find(c => c.id === quiz.class_id) && (
                             <span className="bg-slate-900 px-3 py-1 rounded-full text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-1">
                                 <Users className="w-3 h-3" />
                                 {classes.find(c => c.id === quiz.class_id)?.name}

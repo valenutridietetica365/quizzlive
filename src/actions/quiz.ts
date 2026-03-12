@@ -64,7 +64,8 @@ export async function updateQuizDetails(quizId: string, updates: { title?: strin
 export async function saveQuizData(isNew: boolean, quizId: string | null, data: {
     title: string;
     tags: string[];
-    class_id: string | null;
+    class_ids?: string[];
+    class_id?: string | null; // Keep for legacy
     folder_id: string | null;
     questions: Question[];
 }) {
@@ -93,13 +94,31 @@ export async function saveQuizData(isNew: boolean, quizId: string | null, data: 
             .update({
                 title: data.title,
                 tags: data.tags,
-                class_id: data.class_id,
                 folder_id: data.folder_id
             })
             .eq("id", finalQuizId)
             .eq("teacher_id", user.id);
 
         if (quizError) throw new Error("Error updating quiz");
+
+        // Sync classes
+        const { error: deleteClassesError } = await supabase
+            .from("quiz_classes")
+            .delete()
+            .eq("quiz_id", finalQuizId);
+        
+        if (deleteClassesError) throw new Error("Error updating class assignments");
+
+        if (data.class_ids && data.class_ids.length > 0) {
+            const classAssignments = data.class_ids.map(cid => ({
+                quiz_id: finalQuizId,
+                class_id: cid
+            }));
+            await supabase.from("quiz_classes").insert(classAssignments);
+        } else if (data.class_id) {
+            // Support legacy single class_id
+            await supabase.from("quiz_classes").insert({ quiz_id: finalQuizId, class_id: data.class_id });
+        }
 
         // Delete existing questions
         const { error: deleteError } = await supabase
@@ -116,7 +135,6 @@ export async function saveQuizData(isNew: boolean, quizId: string | null, data: 
             .insert({
                 title: data.title,
                 tags: data.tags,
-                class_id: data.class_id,
                 folder_id: data.folder_id,
                 teacher_id: user.id
             })
@@ -125,6 +143,17 @@ export async function saveQuizData(isNew: boolean, quizId: string | null, data: 
 
         if (quizError || !newQuiz) throw new Error("Error creating quiz");
         finalQuizId = newQuiz.id;
+
+        // Insert classes
+        if (data.class_ids && data.class_ids.length > 0) {
+            const classAssignments = data.class_ids.map(cid => ({
+                quiz_id: finalQuizId,
+                class_id: cid
+            }));
+            await supabase.from("quiz_classes").insert(classAssignments);
+        } else if (data.class_id) {
+            await supabase.from("quiz_classes").insert({ quiz_id: finalQuizId, class_id: data.class_id });
+        }
     }
 
     // Insert new questions
@@ -159,10 +188,10 @@ export async function duplicateQuiz(quizId: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Unauthorized");
 
-    // Fetch original quiz with questions
+    // Fetch original quiz with questions and class assignments
     const { data: original, error: fetchError } = await supabase
         .from("quizzes")
-        .select("title, description, tags, class_id, folder_id, questions(question_text, question_type, options, correct_answer, time_limit, points, image_url, sort_order)")
+        .select("title, description, tags, folder_id, quiz_classes(class_id), questions(question_text, question_type, options, correct_answer, time_limit, points, image_url, sort_order)")
         .eq("id", quizId)
         .eq("teacher_id", user.id)
         .single();
@@ -177,13 +206,22 @@ export async function duplicateQuiz(quizId: string) {
             title: `${original.title} (copia)`,
             description: original.description,
             tags: original.tags,
-            class_id: original.class_id,
             folder_id: original.folder_id,
         })
         .select("id")
         .single();
 
     if (quizError || !newQuiz) throw new Error("Error creating duplicate quiz");
+
+    // Copy class assignments
+    const assignments = (original.quiz_classes as { class_id: string }[]) || [];
+    if (assignments.length > 0) {
+        const assignmentsToInsert = assignments.map(a => ({
+            quiz_id: newQuiz.id,
+            class_id: a.class_id
+        }));
+        await supabase.from("quiz_classes").insert(assignmentsToInsert);
+    }
 
     // Copy questions
     const questions = (original.questions as Question[]) || [];

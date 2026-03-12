@@ -122,7 +122,7 @@ export interface FinishedSession {
     pin: string;
     created_at: string;
     finished_at: string;
-    quiz: { title: string; tags?: string[]; class_id?: string | null };
+    quiz: { title: string; tags?: string[]; class_id?: string | null; class_ids?: string[] };
     _count?: { participants: number };
 }
 
@@ -139,6 +139,6 @@ export interface LiveSession {
     id: string;
     pin: string;
     status: "waiting" | "active";
-    quiz: { title: string; class_id?: string | null };
+    quiz: { title: string; class_id?: string | null; class_ids?: string[] };
     created_at: string;
 }
