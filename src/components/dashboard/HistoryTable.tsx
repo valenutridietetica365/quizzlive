@@ -14,6 +14,9 @@ interface HistoryTableProps {
     t: (key: string) => string;
     onDelete: (id: string) => void;
     onBulkDelete: (ids: string[]) => void;
+    onLoadMore?: () => void;
+    hasMore?: boolean;
+    loadingMore?: boolean;
 }
 
 interface SessionDataWithQuiz {
@@ -28,7 +31,16 @@ interface SessionDataWithQuiz {
     } | null;
 }
 
-export default function HistoryTable({ history, language, t, onDelete, onBulkDelete }: HistoryTableProps) {
+export default function HistoryTable({ 
+    history, 
+    language, 
+    t, 
+    onDelete, 
+    onBulkDelete,
+    onLoadMore,
+    hasMore,
+    loadingMore
+}: HistoryTableProps) {
     const router = useRouter();
     const [downloadingId, setDownloadingId] = useState<string | null>(null);
     const [downloadingFormat, setDownloadingFormat] = useState<'excel' | 'pdf' | null>(null);
@@ -233,8 +245,10 @@ export default function HistoryTable({ history, language, t, onDelete, onBulkDel
 
             {/* Mobile Card View */}
             <div className="md:hidden grid grid-cols-1 gap-6">
+                {/* ... existing mobile rows ... */}
                 {history.map((session) => (
                     <div key={session.id} className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-50 space-y-6 relative">
+                        {/* (Internal mobile card content - same as before) */}
                         <div className="absolute top-6 right-6" onClick={(e) => e.stopPropagation()}>
                             <input
                                 type="checkbox"
@@ -294,6 +308,29 @@ export default function HistoryTable({ history, language, t, onDelete, onBulkDel
                     </div>
                 ))}
             </div>
+
+            {/* Pagination Controls */}
+            {hasMore && (
+                <div className="flex justify-center pt-8">
+                    <button
+                        onClick={onLoadMore}
+                        disabled={loadingMore}
+                        className="btn-premium !bg-white !text-slate-900 !border-2 !border-slate-100 !rounded-2xl !py-4 px-12 flex items-center gap-3 hover:!bg-slate-50 shadow-xl shadow-slate-200/50 disabled:opacity-50"
+                    >
+                        {loadingMore ? (
+                            <>
+                                <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+                                <span>{t('common.loading')}</span>
+                            </>
+                        ) : (
+                            <>
+                                <span>Ver más sesiones</span>
+                                <ChevronRight className="w-5 h-5 text-blue-600" />
+                            </>
+                        )}
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

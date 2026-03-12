@@ -64,6 +64,9 @@ export function useDashboardData() {
     const folders = dashboardFolders as FolderType[];
 
     const [loading, setLoading] = useState(true);
+    const [loadingMoreHistory, setLoadingMoreHistory] = useState(false);
+    const [historyPage, setHistoryPage] = useState(0);
+    const [hasMoreHistory, setHasMoreHistory] = useState(true);
     const [user, setUser] = useState<DashboardUser | null>(null);
 
     const router = useRouter();
@@ -100,20 +103,47 @@ export function useDashboardData() {
         if (!error) setQuizzes(data || []);
     }, [setQuizzes]);
 
-    const fetchHistory = useCallback(async (userId: string) => {
+    const fetchHistory = useCallback(async (userId: string, page = 0) => {
+        const pageSize = 10;
+        const from = page * pageSize;
+        const to = from + pageSize - 1;
+
+        if (page === 0) setLoading(true);
+        else setLoadingMoreHistory(true);
+
         const { data, error } = await supabase
             .from("sessions")
             .select(`id, pin, created_at, finished_at, quiz:quizzes!inner(title, teacher_id, tags, class_id), participants:participants(count)`)
-            .eq("quiz.teacher_id", userId).eq("status", "finished").order("finished_at", { ascending: false });
+            .eq("quiz.teacher_id", userId).eq("status", "finished")
+            .order("finished_at", { ascending: false })
+            .range(from, to);
+
         if (!error && data) {
             const formatted: FinishedSession[] = (data as unknown as SupabaseSessionResponse[]).map(s => ({
                 id: s.id, pin: s.pin, created_at: s.created_at, finished_at: s.finished_at,
                 quiz: { title: s.quiz.title, tags: s.quiz.tags, class_id: s.quiz.class_id },
                 _count: { participants: s.participants?.[0]?.count || 0 }
             }));
-            setHistory(formatted);
+            
+            if (page === 0) {
+                setHistory(formatted);
+            } else {
+                setHistory([...history, ...formatted]);
+            }
+            
+            setHasMoreHistory(formatted.length === pageSize);
+            setHistoryPage(page);
         }
-    }, [setHistory]);
+        
+        setLoading(false);
+        setLoadingMoreHistory(false);
+    }, [history, setHistory]);
+
+    const loadMoreHistory = useCallback(() => {
+        if (user && hasMoreHistory && !loadingMoreHistory) {
+            fetchHistory(user.id, historyPage + 1);
+        }
+    }, [user, hasMoreHistory, loadingMoreHistory, historyPage, fetchHistory]);
 
     const fetchLiveSessions = useCallback(async (userId: string) => {
         const yesterday = new Date();
@@ -319,6 +349,9 @@ export function useDashboardData() {
         exportQuiz: exportQuizHandler,
 
         // Refresh helpers
-        fetchHistory
+        fetchHistory,
+        loadMoreHistory,
+        loadingMoreHistory,
+        hasMoreHistory
     };
 }

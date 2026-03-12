@@ -19,6 +19,7 @@ import ClassManager from "@/components/dashboard/ClassManager";
 import ModeSelectionModal from "@/components/dashboard/ModeSelectionModal";
 import BrandingModal from "@/components/dashboard/BrandingModal";
 import { Shield } from "lucide-react";
+import SectionErrorBoundary from "@/components/SectionErrorBoundary";
 
 const StatsHeader = ({ stats, t }: { stats: { quizzes: number; sessions: number; avg: number }, t: (key: string) => string }) => (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-4 animate-in fade-in slide-in-from-top-4 duration-1000">
@@ -39,13 +40,14 @@ const StatsHeader = ({ stats, t }: { stats: { quizzes: number; sessions: number;
 
 export default function TeacherDashboard() {
     const { language } = useQuizStore();
+    const dashboard = useDashboardData();
     const {
         user, loading, quizzes, classes, history, liveSessions, folders,
         finishSession, deleteQuiz, deleteHistory, deleteMultipleHistory,
         createClass, deleteClass, createFolder, deleteFolder,
         addStudent, removeStudent, startSession, updateBranding,
-        duplicateQuiz, exportQuiz
-    } = useDashboardData();
+        duplicateQuiz, exportQuiz, loadMoreHistory, hasMoreHistory, loadingMoreHistory
+    } = dashboard;
 
     const [activeTab, setActiveTab] = useState<"quizzes" | "history" | "classes">("quizzes");
     const [selectedQuizTag, setSelectedQuizTag] = useState<string>("All");
@@ -108,14 +110,16 @@ export default function TeacherDashboard() {
 
         if (activeTab === "classes") {
             return (
-                <ClassManager
-                    classes={classes}
-                    t={t}
-                    onCreateClass={createClass}
-                    onDeleteClass={deleteClass}
-                    onAddStudent={addStudent}
-                    onRemoveStudent={removeStudent}
-                />
+                <SectionErrorBoundary title="Administrador de Clases">
+                    <ClassManager
+                        classes={classes}
+                        t={t}
+                        onCreateClass={createClass}
+                        onDeleteClass={deleteClass}
+                        onAddStudent={addStudent}
+                        onRemoveStudent={removeStudent}
+                    />
+                </SectionErrorBoundary>
             );
         }
 
@@ -136,13 +140,18 @@ export default function TeacherDashboard() {
                             </button>
                         ))}
                     </div>
-                    <HistoryTable
-                        history={filteredHistory}
-                        language={language}
-                        t={t}
-                        onDelete={(id) => setConfirmModal({ open: true, quizId: null, historyIds: [id], folderId: null })}
-                        onBulkDelete={(ids) => setConfirmModal({ open: true, quizId: null, historyIds: ids, folderId: null })}
-                    />
+                    <SectionErrorBoundary title="Historial de Sesiones">
+                        <HistoryTable
+                            history={filteredHistory}
+                            language={language}
+                            t={t}
+                            onDelete={(id) => setConfirmModal({ open: true, quizId: null, historyIds: [id], folderId: null })}
+                            onBulkDelete={(ids) => setConfirmModal({ open: true, quizId: null, historyIds: ids, folderId: null })}
+                            onLoadMore={loadMoreHistory}
+                            hasMore={hasMoreHistory}
+                            loadingMore={loadingMoreHistory}
+                        />
+                    </SectionErrorBoundary>
                 </div>
             );
         }
