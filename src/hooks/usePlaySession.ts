@@ -125,17 +125,25 @@ export function usePlaySession(id: string) {
     useEffect(() => {
         if (!nickname || !participantId) return;
 
+        let lastKnownQuestionId: string | null = null;
+        let lastKnownStatus: string | null = null;
+
         const sessionChannel = supabase.channel(`play_session_${id}`)
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'sessions', filter: `id=eq.${id}` }, (payload) => {
                 try {
                     const newData = SessionSchema.parse(payload.new);
-                    setSession(prevSession => {
-                        if (newData.current_question_id !== prevSession?.current_question_id && newData.current_question_id) {
-                            handleNewQuestion(newData.current_question_id, newData.game_mode === "hangman");
-                        }
-                        if (newData.status === "finished" && prevSession?.status !== "finished") fetchTotalScore();
-                        return newData;
-                    });
+                    
+                    if (newData.current_question_id && newData.current_question_id !== lastKnownQuestionId) {
+                        lastKnownQuestionId = newData.current_question_id;
+                        handleNewQuestion(newData.current_question_id, newData.game_mode === "hangman");
+                    }
+                    
+                    if (newData.status === "finished" && lastKnownStatus !== "finished") {
+                        lastKnownStatus = newData.status;
+                        fetchTotalScore();
+                    }
+
+                    setSession(newData);
                 } catch (e) { console.error("Error en actualización de tiempo real:", e); }
             })
             .on('postgres_changes', { event: '*', schema: 'public', table: 'participants', filter: `session_id=eq.${id}` }, (payload) => {
