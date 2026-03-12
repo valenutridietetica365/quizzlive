@@ -47,7 +47,7 @@ const FinalPodium = React.memo(function FinalPodium({ sessionId, highlightId }: 
                     teamScores[p.team] = (teamScores[p.team] || 0) + row.total_points;
                 }
             });
-            const allTeams = Object.entries(teamScores).map(([team, total_points], i) => ({
+            const allTeams = Object.entries(teamScores).map(([team, total_points]) => ({
                 participant_id: team,
                 nickname: team,
                 total_points,
