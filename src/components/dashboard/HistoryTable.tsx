@@ -117,7 +117,7 @@ export default function HistoryTable({
                 answers: (answersRes.data || []) as unknown as ReportAnswer[],
                 participants: (participantsRes.data || []) as unknown as ReportParticipant[],
                 questions: (questionsRes.data || []) as unknown as ReportQuestion[],
-                branding: quizObj.teacher
+                branding: quizObj.teacher ?? undefined
             };
 
             if (format === 'excel') {
