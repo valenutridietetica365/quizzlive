@@ -47,6 +47,28 @@ export async function addStudentToClass(classId: string, name: string) {
     return data;
 }
 
+export async function addStudentsBulk(classId: string, names: string[]) {
+    const supabase = createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Unauthorized");
+
+    if (names.length === 0) return [];
+
+    const studentsToInsert = names.map(name => ({
+        class_id: classId,
+        name: name.trim()
+    }));
+
+    const { data, error } = await supabase
+        .from("students")
+        .insert(studentsToInsert)
+        .select();
+
+    if (error) throw new Error(error.message);
+    revalidatePath("/teacher/dashboard");
+    return data;
+}
+
 export async function removeStudentFromClass(studentId: string) {
     const supabase = createSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();

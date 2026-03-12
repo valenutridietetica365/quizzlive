@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { FinishedSession, SupabaseSessionResponse, LiveSession, Folder as FolderType } from "@/lib/schemas";
 import { toast } from "sonner";
 import { deleteQuiz, createFolder, deleteFolder, duplicateQuiz, exportQuizAsJson } from "@/actions/quiz";
-import { createClass, deleteClass, addStudentToClass, removeStudentFromClass } from "@/actions/classes";
+import { createClass, deleteClass, addStudentToClass, removeStudentFromClass, addStudentsBulk } from "@/actions/classes";
 import { startSession, finishSession, deleteHistory, deleteMultipleHistory } from "@/actions/session";
 
 export interface Quiz {
@@ -286,14 +286,31 @@ export function useDashboardData() {
     const addStudentHandler = async (classId: string, name: string): Promise<DashboardStudent | null> => {
         try {
             const data = await addStudentToClass(classId, name);
-            const updatedClasses = classes.map(cls =>
-                cls.id === classId ? { ...cls, students: [...(cls.students || []), data] } : cls
-            );
-            setClasses(updatedClasses);
+            setDashboardData({
+                dashboardClasses: useQuizStore.getState().dashboardClasses.map((cls: DashboardClass) =>
+                    cls.id === classId ? { ...cls, students: [...(cls.students || []), data] } : cls
+                )
+            });
             toast.success("Alumno añadido");
             return data;
         } catch {
             toast.error("Error al añadir alumno");
+            return null;
+        }
+    };
+
+    const addStudentsBulkHandler = async (classId: string, names: string[]): Promise<DashboardStudent[] | null> => {
+        try {
+            const data = await addStudentsBulk(classId, names);
+            setDashboardData({
+                dashboardClasses: useQuizStore.getState().dashboardClasses.map((cls: DashboardClass) =>
+                    cls.id === classId ? { ...cls, students: [...(cls.students || []), ...data] } : cls
+                )
+            });
+            toast.success(`${data.length} alumnos añadidos`);
+            return data;
+        } catch {
+            toast.error("Error al importar alumnos");
             return null;
         }
     };
@@ -342,7 +359,7 @@ export function useDashboardData() {
         finishSession: finishSessionHandler, deleteQuiz: deleteQuizHandler, deleteHistory: deleteHistoryHandler,
         deleteMultipleHistory: deleteMultipleHistoryHandler,
         createClass: createClassHandler, deleteClass: deleteClassHandler, createFolder: createFolderHandler,
-        deleteFolder: deleteFolderHandler, addStudent: addStudentHandler, removeStudent: removeStudentHandler,
+        deleteFolder: deleteFolderHandler, addStudent: addStudentHandler, addStudentsBulk: addStudentsBulkHandler, removeStudent: removeStudentHandler,
         startSession: startSessionHandler,
         updateBranding: updateBrandingHandler,
         duplicateQuiz: duplicateQuizHandler,

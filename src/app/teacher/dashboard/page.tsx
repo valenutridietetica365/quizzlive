@@ -45,7 +45,7 @@ export default function TeacherDashboard() {
         user, loading, quizzes, classes, history, liveSessions, folders,
         finishSession, deleteQuiz, deleteHistory, deleteMultipleHistory,
         createClass, deleteClass, createFolder, deleteFolder,
-        addStudent, removeStudent, startSession, updateBranding,
+        addStudent, addStudentsBulk, removeStudent, startSession, updateBranding,
         duplicateQuiz, exportQuiz, loadMoreHistory, hasMoreHistory, loadingMoreHistory
     } = dashboard;
 
@@ -117,6 +117,7 @@ export default function TeacherDashboard() {
                         onCreateClass={createClass}
                         onDeleteClass={deleteClass}
                         onAddStudent={addStudent}
+                        onAddStudentsBulk={addStudentsBulk}
                         onRemoveStudent={removeStudent}
                     />
                 </SectionErrorBoundary>

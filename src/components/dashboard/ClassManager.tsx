@@ -33,10 +33,11 @@ interface ClassManagerProps {
     onCreateClass: (name: string) => void;
     onDeleteClass: (id: string) => void;
     onAddStudent: (classId: string, name: string) => Promise<DashboardStudent | null>;
+    onAddStudentsBulk: (classId: string, names: string[]) => Promise<DashboardStudent[] | null>;
     onRemoveStudent: (studentId: string, classId: string) => void;
 }
 
-export default function ClassManager({ classes, t, onCreateClass, onDeleteClass, onAddStudent, onRemoveStudent }: ClassManagerProps) {
+export default function ClassManager({ classes, t, onCreateClass, onDeleteClass, onAddStudent, onAddStudentsBulk, onRemoveStudent }: ClassManagerProps) {
     const [newClassName, setNewClassName] = useState("");
     const [selectedClass, setSelectedClass] = useState<DashboardClass | null>(null);
     const [newStudentName, setNewStudentName] = useState("");
@@ -189,6 +190,7 @@ export default function ClassManager({ classes, t, onCreateClass, onDeleteClass,
                                         newStudentName={newStudentName}
                                         setNewStudentName={setNewStudentName}
                                         onAddStudent={onAddStudent}
+                                        onAddStudentsBulk={onAddStudentsBulk}
                                         onRemoveStudent={onRemoveStudent}
                                         onSelectStudent={handleSelectStudent}
                                     />

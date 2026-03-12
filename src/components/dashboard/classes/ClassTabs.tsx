@@ -11,6 +11,7 @@ export function ClassStudentsTab({
   newStudentName,
   setNewStudentName,
   onAddStudent,
+  onAddStudentsBulk,
   onRemoveStudent,
   onSelectStudent,
   classId
@@ -19,7 +20,8 @@ export function ClassStudentsTab({
   t: (k: string) => string;
   newStudentName: string;
   setNewStudentName: (v: string) => void;
-  onAddStudent: (classId: string, name: string) => Promise<unknown>;
+  onAddStudent: (classId: string, name: string) => Promise<DashboardStudent | null>;
+  onAddStudentsBulk: (classId: string, names: string[]) => Promise<DashboardStudent[] | null>;
   onRemoveStudent: (id: string, classId: string) => void;
   onSelectStudent: (student: DashboardStudent) => void;
   classId: string;
@@ -29,9 +31,9 @@ export function ClassStudentsTab({
 
   const handleBulkImport = async () => {
     const names = bulkList.split("\n").map(n => n.trim()).filter(n => n.length > 0);
-    for (const name of names) {
-      await onAddStudent(classId, name);
-    }
+    if (names.length === 0) return;
+    
+    await onAddStudentsBulk(classId, names);
     setBulkList("");
     setShowBulk(false);
   };
