@@ -19,7 +19,7 @@ interface HistoryTableProps {
     loadingMore?: boolean;
 }
 
-interface SessionDataWithQuiz {
+interface FetchedSession {
     id: string;
     pin: string;
     created_at: string;
@@ -27,7 +27,11 @@ interface SessionDataWithQuiz {
     quiz: {
         id: string;
         title: string;
-        class: { name: string } | null;
+        teacher: {
+            institution_name: string | null;
+            logo_url: string | null;
+            brand_color: string | null;
+        } | null;
     } | null;
 }
 
@@ -82,7 +86,8 @@ export default function HistoryTable({
 
             if (sessionError || !sessionData) throw new Error("Error al obtener sesión");
 
-            const quizObj = (sessionData as any).quiz;
+            const typedSession = sessionData as unknown as FetchedSession;
+            const quizObj = typedSession.quiz;
             const quizId = quizObj?.id;
 
             if (!quizId) throw new Error("No se encontró el cuestionario asociado");
