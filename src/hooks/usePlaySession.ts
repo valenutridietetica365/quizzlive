@@ -110,7 +110,7 @@ export function usePlaySession(id: string) {
         setFetchingScore(true);
         try {
             const { data } = await supabase.from("scores").select("total_points").eq("participant_id", participantId).eq("session_id", id).maybeSingle();
-            if (data) setTotalScore(data.total_points);
+            setTotalScore(data ? data.total_points : 0);
         } catch (err) { console.error("Error fetching score:", err); } finally { setFetchingScore(false); }
     }, [id, participantId]);
 

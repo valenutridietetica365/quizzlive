@@ -23,25 +23,52 @@ const FinalPodium = React.memo(function FinalPodium({ sessionId, highlightId }: 
     const [loading, setLoading] = useState(true);
 
     const fetchTop3 = useCallback(async () => {
+        // Fetch session mode first
+        const { data: sessionData } = await supabase
+            .from("sessions")
+            .select("game_mode")
+            .eq("id", sessionId)
+            .single();
+
+        const gameMode = sessionData?.game_mode || 'classic';
+
         const { data } = await supabase
             .from("scores")
-            .select("participant_id, total_points, participants(nickname)")
-            .eq("session_id", sessionId)
-            .order("total_points", { ascending: false })
-            .limit(10);
+            .select("participant_id, total_points, participants(nickname, team)")
+            .eq("session_id", sessionId);
 
         if (!data) return;
 
-        const all = data.map((row, i) => ({
+        if (gameMode === 'teams') {
+            const teamScores: Record<string, number> = {};
+            data.forEach(row => {
+                const p = row.participants as unknown as { team?: string | null };
+                if (p?.team) {
+                    teamScores[p.team] = (teamScores[p.team] || 0) + row.total_points;
+                }
+            });
+            const allTeams = Object.entries(teamScores).map(([team, total_points], i) => ({
+                participant_id: team,
+                nickname: team,
+                total_points,
+                rank: 0 // placeholder
+            })).sort((a, b) => b.total_points - a.total_points).map((t, i) => ({ ...t, rank: i + 1 }));
+
+            setTop3(allTeams.slice(0, 3));
+            setLoading(false);
+            return;
+        }
+
+        const all = data.map(row => ({
             participant_id: row.participant_id,
             nickname: (row.participants as unknown as { nickname: string })?.nickname || "???",
             total_points: row.total_points,
-            rank: i + 1,
-        }));
+            rank: 0,
+        })).sort((a, b) => b.total_points - a.total_points).map((p, i) => ({ ...p, rank: i + 1 }));
 
         setTop3(all.slice(0, 3));
 
-        if (highlightId) {
+        if (highlightId && gameMode !== 'teams') {
             const me = all.find(e => e.participant_id === highlightId);
             if (me && me.rank > 3) setMyRank(me);
         }
