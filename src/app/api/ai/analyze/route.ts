@@ -30,6 +30,20 @@ export async function POST(req: Request) {
     try {
         const { quizTitle, questions, heatmapData, language = 'es' } = await req.json();
 
+        interface AnalyzedQuestion {
+            question_text: string;
+            points: number;
+            options: string[];
+            correct_answer: string;
+        }
+
+        interface AnalyzedRow {
+            studentName: string;
+            pedagogicalScore: number;
+            answers: Record<string, boolean>;
+            selectedAnswers: Record<string, string>;
+        }
+
         const models = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-3-flash-preview"];
         let lastError = "";
 
@@ -41,13 +55,13 @@ export async function POST(req: Request) {
                 Act as a master pedagogical analyst. You are analyzing the results of a quiz titled "${quizTitle}".
                 
                 DATA PROVIDED:
-                - Questions: ${JSON.stringify(questions.map((q: any) => ({ 
+                - Questions: ${JSON.stringify(questions.map((q: AnalyzedQuestion) => ({ 
                     text: q.question_text, 
                     points: q.points,
                     options: q.options,
                     correct: q.correct_answer
                   })))}
-                - Results: ${JSON.stringify(heatmapData.map((row: any) => ({ 
+                - Results: ${JSON.stringify(heatmapData.map((row: AnalyzedRow) => ({ 
                     student: row.studentName, 
                     score: row.pedagogicalScore, 
                     answers: row.answers,
