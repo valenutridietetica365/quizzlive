@@ -32,7 +32,7 @@ export interface QuestionStat {
 
 const SessionAnalytics = React.memo(function SessionAnalytics({ sessionId }: SessionAnalyticsProps) {
     const { language } = useQuizStore();
-    const { answers, participants, questions, session, loading: dataLoading, maxTotalScore } = useSessionResults(sessionId);
+    const { answers, participants, questions, session, loading: dataLoading, maxTotalScore, error } = useSessionResults(sessionId);
     const [useGrading, setUseGrading] = useState(false);
     const [exigency, setExigency] = useState(0.6); // 60% by default
     const t = (key: string) => getTranslation(language, key);
@@ -135,7 +135,9 @@ const SessionAnalytics = React.memo(function SessionAnalytics({ sessionId }: Ses
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="flex justify-between items-center">
                 <div className="space-y-1">
-                    <h2 className="text-2xl font-black text-white uppercase tracking-tight">Estadísticas de Sesión</h2>
+                    <h2 className="text-2xl font-black text-white uppercase tracking-tight">
+                        Estadísticas de Sesión {error && <span className="text-red-500 font-bold ml-4">Error: {error}</span>}
+                    </h2>
                     <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Resumen detallado de resultados</p>
                 </div>
                 <div className="flex items-center gap-3">
