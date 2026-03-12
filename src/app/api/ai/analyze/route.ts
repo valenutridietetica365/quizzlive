@@ -41,11 +41,17 @@ export async function POST(req: Request) {
                 Act as a master pedagogical analyst. You are analyzing the results of a quiz titled "${quizTitle}".
                 
                 DATA PROVIDED:
-                - Questions: ${JSON.stringify(questions.map((q: { question_text: string, points: number }) => ({ text: q.question_text, points: q.points })))}
-                - Results: ${JSON.stringify(heatmapData.map((row: { studentName: string, pedagogicalScore: number, answers: Record<string, boolean> }) => ({ 
+                - Questions: ${JSON.stringify(questions.map((q: any) => ({ 
+                    text: q.question_text, 
+                    points: q.points,
+                    options: q.options,
+                    correct: q.correct_answer
+                  })))}
+                - Results: ${JSON.stringify(heatmapData.map((row: any) => ({ 
                     student: row.studentName, 
                     score: row.pedagogicalScore, 
-                    answers: row.answers 
+                    answers: row.answers,
+                    choices: row.selectedAnswers 
                   })))}
                 
                 OBJECTIVE:
@@ -53,9 +59,9 @@ export async function POST(req: Request) {
                 
                 STRUCTURE:
                 1. Executive Summary: High-level overview of class performance.
-                2. Key Areas for Improvement: Specific concepts or questions where students struggled.
-                3. Strengths: Concepts well-understood by the class.
-                4. Actionable Reinforcement Plan: 3-5 specific steps for the teacher to help the students improve.
+                2. Key Distractor Analysis: Identify WHICH incorrect options were most selected and explain the potential misconception behind those choices.
+                3. Individualized Insights: Group students by their needs (e.g., those who need basics vs. those who need advanced challenge).
+                4. Actionable Reinforcement Plan: 3-5 specific steps for the teacher to help the students improve based on the distractor patterns.
                 
                 FORMAT: Return ONLY plain Markdown text. Do not use JSON. Use bolding and lists for readability.
                 `;

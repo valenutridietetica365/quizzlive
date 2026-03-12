@@ -8,12 +8,15 @@ export interface ReportAnswer {
     points_awarded: number;
     question_id: string;
     participant_id: string;
+    answer_text: string;
 }
 
 export interface ReportQuestion {
     id: string;
     question_text: string;
     points: number;
+    options: string[];
+    correct_answer: string;
 }
 
 export interface ReportParticipant {

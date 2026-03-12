@@ -102,13 +102,15 @@ const SessionAnalytics = React.memo(function SessionAnalytics({ sessionId }: Ses
                     participantId: pId, 
                     studentName: pName, 
                     totalScore: 0, 
-                    answers: {} 
+                    answers: {},
+                    selectedAnswers: {} 
                 });
             }
             
             const row = userMap.get(pId)!;
             const question = questions.find(q => q.id === qId);
             row.answers[qId] = a.is_correct;
+            row.selectedAnswers[qId] = a.answer_text;
             row.totalScore += a.points_awarded || 0;
             
             if (a.is_correct && question) {

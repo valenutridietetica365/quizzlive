@@ -10,6 +10,7 @@ export interface HeatmapRow {
     pedagogicalScore?: number;
     grade?: number;
     answers: Record<string, boolean | null>;
+    selectedAnswers: Record<string, string>;
 }
 
 interface HeatmapTableProps {
