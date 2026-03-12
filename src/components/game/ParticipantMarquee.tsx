@@ -1,4 +1,4 @@
-"use client";
+import { memo } from "react";
 
 interface Participant {
     id: string;
@@ -13,7 +13,7 @@ interface ParticipantMarqueeProps {
     waitingText: string;
 }
 
-export default function ParticipantMarquee({ participants, waitingText }: ParticipantMarqueeProps) {
+const ParticipantMarquee = memo(function ParticipantMarquee({ participants, waitingText }: ParticipantMarqueeProps) {
     return (
         <div className="p-5 bg-black/40 backdrop-blur-lg flex gap-4 overflow-hidden border-t border-white/5 whitespace-nowrap">
             {participants.length === 0 ? (
@@ -41,4 +41,6 @@ export default function ParticipantMarquee({ participants, waitingText }: Partic
             )}
         </div>
     );
-}
+});
+
+export default ParticipantMarquee;

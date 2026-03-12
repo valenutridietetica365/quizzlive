@@ -139,12 +139,27 @@ export function usePlaySession(id: string) {
                 } catch (e) { console.error("Error en actualización de tiempo real:", e); }
             })
             .on('postgres_changes', { event: '*', schema: 'public', table: 'participants', filter: `session_id=eq.${id}` }, (payload) => {
-                const typedPayload = payload.new as Participant;
-                if (typedPayload && typedPayload.id === participantId) {
-                    useQuizStore.getState().setIsEliminated(typedPayload.is_eliminated || false);
-                    if (typedPayload.team) useQuizStore.getState().setTeam(typedPayload.team);
+                const typedNew = payload.new as Participant;
+                if (typedNew && typedNew.id === participantId) {
+                    useQuizStore.getState().setIsEliminated(typedNew.is_eliminated || false);
+                    if (typedNew.team) useQuizStore.getState().setTeam(typedNew.team);
                 }
-                fetchParticipants();
+
+                setParticipants((prev) => {
+                    if (payload.eventType === 'INSERT') {
+                        const exists = prev.find(p => p.id === typedNew.id);
+                        if (exists) return prev;
+                        return [...prev, typedNew];
+                    }
+                    if (payload.eventType === 'UPDATE') {
+                        return prev.map(p => p.id === typedNew.id ? { ...p, ...typedNew } : p);
+                    }
+                    if (payload.eventType === 'DELETE') {
+                        const oldId = (payload.old as Participant).id;
+                        return prev.filter(p => p.id !== oldId);
+                    }
+                    return prev;
+                });
             })
             .subscribe();
 

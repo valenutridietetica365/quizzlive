@@ -82,8 +82,8 @@ export default function TeacherSession() {
             } catch { console.error("Error validando datos de participante"); }
         }).subscribe((status) => { if (status === 'CHANNEL_ERROR') toast.error(t('common.error')); });
 
-        const answersChannel = supabase.channel(`session_answers_${id}`).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'answers' }, (payload) => {
-            if (payload.new.session_id === id) setResponsesCount((prev) => prev + 1);
+        const answersChannel = supabase.channel(`session_answers_${id}`).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'answers', filter: `session_id=eq.${id}` }, () => {
+            setResponsesCount((prev) => prev + 1);
         }).subscribe();
 
         return () => { supabase.removeChannel(participantsChannel); supabase.removeChannel(answersChannel); };
