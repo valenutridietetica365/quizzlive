@@ -73,114 +73,31 @@ export async function saveQuizData(isNew: boolean, quizId: string | null, data: 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Unauthorized");
 
-    let finalQuizId = quizId;
+    const { data: result, error: rpcError } = await supabase.rpc('save_quiz_with_questions', {
+        p_is_new: isNew,
+        p_quiz_id: quizId,
+        p_teacher_id: user.id,
+        p_title: data.title,
+        p_tags: data.tags,
+        p_folder_id: data.folder_id,
+        p_class_ids: data.class_ids || (data.class_id ? [data.class_id] : []),
+        p_questions: data.questions.map((q, i) => ({
+            ...q,
+            sort_order: i,
+            points: q.points || 1000,
+            time_limit: q.time_limit || 20,
+            image_url: q.image_url || null
+        }))
+    });
 
-    if (!isNew && finalQuizId) {
-        // Check for active sessions
-        const { data: activeSessions, error: sessionCheckError } = await supabase
-            .from("sessions")
-            .select("id")
-            .eq("quiz_id", finalQuizId)
-            .in("status", ["waiting", "active"]);
-
-        if (sessionCheckError) throw new Error("Error checking sessions");
-        if (activeSessions && activeSessions.length > 0) {
-            throw new Error("No se puede editar un cuestionario mientras hay una sesión activa o en espera.");
-        }
-
-        // Update quiz
-        const { error: quizError } = await supabase
-            .from("quizzes")
-            .update({
-                title: data.title,
-                tags: data.tags,
-                folder_id: data.folder_id
-            })
-            .eq("id", finalQuizId)
-            .eq("teacher_id", user.id);
-
-        if (quizError) throw new Error("Error updating quiz");
-
-        // Sync classes
-        const { error: deleteClassesError } = await supabase
-            .from("quiz_classes")
-            .delete()
-            .eq("quiz_id", finalQuizId);
-        
-        if (deleteClassesError) throw new Error("Error updating class assignments");
-
-        if (data.class_ids && data.class_ids.length > 0) {
-            const classAssignments = data.class_ids.map(cid => ({
-                quiz_id: finalQuizId,
-                class_id: cid
-            }));
-            await supabase.from("quiz_classes").insert(classAssignments);
-        } else if (data.class_id) {
-            // Support legacy single class_id
-            await supabase.from("quiz_classes").insert({ quiz_id: finalQuizId, class_id: data.class_id });
-        }
-
-        // Delete existing questions
-        const { error: deleteError } = await supabase
-            .from("questions")
-            .delete()
-            .eq("quiz_id", finalQuizId);
-
-        if (deleteError) throw new Error("Error deleting old questions");
-
-    } else {
-        // Insert new quiz
-        const { data: newQuiz, error: quizError } = await supabase
-            .from("quizzes")
-            .insert({
-                title: data.title,
-                tags: data.tags,
-                folder_id: data.folder_id,
-                teacher_id: user.id
-            })
-            .select()
-            .single();
-
-        if (quizError || !newQuiz) throw new Error("Error creating quiz");
-        finalQuizId = newQuiz.id;
-
-        // Insert classes
-        if (data.class_ids && data.class_ids.length > 0) {
-            const classAssignments = data.class_ids.map(cid => ({
-                quiz_id: finalQuizId,
-                class_id: cid
-            }));
-            await supabase.from("quiz_classes").insert(classAssignments);
-        } else if (data.class_id) {
-            await supabase.from("quiz_classes").insert({ quiz_id: finalQuizId, class_id: data.class_id });
-        }
-    }
-
-    // Insert new questions
-    const questionsToInsert = data.questions.map((q, index) => ({
-        quiz_id: finalQuizId,
-        question_text: q.question_text,
-        question_type: q.question_type,
-        options: q.options,
-        correct_answer: q.correct_answer,
-        image_url: q.image_url || null,
-        time_limit: q.time_limit,
-        points: q.points || 1000,
-        sort_order: index
-    }));
-
-    const { error: questionsError } = await supabase
-        .from("questions")
-        .insert(questionsToInsert);
-
-    if (questionsError) throw new Error("Error inserting questions");
+    if (rpcError) throw new Error(rpcError.message);
 
     revalidatePath("/teacher/dashboard");
-    if (finalQuizId) {
-        revalidatePath(`/teacher/editor/${finalQuizId}`);
+    if (result.quiz_id) {
+        revalidatePath(`/teacher/editor/${result.quiz_id}`);
     }
 
-    return { success: true, quizId: finalQuizId };
+    return { success: true, quizId: result.quiz_id };
 }
 
 export async function duplicateQuiz(quizId: string) {

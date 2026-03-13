@@ -42,9 +42,12 @@ export function usePlaySession(id: string) {
     const handleNewQuestion = useCallback(async (questionId: string, isHangmanMode?: boolean) => {
         const selectFields = `id, quiz_id, question_text, question_type, options, image_url, time_limit, points, sort_order${isHangmanMode ? ", correct_answer" : ""}`;
 
+        if (!session?.quiz_id) return;
+
         const { data, error } = await supabase.from("questions")
             .select(selectFields)
             .eq("id", questionId)
+            .eq("quiz_id", session.quiz_id)
             .single();
 
         if (error) {
@@ -85,7 +88,10 @@ export function usePlaySession(id: string) {
     }, []);
 
     const fetchInitialState = useCallback(async () => {
-        const { data: sessionData } = await supabase.from("sessions").select("*").eq("id", id).single();
+        const { data: sessionData } = await supabase.from("sessions")
+            .select("id, pin, status, quiz_id, current_question_id, started_at, finished_at, game_mode, config")
+            .eq("id", id)
+            .single();
         if (sessionData) {
             try {
                 const s = SessionSchema.parse(sessionData);

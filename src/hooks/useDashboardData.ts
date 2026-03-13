@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
@@ -19,6 +18,28 @@ export interface Quiz {
     class_ids?: string[];     // New multi-class field
     folder_id?: string | null;
     questions: { id: string }[];
+}
+
+interface QuizResponse {
+    id: string;
+    title: string;
+    tags: string[];
+    folder_id: string | null;
+    questions: { id: string }[];
+    quiz_classes: { class_id: string }[];
+}
+
+interface LiveSessionResponse {
+    id: string;
+    pin: string;
+    status: "waiting" | "active";
+    created_at: string;
+    quiz: {
+        title: string;
+        teacher_id: string;
+        class_id: string | null;
+        quiz_classes: { class_id: string }[];
+    };
 }
 
 export interface DashboardClass {
@@ -107,10 +128,13 @@ export function useDashboardData() {
             .order("created_at", { ascending: false });
         
         if (!error && data) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const formatted = data.map((q: any) => ({
-                ...q,
-                class_ids: q.quiz_classes?.map((qc: any) => qc.class_id) || []
+            const formatted: Quiz[] = (data as unknown as QuizResponse[]).map((q) => ({
+                id: q.id,
+                title: q.title,
+                tags: q.tags,
+                folder_id: q.folder_id,
+                questions: q.questions,
+                class_ids: q.quiz_classes?.map((qc) => qc.class_id) || []
             }));
             setQuizzes(formatted);
         }
@@ -132,7 +156,7 @@ export function useDashboardData() {
             .range(from, to);
 
         if (!error && data) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            // Mapping Supabase relationship results is tricky with TS, using unknown as intermediate
             const formatted: FinishedSession[] = (data as unknown as SupabaseSessionResponse[]).map((h: any) => ({
                 id: h.id, pin: h.pin, created_at: h.created_at, finished_at: h.finished_at,
                 quiz: {
@@ -172,15 +196,18 @@ export function useDashboardData() {
             .gte("created_at", yesterday.toISOString()).order("created_at", { ascending: false });
         
         if (!error && data) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const formatted = data.map((s: any) => ({
-                ...s,
+            const formatted: LiveSession[] = (data as unknown as LiveSessionResponse[]).map((s) => ({
+                id: s.id,
+                pin: s.pin,
+                status: s.status,
+                created_at: s.created_at,
                 quiz: {
-                    ...s.quiz,
-                    class_ids: s.quiz?.quiz_classes?.map((qc: any) => qc.class_id) || []
+                    title: s.quiz.title,
+                    class_id: s.quiz.class_id,
+                    class_ids: s.quiz.quiz_classes?.map((qc) => qc.class_id) || []
                 }
             }));
-            setLiveSessions(formatted as any);
+            setLiveSessions(formatted);
         }
     }, [setLiveSessions]);
 

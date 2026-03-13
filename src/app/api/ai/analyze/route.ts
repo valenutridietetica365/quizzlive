@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     }
 
     // Rate limiting: 10 requests per minute per user
-    const { allowed, resetIn } = checkRateLimit(user.id, "ai-analyze", 10, 60_000);
+    const { allowed, resetIn } = await checkRateLimit(user.id, "ai-analyze", 10, 60_000);
     if (!allowed) {
         return NextResponse.json({ error: "Rate limit exceeded", details: `Too many requests. Try again in ${Math.ceil(resetIn / 1000)} seconds.` }, { status: 429 });
     }

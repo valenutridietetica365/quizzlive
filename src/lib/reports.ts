@@ -32,7 +32,7 @@ export interface ReportData {
         finished_at: string;
         quiz: {
             title: string;
-            class?: { name: string } | null;
+            class?: { name: string } | string | null;
         };
     };
     answers: ReportAnswer[];
@@ -67,7 +67,7 @@ export const generateExcelReport = (data: ReportData, t: (key: string) => string
         [t('session.report_summary').toUpperCase()],
         [],
         ["📋 " + t('session.title'), session.quiz.title],
-        ["🏫 " + t('sidebar.classes'), session.quiz.class?.name || 'N/A'],
+        ["🏫 " + t('sidebar.classes'), typeof session.quiz.class === 'string' ? session.quiz.class : (session.quiz.class?.name || 'N/A')],
         ["🗓️ " + t('dashboard.table_date'), DATE_STR],
         ["🔑 " + t('dashboard.table_pin'), session.pin],
         [],
@@ -242,7 +242,7 @@ export const generatePDFReport = (data: ReportData, t: (key: string) => string) 
     yPos += 10;
     doc.setFontSize(11);
     doc.setFont("helvetica", "normal");
-    doc.text(`${t('sidebar.classes')}: ${session.quiz.class?.name || 'N/A'}`, 20, yPos);
+    doc.text(`${t('sidebar.classes')}: ${typeof session.quiz.class === 'string' ? session.quiz.class : (session.quiz.class?.name || 'N/A')}`, 20, yPos);
 
     // --- 3. KPIs Recap ---
     yPos += 20;

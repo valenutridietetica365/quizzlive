@@ -32,6 +32,7 @@ interface FetchedSession {
             logo_url: string | null;
             brand_color: string | null;
         } | null;
+        quiz_classes: { class: { name: string } }[] | null;
     } | null;
 }
 
@@ -78,7 +79,8 @@ export default function HistoryTable({
                     id, pin, created_at, finished_at,
                     quiz:quizzes(
                         id, title,
-                        teacher:teachers(institution_name, logo_url, brand_color)
+                        teacher:teachers(institution_name, logo_url, brand_color),
+                        quiz_classes(class:classes(name))
                     )
                 `)
                 .eq("id", session.id)
@@ -111,7 +113,7 @@ export default function HistoryTable({
                     finished_at: sessionData.finished_at,
                     quiz: {
                         title: quizObj.title,
-                        class: null // Omitting class due to multiple relationship ambiguity
+                        class: (quizObj.quiz_classes as any[])?.map(qc => qc.class?.name).filter(Boolean).join(", ") || null
                     }
                 },
                 answers: (answersRes.data || []) as unknown as ReportAnswer[],
