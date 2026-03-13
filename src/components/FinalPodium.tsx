@@ -47,7 +47,8 @@ const FinalPodium = React.memo(function FinalPodium({ sessionId, highlightId }: 
             const teamScores: Record<string, number> = {};
             data.forEach(row => {
                 const p = Array.isArray(row.participants) ? row.participants[0] : row.participants;
-                const team = (p as any)?.team;
+                const pObj = p as { team?: string; nickname?: string } | null;
+                const team = pObj?.team;
                 if (team) {
                     teamScores[team] = (teamScores[team] || 0) + row.total_points;
                 }
@@ -66,9 +67,10 @@ const FinalPodium = React.memo(function FinalPodium({ sessionId, highlightId }: 
 
         const all = data.map(row => {
             const p = Array.isArray(row.participants) ? row.participants[0] : row.participants;
+            const pObj = p as { team?: string; nickname?: string } | null;
             return {
                 participant_id: row.participant_id,
-                nickname: (p as any)?.nickname || "???",
+                nickname: pObj?.nickname || "???",
                 total_points: row.total_points,
                 rank: 0,
             };

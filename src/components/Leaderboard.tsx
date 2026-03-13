@@ -57,14 +57,22 @@ const Leaderboard = React.memo(function Leaderboard({
                 return;
             }
 
+            interface ParticipantRow {
+                id: string;
+                nickname: string;
+                team: string | null;
+                is_eliminated: boolean;
+                scores: { total_points: number }[] | { total_points: number } | null;
+            }
+
             // Map data to LeaderboardEntry format
-            const participants: LeaderboardEntry[] = (data as any[]).map(p => {
+            const participants: LeaderboardEntry[] = (data as ParticipantRow[]).map(p => {
                 // Handle different possible shapes of joined scores
                 let totalScore = 0;
                 if (Array.isArray(p.scores)) {
                     totalScore = p.scores[0]?.total_points ?? 0;
                 } else if (p.scores) {
-                    totalScore = (p.scores as any).total_points ?? 0;
+                    totalScore = p.scores.total_points ?? 0;
                 }
 
                 return {
