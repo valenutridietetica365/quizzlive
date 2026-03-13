@@ -10,6 +10,7 @@ import { StudentPlaySkeleton } from "@/components/Skeleton";
 import AudioController from "@/components/AudioController";
 import QuestionView from "@/components/game/QuestionView";
 import AnswerWaiting from "@/components/game/AnswerWaiting";
+import ChaosStore from "@/components/game/ChaosStore";
 import dynamic from "next/dynamic";
 import { usePlaySession } from "@/hooks/usePlaySession";
 
@@ -39,7 +40,8 @@ export default function StudentPlay() {
         isSubmitting, timesUp, setTimesUp,
         fillAnswer, setFillAnswer, matchingPairs, setMatchingPairs,
         selectedTerm, setSelectedTerm, shuffledMatches, submitAnswer,
-        rouletteItems, rouletteSpinning, rouletteWinnerIndex, rouletteType
+        rouletteItems, rouletteSpinning, rouletteWinnerIndex, rouletteType,
+        myCoins, hasShield, isFrozen, buyPowerup
     } = usePlaySession(id as string);
 
     if (loading || !session) return <StudentPlaySkeleton />;
@@ -151,6 +153,33 @@ export default function StudentPlay() {
                             t={t}
                             wasLate={isLate}
                         />
+                    )}
+
+                    {/* Chaos Mode Overlay and Elements */}
+                    {session.game_mode === "chaos" && (
+                        <>
+                            {isFrozen && (
+                                <div className="fixed inset-0 z-[100] bg-blue-500/20 backdrop-blur-sm flex items-center justify-center border-[16px] border-blue-400/50 pointer-events-auto">
+                                    <div className="bg-white/90 p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-4 animate-in zoom-in duration-300 text-center">
+                                        <div className="w-20 h-20 bg-blue-100 rounded-2xl flex items-center justify-center animate-bounce">
+                                            <Moon className="w-10 h-10 text-blue-500" />
+                                        </div>
+                                        <h2 className="text-3xl font-black text-blue-600 tracking-tight">¡ESTÁS CONGELADO!</h2>
+                                        <p className="text-slate-600 font-bold max-w-xs text-balance">Un rival ha usado su poder de hielo contra ti...</p>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {(!timesUp && currentQuestion && !isFrozen) && (
+                                <ChaosStore 
+                                    coins={myCoins} 
+                                    hasShield={hasShield} 
+                                    buyPowerup={buyPowerup} 
+                                    participants={participants}
+                                    currentParticipantId={participantId ?? undefined}
+                                />
+                            )}
+                        </>
                     )}
                 </div>
             )}

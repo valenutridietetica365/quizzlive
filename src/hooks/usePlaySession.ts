@@ -11,7 +11,7 @@ export function usePlaySession(id: string) {
     const { participantId, nickname } = useQuizStore();
 
     const [session, setSession] = useState<Session | null>(null);
-    const [participants, setParticipants] = useState<{ id: string; nickname: string; current_streak?: number; is_eliminated?: boolean; team?: string | null }[]>([]);
+    const [participants, setParticipants] = useState<{ id: string; nickname: string; current_streak?: number; is_eliminated?: boolean; team?: string | null; coins?: number; has_shield?: boolean }[]>([]);
     const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
 
     // Core game state
@@ -38,6 +38,11 @@ export function usePlaySession(id: string) {
     const [rouletteSpinning, setRouletteSpinning] = useState(false);
     const [rouletteWinnerIndex, setRouletteWinnerIndex] = useState<number | null>(null);
     const [rouletteType, setRouletteType] = useState<"participant" | "question" | null>(null);
+
+    // Chaos Mode specific state
+    const [myCoins, setMyCoins] = useState(0);
+    const [hasShield, setHasShield] = useState(false);
+    const [isFrozen, setIsFrozen] = useState(false);
 
     const handleNewQuestion = useCallback(async (questionId: string, isHangmanMode?: boolean) => {
         const selectFields = `id, quiz_id, question_text, question_type, options, image_url, time_limit, points, sort_order${isHangmanMode ? ", correct_answer" : ""}`;
@@ -157,6 +162,8 @@ export function usePlaySession(id: string) {
                 if (typedNew && typedNew.id === participantId) {
                     useQuizStore.getState().setIsEliminated(typedNew.is_eliminated || false);
                     if (typedNew.team) useQuizStore.getState().setTeam(typedNew.team);
+                    if (typedNew.coins !== undefined) setMyCoins(typedNew.coins);
+                    if (typedNew.has_shield !== undefined) setHasShield(typedNew.has_shield);
                 }
 
                 setParticipants((prev) => {
@@ -194,9 +201,22 @@ export function usePlaySession(id: string) {
             })
             .subscribe();
 
+        const chaosChannel = supabase.channel(`chaos_${id}`)
+            .on('broadcast', { event: 'freeze' }, ({ payload }) => {
+                if (payload.target_id === participantId) {
+                    setIsFrozen(true);
+                    toast.error("¡Te han congelado! 🥶");
+                    setTimeout(() => {
+                        setIsFrozen(false);
+                    }, 3000); // 3 segundos de penalización
+                }
+            })
+            .subscribe();
+
         return () => {
             supabase.removeChannel(sessionChannel);
             supabase.removeChannel(rouletteChannel);
+            supabase.removeChannel(chaosChannel);
         };
     }, [id, nickname, participantId, handleNewQuestion, fetchParticipants, fetchTotalScore]);
 
@@ -243,6 +263,13 @@ export function usePlaySession(id: string) {
                 setPointsEarned(data.points_earned);
                 setIsCorrect(data.is_correct);
                 setCurrentStreak(data.current_streak || 0);
+                
+                if (data.coins_total !== undefined) setMyCoins(data.coins_total);
+                if (data.shield_consumed) toast.info("¡Tu Escudo te ha salvado la racha! 🛡️");
+                if (data.coins_earned && data.coins_earned > 0) {
+                    toast.success(`+${data.coins_earned} monedas ganadas 🪙`);
+                }
+
                 playSFX(data.is_correct ? "correct" : "wrong");
                 if (data.is_correct && (data.current_streak || 0) >= 2) playSFX("streak");
             }
@@ -255,6 +282,56 @@ export function usePlaySession(id: string) {
         }
     }, [answered, isSubmitting, currentQuestion, id, participantId, matchingPairs]);
 
+    const buyPowerup = useCallback(async (powerupType: "shield" | "freeze" | "spy", targetId?: string) => {
+        if (!session || !participantId) return false;
+        
+        // Optimistic UI checks
+        const cost = powerupType === 'shield' ? 30 : powerupType === 'freeze' ? 50 : 40;
+        if (myCoins < cost) {
+            toast.error("No tienes suficientes monedas 🪙");
+            return false;
+        }
+
+        try {
+            const { data, error } = await supabase.rpc('buy_powerup', {
+                p_session_id: id,
+                p_participant_id: participantId,
+                p_powerup_type: powerupType
+            });
+
+            if (error) throw error;
+
+            if (data && data.success) {
+                setMyCoins(data.remaining_coins);
+                if (powerupType === 'shield') {
+                    setHasShield(true);
+                    toast.success("¡Escudo Activado! 🛡️");
+                    playSFX("correct");
+                } else if (powerupType === 'freeze') {
+                    // Send realtime broadcast
+                    supabase.channel(`chaos_${id}`).send({
+                        type: 'broadcast',
+                        event: 'freeze',
+                        payload: { target_id: targetId, sender: nickname }
+                    });
+                    toast.success("¡Has congelado a un rival! 🥶");
+                    playSFX("correct");
+                } else if (powerupType === 'spy') {
+                    toast.success("¡Modo Espía! 👀");
+                    playSFX("correct");
+                }
+                return true;
+            } else {
+                toast.error(data?.error || "Error al comprar el poder");
+                return false;
+            }
+        } catch (e) {
+            console.error("Error comprando poder:", e);
+            toast.error("Error de conexión");
+            return false;
+        }
+    }, [id, participantId, session, myCoins, nickname]);
+
     return {
         session, participants, currentQuestion, loading,
         answered, setAnswered, isCorrect, isLate, setIsLate,
@@ -262,6 +339,7 @@ export function usePlaySession(id: string) {
         isSubmitting, timesUp, setTimesUp,
         fillAnswer, setFillAnswer, matchingPairs, setMatchingPairs,
         selectedTerm, setSelectedTerm, shuffledMatches, submitAnswer,
-        rouletteItems, rouletteSpinning, rouletteWinnerIndex, rouletteType
+        rouletteItems, rouletteSpinning, rouletteWinnerIndex, rouletteType,
+        myCoins, hasShield, isFrozen, buyPowerup
     };
 }

@@ -37,7 +37,7 @@ export const quizSchema = z.object({
     folder_id: z.string().nullable().optional(),
     tags: z.array(z.string()).optional().default([]),
     created_at: z.string().optional(),
-    game_mode: z.enum(["classic", "survival", "teams", "hangman", "roulette"]).optional().default("classic"),
+    game_mode: z.enum(["classic", "survival", "teams", "hangman", "roulette", "chaos"]).optional().default("classic"),
     config: GameModeConfigSchema.optional().default({
         hangmanLives: 6,
         hangmanIgnoreAccents: true,
@@ -71,7 +71,7 @@ export const SessionSchema = z.object({
     current_question_started_at: z.string().nullable().optional(),
     started_at: z.string().nullable().optional(),
     finished_at: z.string().nullable().optional(),
-    game_mode: z.enum(["classic", "survival", "teams", "hangman", "roulette"]).optional().default("classic"),
+    game_mode: z.enum(["classic", "survival", "teams", "hangman", "roulette", "chaos"]).optional().default("classic"),
     config: GameModeConfigSchema.optional().default({
         hangmanLives: 6,
         hangmanIgnoreAccents: true,
@@ -90,6 +90,8 @@ export const ParticipantSchema = z.object({
     max_streak: z.number().default(0),
     team: z.string().nullable().optional(),
     is_eliminated: z.boolean().optional().default(false),
+    coins: z.number().optional().default(0),
+    has_shield: z.boolean().optional().default(false),
 });
 
 export const studentSchema = z.object({

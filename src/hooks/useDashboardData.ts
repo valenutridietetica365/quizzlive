@@ -111,13 +111,22 @@ export function useDashboardData() {
     const fetchClasses = useCallback(async (userId: string) => {
         const { data, error } = await supabase
             .from("classes").select("*, students(*)").eq("teacher_id", userId).order("created_at", { ascending: false });
-        if (!error) setClasses(data || []);
+        if (error) {
+            console.error("Error fetching classes:", error);
+            toast.error("Error al cargar las clases");
+        } else {
+            setClasses(data || []);
+        }
     }, [setClasses]);
 
     const fetchFolders = useCallback(async (userId: string) => {
         const { data, error } = await supabase
             .from("folders").select("*").eq("teacher_id", userId).order("created_at", { ascending: false });
-        if (!error) setFolders(data || []);
+        if (error) {
+            console.error("Error fetching folders:", error);
+        } else {
+            setFolders(data || []);
+        }
     }, [setFolders]);
 
     const fetchQuizzes = useCallback(async (userId: string) => {
@@ -127,7 +136,10 @@ export function useDashboardData() {
             .eq("teacher_id", userId)
             .order("created_at", { ascending: false });
         
-        if (!error && data) {
+        if (error) {
+            console.error("Error fetching quizzes:", error.message, "Code:", error.code);
+            toast.error(`Error de base de datos (${error.code}): ${error.message}`);
+        } else if (data) {
             const formatted: Quiz[] = (data as unknown as QuizResponse[]).map((q) => ({
                 id: q.id,
                 title: q.title,
@@ -228,13 +240,24 @@ export function useDashboardData() {
                 ...authUser,
                 ...profile
             });
-            if (!dashboardLoaded || (authUser && useQuizStore.getState().dashboardUserId !== authUser.id)) {
-                await Promise.all([
-                    fetchQuizzes(authUser.id), fetchFolders(authUser.id),
-                    fetchHistory(authUser.id), fetchLiveSessions(authUser.id), fetchClasses(authUser.id)
-                ]);
-                setDashboardLoaded(true);
-                useQuizStore.getState().setDashboardData({ dashboardUserId: authUser.id });
+            const store = useQuizStore.getState();
+            const shouldFetch = !dashboardLoaded || 
+                               (authUser && store.dashboardUserId !== authUser.id) ||
+                               (store.dashboardQuizzes.length === 0 && !dashboardLoaded);
+
+            // Force refetch if we have a user but store seems empty or user changed
+            if (!dashboardLoaded || (authUser && store.dashboardUserId !== authUser.id) || (dashboardLoaded && store.dashboardQuizzes.length === 0)) {
+                try {
+                    await Promise.all([
+                        fetchQuizzes(authUser.id), fetchFolders(authUser.id),
+                        fetchHistory(authUser.id), fetchLiveSessions(authUser.id), fetchClasses(authUser.id)
+                    ]);
+                    setDashboardLoaded(true);
+                    useQuizStore.getState().setDashboardData({ dashboardUserId: authUser.id });
+                } catch (error) {
+                    console.error("Error fetching dashboard data:", error);
+                    toast.error("Error al cargar los datos. Por favor, refresca la página.");
+                }
             }
             setLoading(false);
         };

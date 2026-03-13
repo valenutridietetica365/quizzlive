@@ -216,8 +216,13 @@ export default function QuizEditor() {
         const invalidQuestionIndex = questions.findIndex(q => {
             const hasText = q.question_text.trim().length > 0;
             const hasCorrectAnswer = (q.correct_answer?.trim() || "").length > 0;
+            
+            // Categorías especiales que no se validan contra el array de opciones
             if (q.question_type === "fill_in_the_blank") return !hasText || !hasCorrectAnswer;
+            if (q.question_type === "hangman") return !hasText || !hasCorrectAnswer;
             if (q.question_type === "matching") return !hasText || q.options.length === 0;
+            
+            // Para multiple_choice y true_false, validamos que la respuesta esté en las opciones
             const isCorrectInOptions = q.options.includes(q.correct_answer || "");
             return !hasText || !hasCorrectAnswer || !isCorrectInOptions;
         });

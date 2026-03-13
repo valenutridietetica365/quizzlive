@@ -41,6 +41,10 @@ export async function POST(req: Request) {
                 let promptInstructions = "";
                 let expectedFormat = "";
 
+                const isSpanish = language === "es";
+                const trueText = isSpanish ? "Verdadero" : "True";
+                const falseText = isSpanish ? "Falso" : "False";
+
                 if (questionType === "hangman") {
                     promptInstructions = `Generate ${count} hangman game questions. The question_text should be a clue, definition, or a phrase with a missing word. The secret word MUST be placed in "correct_answer". "options" should be an empty array [].`;
                     expectedFormat = `
@@ -55,27 +59,27 @@ export async function POST(req: Request) {
                   }
                 ]`;
                 } else if (questionType === "matching") {
-                    promptInstructions = `Generate ${count} matching game questions based on the topic. The question_text should be a general instruction like "Match the following terms with their definitions." The options array MUST contain exactly 4 pairs. Each pair MUST be a single string formatted exactly as "Term:Definition" with a colon separating them. No spaces around the colon internally if possible, but the format MUST be strict.`;
+                    promptInstructions = `Generate ${count} matching game questions based on the topic. The question_text should be a general instruction like "Match the following terms with their definitions." The options array MUST contain exactly 4 pairs. Each pair MUST be a single string formatted exactly as "Term:Definition" with a colon separating them. No spaces around the colon internally if possible. "correct_answer" MUST be exactly "MATCHING_MODE".`;
                     expectedFormat = `
                 [
                   {
                     "question_text": "Match the following terms...",
                     "question_type": "matching",
                     "options": ["Term1:Definition1", "Term2:Definition2", "Term3:Definition3", "Term4:Definition4"],
-                    "correct_answer": null,
+                    "correct_answer": "MATCHING_MODE",
                     "time_limit": 60,
                     "points": 1000
                   }
                 ]`;
                 } else if (questionType === "true_false") {
-                    promptInstructions = `Generate ${count} True or False questions. The "options" array MUST be exactly ["Verdadero", "Falso"] (or ["True", "False"] if English). The "correct_answer" MUST be one of those two exact strings.`;
+                    promptInstructions = `Generate ${count} True or False questions. The "options" array MUST be exactly ["${trueText}", "${falseText}"]. The "correct_answer" MUST be one of those two exact strings.`;
                     expectedFormat = `
                 [
                   {
                     "question_text": "Fact statement here...",
                     "question_type": "true_false",
-                    "options": ["Verdadero", "Falso"],
-                    "correct_answer": "Verdadero",
+                    "options": ["${trueText}", "${falseText}"],
+                    "correct_answer": "${trueText}",
                     "time_limit": 15,
                     "points": 1000
                   }
@@ -94,7 +98,7 @@ export async function POST(req: Request) {
                   }
                 ]`;
                 } else if (questionType === "mixed") {
-                    promptInstructions = `Generate a mixture of ${count} questions. Approximately 50% should be "multiple_choice" (4 options) and 50% should be "true_false" (options: ["Verdadero", "Falso"]).`;
+                    promptInstructions = `Generate a mixture of ${count} questions. Approximately 50% should be "multiple_choice" (4 options) and 50% should be "true_false" (options: ["${trueText}", "${falseText}"]).`;
                     expectedFormat = `
                 [
                   {
@@ -108,8 +112,8 @@ export async function POST(req: Request) {
                   {
                     "question_text": "...",
                     "question_type": "true_false",
-                    "options": ["Verdadero", "Falso"],
-                    "correct_answer": "Verdadero",
+                    "options": ["${trueText}", "${falseText}"],
+                    "correct_answer": "${trueText}",
                     "time_limit": 15,
                     "points": 1000
                   }
