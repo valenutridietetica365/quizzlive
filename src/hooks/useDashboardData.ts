@@ -243,10 +243,10 @@ export function useDashboardData() {
             const store = useQuizStore.getState();
             const shouldFetch = !dashboardLoaded || 
                                (authUser && store.dashboardUserId !== authUser.id) ||
-                               (store.dashboardQuizzes.length === 0 && !dashboardLoaded);
+                               (dashboardLoaded && store.dashboardQuizzes.length === 0);
 
             // Force refetch if we have a user but store seems empty or user changed
-            if (!dashboardLoaded || (authUser && store.dashboardUserId !== authUser.id) || (dashboardLoaded && store.dashboardQuizzes.length === 0)) {
+            if (shouldFetch) {
                 try {
                     await Promise.all([
                         fetchQuizzes(authUser.id), fetchFolders(authUser.id),
