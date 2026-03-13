@@ -28,7 +28,7 @@ export async function POST(req: Request) {
     }
 
     try {
-        const { topic, count, grade, language, questionType = "multiple_choice" } = await req.json();
+        const { topic, count, grade, language, questionType = "multiple_choice", pdfText } = await req.json();
 
         // Probamos modelos en orden. Gemini 3 es el que venía en tu snippet.
         const models = ["gemini-3-flash-preview", "gemini-1.5-flash", "gemini-1.5-flash-latest"];
@@ -82,7 +82,11 @@ export async function POST(req: Request) {
                 ]`;
                 }
 
-                const prompt = `Act as an expert educator. Topic: "${topic}", Grade: "${grade}", Language: ${language === 'es' ? 'Spanish' : 'English'}.
+                const baseContext = pdfText 
+                    ? `Based on the following document content: """${pdfText}"""`
+                    : `Topic: "${topic}"`;
+
+                const prompt = `Act as an expert educator. ${baseContext}, Grade: "${grade}", Language: ${language === 'es' ? 'Spanish' : 'English'}.
                 ${promptInstructions}
                 Return ONLY a valid JSON array. Do not include markdown formatting like \`\`\`json.
                 Format:
