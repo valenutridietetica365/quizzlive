@@ -212,7 +212,7 @@ export default function AIGeneratorModal({ isOpen, onClose, onGenerate }: AIGene
                                 onChange={(e) => setCount(parseInt(e.target.value))}
                                 className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl px-6 py-4 font-bold text-slate-900 outline-none transition-all"
                             >
-                                {[3, 5, 8, 10, 15].map(v => (
+                                {[3, 5, 8, 10, 15, 20, 25, 30].map(v => (
                                     <option key={v} value={v}>{v} {t('common.questions')}</option>
                                 ))}
                             </select>
