@@ -67,8 +67,55 @@ export async function POST(req: Request) {
                     "points": 1000
                   }
                 ]`;
+                } else if (questionType === "true_false") {
+                    promptInstructions = `Generate ${count} True or False questions. The "options" array MUST be exactly ["Verdadero", "Falso"] (or ["True", "False"] if English). The "correct_answer" MUST be one of those two exact strings.`;
+                    expectedFormat = `
+                [
+                  {
+                    "question_text": "Fact statement here...",
+                    "question_type": "true_false",
+                    "options": ["Verdadero", "Falso"],
+                    "correct_answer": "Verdadero",
+                    "time_limit": 15,
+                    "points": 1000
+                  }
+                ]`;
+                } else if (questionType === "fill_in_the_blank") {
+                    promptInstructions = `Generate ${count} "fill in the blank" questions. The "question_text" should contain a sentence with the missing word represented by "____". The "correct_answer" should be the missing word. "options" should be an empty array [].`;
+                    expectedFormat = `
+                [
+                  {
+                    "question_text": "The capital of France is ____.",
+                    "question_type": "fill_in_the_blank",
+                    "options": [],
+                    "correct_answer": "Paris",
+                    "time_limit": 30,
+                    "points": 1000
+                  }
+                ]`;
+                } else if (questionType === "mixed") {
+                    promptInstructions = `Generate a mixture of ${count} questions. Approximately 50% should be "multiple_choice" (4 options) and 50% should be "true_false" (options: ["Verdadero", "Falso"]).`;
+                    expectedFormat = `
+                [
+                  {
+                    "question_text": "...",
+                    "question_type": "multiple_choice",
+                    "options": ["a", "b", "c", "d"],
+                    "correct_answer": "...",
+                    "time_limit": 20,
+                    "points": 1000
+                  },
+                  {
+                    "question_text": "...",
+                    "question_type": "true_false",
+                    "options": ["Verdadero", "Falso"],
+                    "correct_answer": "Verdadero",
+                    "time_limit": 15,
+                    "points": 1000
+                  }
+                ]`;
                 } else {
-                    promptInstructions = `Generate ${count} multiple choice questions.`;
+                    promptInstructions = `Generate ${count} multiple choice questions. Each question MUST have exactly 4 options.`;
                     expectedFormat = `
                 [
                   {

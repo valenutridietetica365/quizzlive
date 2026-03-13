@@ -17,7 +17,7 @@ export default function AIGeneratorModal({ isOpen, onClose, onGenerate }: AIGene
     const [topic, setTopic] = useState("");
     const [grade, setGrade] = useState("");
     const [count, setCount] = useState(5);
-    const [questionType, setQuestionType] = useState<"multiple_choice" | "hangman" | "matching">("multiple_choice");
+    const [questionType, setQuestionType] = useState<"multiple_choice" | "true_false" | "fill_in_the_blank" | "matching" | "hangman" | "mixed">("multiple_choice");
     const [loading, setLoading] = useState(false);
     const [file, setFile] = useState<File | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -193,12 +193,15 @@ export default function AIGeneratorModal({ isOpen, onClose, onGenerate }: AIGene
                             </label>
                             <select
                                 value={questionType}
-                                onChange={(e) => setQuestionType(e.target.value as "multiple_choice" | "hangman" | "matching")}
+                                onChange={(e) => setQuestionType(e.target.value as "multiple_choice" | "true_false" | "fill_in_the_blank" | "matching" | "hangman" | "mixed")}
                                 className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl px-6 py-4 font-bold text-slate-900 outline-none transition-all"
                             >
                                 <option value="multiple_choice">Opción Múltiple</option>
-                                <option value="hangman">Ahorcado</option>
+                                <option value="true_false">Verdadero o Falso</option>
+                                <option value="fill_in_the_blank">Completar (Fill in the Blank)</option>
                                 <option value="matching">Emparejar</option>
+                                <option value="hangman">Ahorcado</option>
+                                <option value="mixed">Mixto (Alternativas + V/F)</option>
                             </select>
                         </div>
 
