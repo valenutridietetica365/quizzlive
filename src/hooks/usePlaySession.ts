@@ -282,7 +282,7 @@ export function usePlaySession(id: string) {
         }
     }, [answered, isSubmitting, currentQuestion, id, participantId, matchingPairs]);
 
-    const buyPowerup = useCallback(async (powerupType: "shield" | "freeze" | "spy", targetId?: string) => {
+    const buyPowerup = useCallback(async (powerupType: "shield" | "freeze" | "spy") => {
         if (!session || !participantId) return false;
         
         // Optimistic UI checks
@@ -308,14 +308,17 @@ export function usePlaySession(id: string) {
                     toast.success("¡Escudo Activado! 🛡️");
                     playSFX("correct");
                 } else if (powerupType === 'freeze') {
-                    // Send realtime broadcast
-                    supabase.channel(`chaos_${id}`).send({
-                        type: 'broadcast',
-                        event: 'freeze',
-                        payload: { target_id: targetId, sender: nickname }
-                    });
-                    toast.success("¡Has congelado a un rival! 🥶");
-                    playSFX("correct");
+                    const targetId = data.target_id;
+                    if (targetId) {
+                        // Send realtime broadcast
+                        supabase.channel(`chaos_${id}`).send({
+                            type: 'broadcast',
+                            event: 'freeze',
+                            payload: { target_id: targetId, sender: nickname }
+                        });
+                        toast.success("¡Has congelado a un rival! 🥶");
+                        playSFX("correct");
+                    }
                 } else if (powerupType === 'spy') {
                     toast.success("¡Modo Espía! 👀");
                     playSFX("correct");
