@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Shield, Snowflake, Eye, Coins, X } from "lucide-react";
+import { Shield, Snowflake, Eye, Coins, Check } from "lucide-react";
 
 interface ChaosStoreProps {
     coins: number;
@@ -12,106 +12,91 @@ interface ChaosStoreProps {
 }
 
 export default function ChaosStore({ coins, hasShield, buyPowerup, participants, currentParticipantId }: ChaosStoreProps) {
-    const [isOpen, setIsOpen] = useState(false);
     const [buying, setBuying] = useState<string | null>(null);
 
     const handleBuy = async (type: "shield" | "freeze" | "spy") => {
+        if (buying) return;
         setBuying(type);
         
         let targetId = undefined;
         if (type === "freeze") {
-            // Select a random rival
             const rivals = participants.filter(p => p.id !== currentParticipantId);
             if (rivals.length > 0) {
                 targetId = rivals[Math.floor(Math.random() * rivals.length)].id;
             }
         }
 
-        const success = await buyPowerup(type, targetId);
-        if (success) {
-            setIsOpen(false);
-        }
+        await buyPowerup(type, targetId);
         setBuying(null);
     };
 
+    const powerups = [
+        { 
+            id: 'shield' as const, 
+            icon: Shield, 
+            cost: 30, 
+            colorClass: 'bg-emerald-500 border-emerald-200',
+            active: hasShield,
+            label: 'Escudo'
+        },
+        { 
+            id: 'freeze' as const, 
+            icon: Snowflake, 
+            cost: 50, 
+            colorClass: 'bg-blue-500 border-blue-200',
+            active: false,
+            label: 'Congelar'
+        },
+        { 
+            id: 'spy' as const, 
+            icon: Eye, 
+            cost: 40, 
+            colorClass: 'bg-purple-500 border-purple-200',
+            active: false,
+            label: 'Espiar'
+        }
+    ];
+
     return (
-        <div className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-[60]">
-            {/* Wallet Toggle */}
-            <button
-                onClick={() => setIsOpen(!isOpen)}
-                className="relative group bg-amber-400 hover:bg-amber-500 text-amber-950 p-3 md:p-4 rounded-full shadow-2xl transition-all hover:scale-110 border-4 border-amber-200"
-            >
-                <div className="absolute -top-3 -left-3 bg-red-500 text-white text-xs font-black min-w-[24px] h-[24px] flex items-center justify-center rounded-full shadow-md animate-bounce">
-                    {coins}
-                </div>
-                {isOpen ? <X className="w-6 h-6 md:w-8 md:h-8" /> : <Coins className="w-6 h-6 md:w-8 md:h-8" />}
-            </button>
+        <div className="fixed right-4 bottom-1/2 translate-y-[-10%] z-[60] flex flex-col items-center gap-4">
+            {/* Coins Display */}
+            <div className="bg-slate-900 border-2 border-amber-400 px-3 py-2 rounded-2xl shadow-xl flex items-center gap-2 animate-in slide-in-from-right-10 duration-500">
+                <Coins className="w-4 h-4 text-amber-400 animate-pulse" />
+                <span className="text-white font-black tabular-nums text-sm">{coins}</span>
+            </div>
 
-            {/* Store Menu */}
-            {isOpen && (
-                <div className="absolute bottom-full right-0 mb-4 w-64 md:w-72 bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl border border-slate-100 p-4 animate-in slide-in-from-bottom-5 zoom-in-95 origin-bottom-right">
-                    <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-4 flex items-center gap-2">
-                        <Coins className="w-4 h-4 text-amber-500" /> Tienda Caos
-                    </h3>
-                    
-                    <div className="space-y-3">
-                        {/* Shield */}
-                        <button 
-                            disabled={coins < 30 || hasShield || buying !== null}
-                            onClick={() => handleBuy("shield")}
-                            className="w-full relative overflow-hidden group bg-slate-50 hover:bg-emerald-50 disabled:opacity-50 disabled:hover:bg-slate-50 p-3 rounded-2xl border border-slate-200 hover:border-emerald-300 transition-all text-left flex items-center gap-3"
+            {/* Powerups Column */}
+            <div className="flex flex-col gap-3 bg-white/10 backdrop-blur-md p-2 rounded-[2.5rem] border border-white/20 shadow-2xl">
+                {powerups.map((pw) => (
+                    <div key={pw.id} className="relative group">
+                        <button
+                            disabled={coins < pw.cost || pw.active || buying !== null}
+                            onClick={() => handleBuy(pw.id)}
+                            className={`
+                                w-14 h-14 md:w-16 md:h-16 rounded-full flex flex-col items-center justify-center transition-all duration-300 border-4 relative
+                                ${pw.active 
+                                    ? 'bg-emerald-600 border-emerald-300 text-white cursor-default scale-95 shadow-inner' 
+                                    : coins >= pw.cost 
+                                        ? `${pw.colorClass} text-white hover:scale-110 active:scale-95 shadow-lg` 
+                                        : 'bg-slate-200 border-slate-300 text-slate-400 grayscale opacity-60 cursor-not-allowed'}
+                            `}
                         >
-                            <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
-                                <Shield className="w-5 h-5 text-emerald-600" />
-                            </div>
-                            <div className="flex-1">
-                                <p className="font-black text-slate-800 text-sm">Escudo</p>
-                                <p className="text-[10px] sm:text-xs text-slate-500 font-medium leading-tight">Protege tu racha si fallas</p>
-                            </div>
-                            <div className="font-black text-amber-500 flex items-center gap-1">
-                                30 <Coins className="w-3 h-3" />
-                            </div>
-                            {hasShield && <div className="absolute inset-0 bg-emerald-500/10 flex items-center justify-center font-black text-emerald-700 text-xs backdrop-blur-sm">ACTIVO</div>}
+                            {pw.active ? <Check className="w-6 h-6 md:w-8 md:h-8" /> : <pw.icon className="w-6 h-6 md:w-8 md:h-8" />}
+                            
+                            {!pw.active && (
+                                <div className="absolute -bottom-1 -right-1 bg-amber-400 text-amber-950 text-[10px] font-black px-1.5 rounded-full border-2 border-white shadow-sm">
+                                    {pw.cost}
+                                </div>
+                            )}
                         </button>
 
-                        {/* Freeze */}
-                        <button 
-                            disabled={coins < 50 || buying !== null}
-                            onClick={() => handleBuy("freeze")}
-                            className="w-full relative overflow-hidden group bg-slate-50 hover:bg-blue-50 disabled:opacity-50 disabled:hover:bg-slate-50 p-3 rounded-2xl border border-slate-200 hover:border-blue-300 transition-all text-left flex items-center gap-3"
-                        >
-                            <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
-                                <Snowflake className="w-5 h-5 text-blue-600 group-hover:rotate-180 transition-transform duration-700" />
-                            </div>
-                            <div className="flex-1">
-                                <p className="font-black text-slate-800 text-sm">Congelar</p>
-                                <p className="text-[10px] sm:text-xs text-slate-500 font-medium leading-tight">Gela a un rival al azar 3s</p>
-                            </div>
-                            <div className="font-black text-amber-500 flex items-center gap-1">
-                                50 <Coins className="w-3 h-3" />
-                            </div>
-                        </button>
-
-                        {/* Spy */}
-                        <button 
-                            disabled={coins < 40 || buying !== null}
-                            onClick={() => handleBuy("spy")}
-                            className="w-full relative overflow-hidden group bg-slate-50 hover:bg-purple-50 disabled:opacity-50 disabled:hover:bg-slate-50 p-3 rounded-2xl border border-slate-200 hover:border-purple-300 transition-all text-left flex items-center gap-3"
-                        >
-                            <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center shrink-0">
-                                <Eye className="w-5 h-5 text-purple-600" />
-                            </div>
-                            <div className="flex-1">
-                                <p className="font-black text-slate-800 text-sm">Espía</p>
-                                <p className="text-[10px] sm:text-xs text-slate-500 font-medium leading-tight">Ver tendencias de clase</p>
-                            </div>
-                            <div className="font-black text-amber-500 flex items-center gap-1">
-                                40 <Coins className="w-3 h-3" />
-                            </div>
-                        </button>
+                        {/* Tooltip on Hover */}
+                        <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-3 py-1 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-xl border border-white/10">
+                            {pw.label}
+                        </div>
                     </div>
-                </div>
-            )}
+                ))}
+            </div>
         </div>
     );
 }
