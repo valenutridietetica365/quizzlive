@@ -32,19 +32,24 @@ const FinalPodium = React.memo(function FinalPodium({ sessionId, highlightId }: 
 
         const gameMode = sessionData?.game_mode || 'classic';
 
-        const { data } = await supabase
+        const { data, error } = await supabase
             .from("scores")
             .select("participant_id, total_points, participants(nickname, team)")
             .eq("session_id", sessionId);
 
-        if (!data) return;
+        if (error || !data) {
+            console.error("Podium fetch error:", error);
+            setLoading(false);
+            return;
+        }
 
         if (gameMode === 'teams') {
             const teamScores: Record<string, number> = {};
             data.forEach(row => {
-                const p = row.participants as unknown as { team?: string | null };
-                if (p?.team) {
-                    teamScores[p.team] = (teamScores[p.team] || 0) + row.total_points;
+                const p = Array.isArray(row.participants) ? row.participants[0] : row.participants;
+                const team = (p as any)?.team;
+                if (team) {
+                    teamScores[team] = (teamScores[team] || 0) + row.total_points;
                 }
             });
             const allTeams = Object.entries(teamScores).map(([team, total_points]) => ({
@@ -59,12 +64,15 @@ const FinalPodium = React.memo(function FinalPodium({ sessionId, highlightId }: 
             return;
         }
 
-        const all = data.map(row => ({
-            participant_id: row.participant_id,
-            nickname: (row.participants as unknown as { nickname: string })?.nickname || "???",
-            total_points: row.total_points,
-            rank: 0,
-        })).sort((a, b) => b.total_points - a.total_points).map((p, i) => ({ ...p, rank: i + 1 }));
+        const all = data.map(row => {
+            const p = Array.isArray(row.participants) ? row.participants[0] : row.participants;
+            return {
+                participant_id: row.participant_id,
+                nickname: (p as any)?.nickname || "???",
+                total_points: row.total_points,
+                rank: 0,
+            };
+        }).sort((a, b) => b.total_points - a.total_points).map((p, i) => ({ ...p, rank: i + 1 }));
 
         setTop3(all.slice(0, 3));
 
@@ -136,15 +144,15 @@ const FinalPodium = React.memo(function FinalPodium({ sessionId, highlightId }: 
                 <Trophy className="w-8 h-8 text-amber-400 animate-float" />
             </div>
 
-            <div className="flex items-end justify-center gap-4 w-full max-w-lg">
+            <div className="flex items-end justify-center gap-2 md:gap-4 w-full max-w-lg scale-[0.85] sm:scale-100 transition-transform origin-bottom">
                 {podiumOrder.map(({ rank, height, bg, icon, delay }) => {
                     const entry = top3.find(e => e.rank === rank);
                     const isMe = entry?.participant_id === highlightId;
 
                     return (
-                        <div key={rank} className={`flex flex-col items-center gap-3 animate-in slide-in-from-bottom-8 duration-700 ${delay}`}>
+                        <div key={rank} className={`flex flex-col items-center gap-2 md:gap-3 animate-in slide-in-from-bottom-8 duration-700 ${delay}`}>
                             {/* Avatar / icon */}
-                            <div className={`w-16 h-16 rounded-full flex items-center justify-center ${bg} shadow-xl ${isMe ? "ring-4 ring-blue-400" : ""}`}>
+                            <div className={`w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center ${bg} shadow-xl ${isMe ? "ring-4 ring-blue-400" : ""}`}>
                                 {icon}
                             </div>
                             {/* Nickname */}

@@ -156,18 +156,29 @@ export default function StudentPlay() {
             )}
 
             {session.status === "finished" && (
-                <div className="max-w-md w-full text-center space-y-6 animate-in zoom-in duration-700">
-                    <div className="bg-slate-900 p-8 rounded-[3rem] border border-white/5 shadow-2xl">
+                <div className="max-w-md w-full text-center space-y-6 animate-in zoom-in duration-700 relative z-[100] py-10">
+                    <div className="bg-slate-900 p-4 md:p-8 rounded-[3rem] border border-white/5 shadow-2xl overflow-hidden min-h-[400px]">
                         <FinalPodium sessionId={id as string} highlightId={participantId ?? undefined} />
                     </div>
-                    <div className="bg-white p-10 rounded-[3rem] shadow-2xl border border-slate-100 flex flex-col items-center gap-6">
-                        <h1 className="text-4xl font-black text-slate-900 tracking-tight">{t('play.incredible')}, <span className="text-blue-600">{nickname}</span>!</h1>
+                    <div className="bg-white p-6 md:p-10 rounded-[3rem] shadow-2xl border border-slate-100 flex flex-col items-center gap-6">
+                        <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-tight">
+                            {t('play.incredible')}, <span className="text-blue-600">{nickname}</span>!
+                        </h1>
                         <p className="text-slate-500 font-medium">{t('play.finished_subtitle')}</p>
-                        <div className="bg-slate-900 p-8 rounded-[2rem] w-full">
+                        <div className="bg-slate-900 p-6 md:p-8 rounded-[2rem] w-full">
                             <span className="text-xs font-black text-blue-400 uppercase tracking-[0.4em] block mb-2">{t('play.total_score')}</span>
-                            {fetchingScore ? <Loader2 className="w-10 h-10 animate-spin text-white mx-auto" /> : <span className="text-6xl font-black text-white tracking-tighter tabular-nums">{(totalScore ?? 0).toLocaleString()}</span>}
+                            {fetchingScore ? (
+                                <Loader2 className="w-10 h-10 animate-spin text-white mx-auto" />
+                            ) : (
+                                <span className="text-5xl md:text-6xl font-black text-white tracking-tighter tabular-nums drop-shadow-lg">
+                                    {(totalScore ?? 0).toLocaleString()}
+                                </span>
+                            )}
                         </div>
-                        <button onClick={() => router.push("/")} className="btn-premium w-full !bg-blue-600 !text-white !rounded-[2rem] !py-5 !text-xl flex items-center justify-center gap-3">
+                        <button 
+                            onClick={() => router.push("/")} 
+                            className="btn-premium w-full !bg-blue-600 !text-white !rounded-[2rem] !py-4 md:!py-5 !text-lg md:!text-xl flex items-center justify-center gap-3 active:scale-95 transition-all shadow-xl shadow-blue-200"
+                        >
                             {t('play.go_home')} <ArrowRight className="w-6 h-6" />
                         </button>
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('play.thanks')}</p>

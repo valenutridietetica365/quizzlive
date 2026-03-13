@@ -194,7 +194,23 @@ export function usePlaySession(id: string) {
         };
     }, [id, nickname, participantId, handleNewQuestion, fetchParticipants, fetchTotalScore]);
 
-    // Effect 3: Fetch score when session finishes
+    // Effect 3: Polling fallback for status (Safety for mobile/unstable connections)
+    useEffect(() => {
+        if (session?.status !== "active") return;
+
+        const interval = setInterval(async () => {
+            const { data } = await supabase.from("sessions").select("status, current_question_id").eq("id", id).maybeSingle();
+            if (data && data.status === "finished") {
+                setSession(prev => prev ? { ...prev, status: "finished" } : null);
+                fetchTotalScore();
+                clearInterval(interval);
+            }
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, [id, session?.status, fetchTotalScore]);
+
+    // Effect 4: Fetch score when session finishes
     useEffect(() => {
         if (session?.status === "finished" && totalScore === null && !fetchingScore) {
             fetchTotalScore();

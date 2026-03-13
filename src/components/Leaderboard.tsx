@@ -48,26 +48,33 @@ const Leaderboard = React.memo(function Leaderboard({
                     nickname, 
                     team, 
                     is_eliminated,
-                    scores:scores(total_points)
+                    scores(total_points)
                 `)
                 .eq("session_id", sessionId);
 
-            if (error || !data) return;
+            if (error || !data) {
+                console.error("Leaderboard fetch error:", error);
+                return;
+            }
 
             // Map data to LeaderboardEntry format
-            const participants: LeaderboardEntry[] = (data as unknown as {
-                id: string;
-                nickname: string;
-                team: string | null;
-                is_eliminated: boolean;
-                scores: { total_points: number }[]
-            }[]).map(p => ({
-                id: p.id,
-                nickname: p.nickname,
-                team: p.team,
-                is_eliminated: p.is_eliminated,
-                score: p.scores?.[0]?.total_points ?? 0
-            }));
+            const participants: LeaderboardEntry[] = (data as any[]).map(p => {
+                // Handle different possible shapes of joined scores
+                let totalScore = 0;
+                if (Array.isArray(p.scores)) {
+                    totalScore = p.scores[0]?.total_points ?? 0;
+                } else if (p.scores) {
+                    totalScore = (p.scores as any).total_points ?? 0;
+                }
+
+                return {
+                    id: p.id,
+                    nickname: p.nickname,
+                    team: p.team,
+                    is_eliminated: p.is_eliminated,
+                    score: totalScore
+                };
+            });
 
             // Sort participants by score descending
             participants.sort((a, b) => b.score - a.score);
