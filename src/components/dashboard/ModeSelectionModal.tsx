@@ -1,17 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { Play, Users, BookOpen, Sparkles } from "lucide-react";
+import { Play, Users, BookOpen, Sparkles, Zap } from "lucide-react";
 import { GameModeConfig } from "@/lib/schemas";
 
 interface ModeSelectionModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onStart: (mode: "classic" | "survival" | "teams" | "hangman" | "roulette", config: GameModeConfig) => void;
+    onStart: (mode: "classic" | "survival" | "teams" | "hangman" | "roulette" | "chaos", config: GameModeConfig) => void;
 }
 
 export default function ModeSelectionModal({ isOpen, onClose, onStart }: ModeSelectionModalProps) {
-    const [selectedMode, setSelectedMode] = useState<"classic" | "survival" | "teams" | "hangman" | "roulette">("classic");
+    const [selectedMode, setSelectedMode] = useState<"classic" | "survival" | "teams" | "hangman" | "roulette" | "chaos">("classic");
     const [config, setConfig] = useState<GameModeConfig>({
         hangmanLives: 6, hangmanIgnoreAccents: true, teamsCount: 2, survivalLives: 1, rouletteManualPoints: 1000
     });
@@ -32,6 +32,7 @@ export default function ModeSelectionModal({ isOpen, onClose, onStart }: ModeSel
                             { id: 'classic', icon: Play, name: 'Clásico', desc: 'Puntos estándar.' },
                             { id: 'survival', icon: Users, name: 'Supervivencia', desc: 'Vidas limitadas.' },
                             { id: 'teams', icon: Users, name: 'Equipos', desc: 'Grupos vs Grupos.' },
+                            { id: 'chaos', icon: Zap, name: 'Modo Caos', desc: 'Monedas y Poderes.' },
                             { id: 'roulette', icon: Sparkles, name: 'Ruleta', desc: 'Sorteo dinámico.' },
                             { id: 'hangman', icon: BookOpen, name: 'Ahorcado', desc: 'Palabra oculta.' }
                         ] as const).map((mode) => (
@@ -135,6 +136,13 @@ export default function ModeSelectionModal({ isOpen, onClose, onStart }: ModeSel
 
                         {selectedMode === 'classic' && (
                             <p className="text-xs text-slate-400 font-medium italic">Sin configuraciones adicionales para este modo.</p>
+                        )}
+                        
+                        {selectedMode === 'chaos' && (
+                            <div className="space-y-1">
+                                <p className="font-bold text-slate-800 text-sm">Economía In-Game y Poderes</p>
+                                <p className="text-xs text-slate-500 text-balance">Los alumnos ganarán monedas por rachas correctas que podrán gastar comprando Escudos (protección ante fallos), Congelar rivales o Espiar tendencias de clase usando sus teléfonos.</p>
+                            </div>
                         )}
                     </div>
 

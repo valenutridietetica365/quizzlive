@@ -6,7 +6,7 @@ import QRDisplay from "@/components/QRDisplay";
 interface WaitingRoomProps {
     pin: string;
     joinUrl: string;
-    gameMode: "classic" | "survival" | "teams" | "hangman";
+    gameMode: "classic" | "survival" | "teams" | "hangman" | "roulette" | "chaos";
     participantsCount: number;
     t: (key: string) => string;
     onStart: () => void;
@@ -59,6 +59,12 @@ export default function WaitingRoom({ pin, joinUrl, gameMode, participantsCount,
                     <div className="bg-red-500/10 p-6 rounded-3xl border border-red-500/20 text-center w-full">
                         <p className="text-xs font-black text-red-400 uppercase tracking-widest mb-2">Modo Supervivencia</p>
                         <p className="text-red-400/60 text-sm">¡Un fallo y estás fuera!</p>
+                    </div>
+                )}
+                {gameMode === 'chaos' && (
+                    <div className="bg-amber-500/10 p-6 rounded-3xl border border-amber-500/20 text-center w-full animate-pulse">
+                        <p className="text-xs font-black text-amber-500 uppercase tracking-widest mb-2">Modo Caos</p>
+                        <p className="text-amber-600/60 font-bold text-sm">¡Gana monedas y ataca a tus rivales!</p>
                     </div>
                 )}
             </div>

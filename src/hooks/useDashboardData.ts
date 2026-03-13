@@ -403,7 +403,7 @@ export function useDashboardData() {
         } catch { toast.error("Error al eliminar alumno"); }
     };
 
-    const startSessionHandler = async (quizId: string, mode: "classic" | "survival" | "teams" | "hangman" | "roulette", config: Record<string, unknown>) => {
+    const startSessionHandler = async (quizId: string, mode: "classic" | "survival" | "teams" | "hangman" | "roulette" | "chaos", config: Record<string, unknown>) => {
         try {
             const data = await startSession(quizId, mode, config);
             if (data) router.push(`/teacher/session/${data.id}`);
