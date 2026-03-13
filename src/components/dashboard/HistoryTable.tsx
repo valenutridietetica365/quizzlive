@@ -113,7 +113,7 @@ export default function HistoryTable({
                     finished_at: sessionData.finished_at,
                     quiz: {
                         title: quizObj.title,
-                        class: (quizObj.quiz_classes as any[])?.map(qc => qc.class?.name).filter(Boolean).join(", ") || null
+                        class: quizObj.quiz_classes?.map(qc => qc.class?.name).filter(Boolean).join(", ") || null
                     }
                 },
                 answers: (answersRes.data || []) as unknown as ReportAnswer[],

@@ -131,7 +131,13 @@ export interface SupabaseSessionResponse {
     pin: string;
     created_at: string;
     finished_at: string;
-    quiz: { title: string; teacher_id: string; tags?: string[]; class_id?: string | null };
+    quiz: { 
+        title: string; 
+        teacher_id: string; 
+        tags?: string[]; 
+        class_id?: string | null;
+        quiz_classes?: { class_id: string }[];
+    };
     participants: { count: number }[];
 }
 

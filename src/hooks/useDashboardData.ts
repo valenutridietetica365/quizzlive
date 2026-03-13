@@ -157,11 +157,11 @@ export function useDashboardData() {
 
         if (!error && data) {
             // Mapping Supabase relationship results is tricky with TS, using unknown as intermediate
-            const formatted: FinishedSession[] = (data as unknown as SupabaseSessionResponse[]).map((h: any) => ({
+            const formatted: FinishedSession[] = (data as unknown as SupabaseSessionResponse[]).map((h) => ({
                 id: h.id, pin: h.pin, created_at: h.created_at, finished_at: h.finished_at,
                 quiz: {
                     title: h.quiz.title, tags: h.quiz.tags, class_id: h.quiz.class_id,
-                    class_ids: h.quiz?.quiz_classes?.map((qc: any) => qc.class_id) || []
+                    class_ids: h.quiz?.quiz_classes?.map((qc) => qc.class_id) || []
                 },
                 _count: { participants: h.participants?.[0]?.count || 0 }
             }));
