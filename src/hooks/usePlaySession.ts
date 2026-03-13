@@ -85,7 +85,7 @@ export function usePlaySession(id: string) {
                 toast.error("Error al cargar los datos de la pregunta");
             }
         }
-    }, []);
+    }, [session?.quiz_id]);
 
     const fetchInitialState = useCallback(async () => {
         const { data: sessionData } = await supabase.from("sessions")

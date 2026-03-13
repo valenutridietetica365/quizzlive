@@ -43,7 +43,7 @@ export async function checkRateLimit(
     // A. Use Upstash Redis if configured
     if (ratelimit) {
         try {
-            const { success, limit, remaining, reset } = await ratelimit.limit(key);
+            const { success, remaining, reset } = await ratelimit.limit(key);
             const now = Date.now();
             return {
                 allowed: success,
