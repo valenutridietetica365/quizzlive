@@ -57,7 +57,7 @@ export default function StudentPlay() {
             </button>
 
             {(session.status === "active" || session.status === "waiting") && !isEliminated && (
-                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[60] scale-90 sm:scale-100">
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[60] w-full max-w-[95%] flex justify-center">
                     <Leaderboard
                         sessionId={id as string}
                         currentParticipantId={participantId ?? undefined}

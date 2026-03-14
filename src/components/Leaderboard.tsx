@@ -41,31 +41,29 @@ const Leaderboard = React.memo(function Leaderboard({
             if (sessionData) setSessionMode(sessionData.game_mode);
 
             // Fetch participants for THIS session
-            const { data: participantsData, error: pError } = await supabase
+            const { data: pData, error: pError } = await supabase
                 .from("participants")
                 .select("id, nickname, team, is_eliminated")
                 .eq("session_id", sessionId);
 
-            if (pError || !participantsData) {
-                console.error("Leaderboard participants fetch error:", pError);
+            if (pError || !pData) {
+                console.error("Leaderboard fetch error:", pError);
                 return;
             }
 
             // Fetch scores for THIS session
-            const { data: scoresData, error: sError } = await supabase
+            const { data: sData, error: sError } = await supabase
                 .from("scores")
                 .select("participant_id, total_points")
                 .eq("session_id", sessionId);
 
-            if (sError) {
-                console.error("Leaderboard scores fetch error:", sError);
-            }
+            if (sError) console.error("Leaderboard scores fetch error:", sError);
 
-            // Map scores to a lookup object
-            const scoresMap = new Map((scoresData || []).map(s => [s.participant_id, s.total_points]));
+            // Create a lookup map for scores
+            const scoresMap = new Map((sData || []).map(s => [s.participant_id, s.total_points]));
 
-            // Combine data
-            const participants: LeaderboardEntry[] = participantsData.map(p => ({
+            // Transform to entry format
+            const participants: LeaderboardEntry[] = pData.map(p => ({
                 id: p.id,
                 nickname: p.nickname,
                 team: p.team,
@@ -148,24 +146,24 @@ const Leaderboard = React.memo(function Leaderboard({
 
         return (
             <div className="flex flex-col items-center animate-in fade-in slide-in-from-top-4 duration-500">
-                {/* Ultra-Minimalist Pill */}
-                <div className="flex items-center gap-3 bg-white/40 dark:bg-black/40 backdrop-blur-md px-4 py-1.5 rounded-full border border-slate-200/50 dark:border-white/10 shadow-sm">
+                {/* Large Responsive Pill */}
+                <div className="flex items-center gap-6 bg-white/80 dark:bg-slate-900/90 backdrop-blur-xl px-7 py-3 rounded-full border-2 border-slate-200 dark:border-white/10 shadow-2xl ring-1 ring-black/5">
                     {top3.map((entry, i) => {
                         const isMe = entry.id === currentParticipantId;
                         const rank = i + 1;
                         return (
-                            <div key={entry.id} className="flex items-center gap-1.5 transition-all">
-                                <span className="text-[10px] grayscale-[0.5]">{rankIcon(rank)}</span>
-                                <div className="flex items-baseline gap-1">
-                                    <span className={`text-[10px] font-bold truncate max-w-[60px] ${isMe ? 'text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-300'}`}>
+                            <div key={entry.id} className={`flex items-center gap-3 transition-all ${isMe ? 'scale-110' : ''}`}>
+                                <span className="text-xl">{rankIcon(rank)}</span>
+                                <div className="flex items-baseline gap-2">
+                                    <span className={`text-base font-black truncate max-w-[120px] ${isMe ? 'text-blue-600 dark:text-blue-400' : 'text-slate-800 dark:text-slate-200'}`}>
                                         {entry.nickname}
                                     </span>
-                                    <span className={`text-[9px] font-black tabular-nums ${isMe ? 'text-blue-500' : 'text-slate-400 dark:text-slate-500'}`}>
-                                        {entry.score}
+                                    <span className={`text-sm font-black tabular-nums ${isMe ? 'text-blue-500' : 'text-slate-500 dark:text-slate-400'}`}>
+                                        {entry.score.toLocaleString()}
                                     </span>
                                 </div>
                                 {i < top3.length - 1 && (
-                                    <div className="mx-1 w-[1px] h-2.5 bg-slate-300 dark:bg-white/10" />
+                                    <div className="mx-3 w-[2px] h-4 bg-slate-200 dark:bg-white/10 rounded-full" />
                                 )}
                             </div>
                         );
