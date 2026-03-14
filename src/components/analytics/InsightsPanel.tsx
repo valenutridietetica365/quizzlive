@@ -5,10 +5,9 @@ import { HeatmapRow } from "./HeatmapTable";
 interface InsightsPanelProps {
     data: QuestionStat[];
     heatmapRows: HeatmapRow[];
-    t: (key: string) => string;
 }
 
-export default function InsightsPanel({ data, heatmapRows, t }: InsightsPanelProps) {
+export default function InsightsPanel({ data, heatmapRows }: InsightsPanelProps) {
     // 1. Identify critical questions (success < 50%)
     const criticalQuestions = data.filter(q => q.percentage < 50);
 
@@ -71,7 +70,7 @@ export default function InsightsPanel({ data, heatmapRows, t }: InsightsPanelPro
                             <HelpCircle className="w-6 h-6" />
                         </div>
                         <div>
-                            <h3 className="text-xl font-black uppercase tracking-tight">Preguntas "Trampa"</h3>
+                            <h3 className="text-xl font-black uppercase tracking-tight">Preguntas &quot;Trampa&quot;</h3>
                             <p className="text-[10px] font-black opacity-60 uppercase tracking-widest text-amber-400">Confundieron incluso a los mejores</p>
                         </div>
                     </div>

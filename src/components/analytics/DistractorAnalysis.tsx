@@ -7,10 +7,9 @@ import { QuestionStat } from "@/components/SessionAnalytics";
 
 interface DistractorAnalysisProps {
     data: QuestionStat[];
-    t: (key: string) => string;
 }
 
-export default function DistractorAnalysis({ data, t }: DistractorAnalysisProps) {
+export default function DistractorAnalysis({ data }: DistractorAnalysisProps) {
     const [currentIndex, setCurrentIndex] = useState(0);
 
     // Only show questions with errors

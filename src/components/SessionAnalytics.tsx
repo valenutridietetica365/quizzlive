@@ -174,11 +174,10 @@ const SessionAnalytics = React.memo(function SessionAnalytics({ sessionId }: Ses
             <InsightsPanel 
                 data={chartData} 
                 heatmapRows={processedHeatmapRows}
-                t={t} 
             />
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
                 <QuestionsChart data={chartData} t={t} />
-                <DistractorAnalysis data={chartData} t={t} />
+                <DistractorAnalysis data={chartData} />
             </div>
 
             {/* Heatmap Section */}
