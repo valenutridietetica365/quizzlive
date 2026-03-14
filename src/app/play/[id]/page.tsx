@@ -172,7 +172,7 @@ export default function StudentPlay() {
                                 </div>
                             )}
                             
-                            <div className="fixed left-4 top-4 z-[60]">
+                            <div className="fixed right-4 top-20 z-[60]">
                                 <ChaosStore
                                     coins={myCoins}
                                     hasShield={hasShield}
