@@ -93,22 +93,12 @@ const Leaderboard = React.memo(function Leaderboard({
     useEffect(() => {
         fetchLeaderboard();
 
-        // Subscribe to scores changes
-        const scoresChannel = supabase
-            .channel(`scores_realtime_${sessionId}`)
-            .on(
-                "postgres_changes",
-                { event: "*", schema: "public", table: "scores" },
-                (payload: { new: { session_id?: string }; old: { session_id?: string } }) => {
-                    // Only refetch if the change belongs to this session
-                    if (payload.new?.session_id === sessionId || payload.old?.session_id === sessionId) {
-                        fetchLeaderboard();
-                    }
-                }
-            )
-            .subscribe();
+        // Polling fallback: refetch every 5 seconds for reliability
+        const pollInterval = setInterval(() => {
+            fetchLeaderboard();
+        }, 5000);
 
-        // Subscribe to participant status changes (is_eliminated)
+        // Subscribe to participant status changes (is_eliminated, new joins)
         const participantsChannel = supabase
             .channel(`participants_realtime_${sessionId}`)
             .on(
@@ -118,9 +108,23 @@ const Leaderboard = React.memo(function Leaderboard({
             )
             .subscribe();
 
+        // Subscribe to answers (more reliable than scores for triggering updates)
+        const answersChannel = supabase
+            .channel(`answers_leaderboard_${sessionId}`)
+            .on(
+                "postgres_changes",
+                { event: "INSERT", schema: "public", table: "answers", filter: `session_id=eq.${sessionId}` },
+                () => {
+                    // Small delay to allow the trigger to populate scores
+                    setTimeout(() => fetchLeaderboard(), 500);
+                }
+            )
+            .subscribe();
+
         return () => {
-            supabase.removeChannel(scoresChannel);
+            clearInterval(pollInterval);
             supabase.removeChannel(participantsChannel);
+            supabase.removeChannel(answersChannel);
         };
     }, [sessionId, fetchLeaderboard]);
 

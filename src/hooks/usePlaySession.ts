@@ -290,10 +290,8 @@ export function usePlaySession(id: string) {
                 setCurrentStreak(data.current_streak || 0);
                 
                 if (data.coins_total !== undefined) setMyCoins(data.coins_total);
-                if (data.shield_consumed) toast("🛡️ Escudo usado", { duration: 2000, style: { fontSize: '12px', padding: '6px 12px' } });
-                if (data.coins_earned && data.coins_earned > 0) {
-                    toast(`+${data.coins_earned} 🪙`, { duration: 1500, style: { fontSize: '12px', padding: '6px 12px', background: '#1e293b', color: '#fbbf24', borderRadius: '999px', minHeight: 'auto' } });
-                }
+                if (data.shield_consumed) toast("🛡️ Escudo usado", { duration: 1500, style: { fontSize: '11px', padding: '4px 10px', borderRadius: '999px', minHeight: 'auto' } });
+                // Coins update is already visible via the ChaosStore UI — no toast needed
 
                 playSFX(data.is_correct ? "correct" : "wrong");
                 if (data.is_correct && (data.current_streak || 0) >= 2) playSFX("streak");
