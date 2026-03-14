@@ -58,9 +58,9 @@ export default function ChaosStore({ coins, hasShield, buyPowerup, participants,
     ];
 
     return (
-        <div className="fixed right-4 bottom-1/2 translate-y-[-10%] z-[60] flex flex-col items-center gap-4">
+        <div className="fixed left-4 bottom-1/2 translate-y-[-10%] z-[60] flex flex-col items-center gap-4">
             {/* Coins Display */}
-            <div className="bg-slate-900 border-2 border-amber-400 px-3 py-2 rounded-2xl shadow-xl flex items-center gap-2 animate-in slide-in-from-right-10 duration-500">
+            <div className="bg-slate-900 border-2 border-amber-400 px-3 py-2 rounded-2xl shadow-xl flex items-center gap-2 animate-in slide-in-from-left-10 duration-500">
                 <Coins className="w-4 h-4 text-amber-400 animate-pulse" />
                 <span className="text-white font-black tabular-nums text-sm">{coins}</span>
             </div>
@@ -91,7 +91,7 @@ export default function ChaosStore({ coins, hasShield, buyPowerup, participants,
                         </button>
 
                         {/* Tooltip on Hover */}
-                        <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-3 py-1 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-xl border border-white/10">
+                        <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-3 py-1 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-xl border border-white/10">
                             {pw.label}
                         </div>
                     </div>
