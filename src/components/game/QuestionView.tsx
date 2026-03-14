@@ -216,6 +216,8 @@ export default function QuestionView({
                             answered={answered}
                             submitAnswer={submitAnswer}
                             selectedOption={selectedOption}
+                            isSpyActive={isSpyActive}
+                            answerDistribution={answerDistribution}
                         />
                     ) : currentQuestion.question_type === "fill_in_the_blank" ? (
                         <FillInBlankRenderer
@@ -240,41 +242,6 @@ export default function QuestionView({
                             t={t}
                         />
                     ) : null}
-                    {/* Spy Mode Overlay Stats */}
-                    {isSpyActive && (
-                        <div className="bg-white/90 backdrop-blur-md p-4 rounded-3xl border border-blue-200 shadow-xl space-y-3 animate-in fade-in zoom-in duration-500">
-                            <div className="flex items-center gap-2 mb-2">
-                                <Sparkles className="w-4 h-4 text-blue-500" />
-                                <span className="text-[10px] font-black text-slate-800 uppercase tracking-widest">Estadísticas Espía 👀</span>
-                            </div>
-                            <div className="space-y-2">
-                                {currentQuestion.options.map((opt, i) => {
-                                    const count = answerDistribution[opt] || 0;
-                                    const total = Object.values(answerDistribution).reduce((a, b) => a + b, 0) || 1;
-                                    const percent = Math.round((count / total) * 100);
-                                    const label = String.fromCharCode(65 + i); // A, B, C...
-
-                                    return (
-                                        <div key={opt} className="space-y-1">
-                                            <div className="flex justify-between text-[10px] font-bold text-slate-600">
-                                                <span>{label}: {opt.substring(0, 20)}{opt.length > 20 ? '...' : ''}</span>
-                                                <span className="text-blue-600">{percent}% ({count})</span>
-                                            </div>
-                                            <div className="h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
-                                                <div 
-                                                    className="h-full bg-blue-500 rounded-full transition-all duration-1000 ease-out"
-                                                    style={{ width: `${percent}%` }}
-                                                />
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                            <p className="text-[8px] text-slate-400 font-bold uppercase text-center italic">
-                                Esto es lo que la mayoría está respondiendo ahora mismo
-                            </p>
-                        </div>
-                    )}
                 </>
             )}
         </div>

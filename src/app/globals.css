@@ -92,6 +92,16 @@
   animation: float 3s ease-in-out infinite;
 }
 
+@keyframes coinFloat {
+  0% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-30px); }
+}
+
+@keyframes freezeCountdown {
+  0% { width: 100%; }
+  100% { width: 0%; }
+}
+
 @media print {
 
   nav,

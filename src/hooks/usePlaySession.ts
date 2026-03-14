@@ -43,6 +43,8 @@ export function usePlaySession(id: string) {
     const [myCoins, setMyCoins] = useState(0);
     const [hasShield, setHasShield] = useState(false);
     const [isFrozen, setIsFrozen] = useState(false);
+    const [frozenBy, setFrozenBy] = useState<string | null>(null);
+    const [freezeTimer, setFreezeTimer] = useState(0);
     const [isSpyActive, setIsSpyActive] = useState(false);
     const [answerDistribution, setAnswerDistribution] = useState<Record<string, number>>({});
 
@@ -207,14 +209,24 @@ export function usePlaySession(id: string) {
             })
             .subscribe();
 
+        const FREEZE_DURATION = 5; // 5 seconds freeze
         const chaosChannel = supabase.channel(`chaos_${id}`)
             .on('broadcast', { event: 'freeze' }, ({ payload }) => {
                 if (payload.target_id === participantId) {
                     setIsFrozen(true);
-                    toast.error("¡Te han congelado! 🥶");
-                    setTimeout(() => {
-                        setIsFrozen(false);
-                    }, 3000); // 3 segundos de penalización
+                    setFrozenBy(payload.attacker_name || '???');
+                    setFreezeTimer(FREEZE_DURATION);
+                    // Countdown timer
+                    let remaining = FREEZE_DURATION;
+                    const interval = setInterval(() => {
+                        remaining--;
+                        setFreezeTimer(remaining);
+                        if (remaining <= 0) {
+                            clearInterval(interval);
+                            setIsFrozen(false);
+                            setFrozenBy(null);
+                        }
+                    }, 1000);
                 }
             })
             .subscribe();
@@ -293,6 +305,8 @@ export function usePlaySession(id: string) {
                 if (data.shield_consumed) toast("🛡️ Escudo usado", { duration: 1500, style: { fontSize: '11px', padding: '4px 10px', borderRadius: '999px', minHeight: 'auto' } });
                 // Coins update is already visible via the ChaosStore UI — no toast needed
 
+                if (data.speed_bonus) toast("⚡ Bonus de Velocidad x2", { duration: 1500, style: { fontSize: '11px', padding: '4px 10px', borderRadius: '999px', minHeight: 'auto', backgroundColor: '#f59e0b', color: '#fff' } });
+                
                 playSFX(data.is_correct ? "correct" : "wrong");
                 if (data.is_correct && (data.current_streak || 0) >= 2) playSFX("streak");
             }
@@ -328,18 +342,18 @@ export function usePlaySession(id: string) {
                 setMyCoins(data.remaining_coins);
                 if (powerupType === 'shield') {
                     setHasShield(true);
-                    toast.success("¡Escudo Activado! 🛡️");
+                    toast("🛡️ Escudo activo", { duration: 1500, style: { fontSize: '11px', padding: '4px 10px', borderRadius: '999px', minHeight: 'auto' } });
                     playSFX("correct");
                 } else if (powerupType === 'freeze') {
                     const targetId = data.target_id;
                     if (targetId) {
-                        // Send realtime broadcast
+                        // Send realtime broadcast with attacker's name
                         supabase.channel(`chaos_${id}`).send({
                             type: 'broadcast',
                             event: 'freeze',
-                            payload: { target_id: targetId, sender: nickname }
+                            payload: { target_id: targetId, attacker_name: nickname }
                         });
-                        toast.success("¡Has congelado a un rival! 🥶");
+                        toast("❄️ ¡Rival congelado!", { duration: 1500, style: { fontSize: '11px', padding: '4px 10px', borderRadius: '999px', minHeight: 'auto' } });
                         playSFX("correct");
                     }
                 } else if (powerupType === 'spy') {
@@ -359,7 +373,7 @@ export function usePlaySession(id: string) {
                     }
 
                     setIsSpyActive(true);
-                    toast.success("¡Modo Espía Activado! Mira lo que responden otros 👀");
+                    toast("👀 Espía activado", { duration: 1500, style: { fontSize: '11px', padding: '4px 10px', borderRadius: '999px', minHeight: 'auto' } });
                     playSFX("correct");
                 }
                 return true;
@@ -382,6 +396,6 @@ export function usePlaySession(id: string) {
         fillAnswer, setFillAnswer, matchingPairs, setMatchingPairs,
         selectedTerm, setSelectedTerm, shuffledMatches, submitAnswer,
         rouletteItems, rouletteSpinning, rouletteWinnerIndex, rouletteType,
-        myCoins, hasShield, isFrozen, isSpyActive, answerDistribution, buyPowerup
+        myCoins, hasShield, isFrozen, frozenBy, freezeTimer, isSpyActive, answerDistribution, buyPowerup
     };
 }
