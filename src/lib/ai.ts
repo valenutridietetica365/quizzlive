@@ -37,7 +37,7 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 2, delay = 500): Pro
 export async function generateQuizFromAI(params: AIParams): Promise<GeneratedQuestion[]> {
   try {
     // 1. Try Groq with Retry and Zod Validation
-    return await withRetry(async () => {
+    const questions = await withRetry(async () => {
       console.log(`Attempting Groq Generation for ${params.topic || 'PDF Content'}...`);
       const result = await generateWithGroq(params);
       
@@ -45,24 +45,60 @@ export async function generateQuizFromAI(params: AIParams): Promise<GeneratedQue
       const validated = schema.parse(result);
       return validated as GeneratedQuestion[];
     });
+
+    // Final multi-layer validation and normalization
+    return questions.map(q => normalizeQuestion(q));
+
   } catch (error) {
     console.warn("Groq failed, falling back to Gemini:", error);
     try {
       // 2. Try Gemini Fallback
-      return await withRetry(async () => {
+      const geminiQuestions = await withRetry(async () => {
         console.log("Attempting Gemini Fallback...");
         const result = await generateWithGemini(params);
         const schema = z.array(QuestionSchema.omit({ id: true, quiz_id: true, sort_order: true }));
         const validated = schema.parse(result);
         return validated as GeneratedQuestion[];
       });
+
+      return geminiQuestions.map(q => normalizeQuestion(q));
+
     } catch (geminiError) {
       console.error("Critical AI Failure:", geminiError);
-      // Incluimos detalles del error para depuración si es posible
       const detail = geminiError instanceof Error ? geminiError.message : String(geminiError);
-      throw new Error(`Lo sentimos, no pudimos generar las preguntas en este momento. Por favor, intenta de nuevo o sube contenido más corto. (Ref: ${detail.substring(0, 50)})`);
+      throw new Error(`Error en la generación: ${detail.substring(0, 50)}... Intenta de nuevo o verifica tu conexión.`);
     }
   }
+}
+
+/**
+ * Ensures the question follows strict rules before being saved
+ */
+function normalizeQuestion(q: GeneratedQuestion): GeneratedQuestion {
+  const normOptions = q.options.map(o => o.trim());
+  let correct = q.correct_answer?.trim() || "";
+
+  // For Multiple Choice / True-False: Ensure the correct answer matches exactly one option
+  if (q.question_type === 'multiple_choice' || q.question_type === 'true_false') {
+    // If not found exactly, try case-insensitive
+    if (!normOptions.includes(correct)) {
+      const match = normOptions.find(o => o.toLowerCase() === correct.toLowerCase());
+      if (match) {
+        correct = match;
+      } else {
+        // Fallback to first option if something went totally wrong, but AI should prevent this
+        correct = normOptions[0] || "";
+      }
+    }
+  } else if (q.question_type === 'hangman') {
+    correct = correct.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // Basic normalization
+  }
+
+  return {
+    ...q,
+    options: normOptions,
+    correct_answer: correct
+  };
 }
 
 /**
@@ -89,23 +125,33 @@ async function generateWithGroq({ topic, count, grade, language, questionType, p
     ? `Analyze this content and generate questions strictly based on it. Document Content: """${pdfText.substring(0, 50000)}"""` 
     : `Generate questions based on the topic: "${topic}"`;
   
-  const prompt = `Act as an Expert Pedagogue and Quiz Creator.
+  const prompt = `Act as an Expert Pedagogue, Fact-Checker and Quiz Creator. 
+  Your mission is to create a quiz that is factually indisputable and grammatically flawless.
   ${context}
   
   Target Audience Grade: ${grade || 'General'}
-  Output Language: ${isSpanish ? 'Spanish' : 'English'}
+  Output Language: ${isSpanish ? 'Spanish (Universal/Neutral)' : 'English'}
   Question Type: ${typeInstruction}
   Number of Questions: ${count}
+
+  STRICT QUALITY CRITERIA:
+  1. FACTUAL TRUTH: Perform a mental check of every fact. (e.g., If the topic is science, ensure "Platino" is indeed denser than "Oro" if that's the answer).
+  2. ORTHOGRAPHY (Very Important): 
+     - No spelling errors. Use "gravedad" NOT "gravidad".
+     - Proper accentuation in Spanish (e.g., "geografía", "energía", "biología").
+     - Capitalize the beginning of sentences and proper nouns.
+  3. LOGICAL OPTIONS: Ensure there is EXACTLY ONE clearly correct answer.
+  4. NO HALLUCINATIONS: Do not invent facts.
 
   STRICT JSON FORMAT:
   Return a JSON object with a "questions" key containing an array of question objects.
   
   QUESTION STRUCTURE:
-  - "question_text": The text of the question.
-  - "question_type": Must be one of: "multiple_choice", "true_false", "fill_in_the_blank", "matching", "hangman". (Do NOT use "mixed" here).
-  - "options": Array of strings.
-  - "correct_answer": The exact string from "options" that is correct. For hangman, use the word in CAPS.
-  - "time_limit": Number between 10 and 60.
+  - "question_text": The clear question text.
+  - "question_type": "multiple_choice", "true_false", "fill_in_the_blank", "matching", or "hangman".
+  - "options": Array of 4 strings for Multiple Choice, 2 for True/False.
+  - "correct_answer": MUST be a string that exists exactly in the "options" array.
+  - "time_limit": 20.
   - "points": 1000.
 
   ${questionType === 'multiple_choice' || questionType === 'mixed' ? examples.multiple_choice : ''}
@@ -113,7 +159,13 @@ async function generateWithGroq({ topic, count, grade, language, questionType, p
 
   const completion = await groq.chat.completions.create({
     messages: [
-      { role: "system", content: "You are a professional quiz generator. You always return a JSON object with a 'questions' array." },
+      { 
+        role: "system", 
+        content: `You are a professional quiz generator. 
+        You MUST verify all facts before responding. 
+        You MUST ensure perfect spelling and grammar in ${isSpanish ? 'Spanish' : 'English'}.
+        You always return a JSON object with a 'questions' array.` 
+      },
       { role: "user", content: prompt }
     ],
     model: "llama-3.3-70b-versatile",
@@ -143,10 +195,16 @@ async function generateWithGemini({ topic, count, grade, language, questionType,
   
   const typeInstruction = questionType === 'mixed' ? "multiple choice and true/false" : questionType;
 
-  const prompt = `Act as a Quiz Generator. Generate ${count} ${typeInstruction} questions. 
+  const prompt = `Act as an Expert Quiz Generator and Pedagogue. 
+  Generate ${count} ${typeInstruction} questions. 
   Context: ${context}
   Target Grade: ${grade}. 
   Output Language: ${language}.
+  
+  STRICT RULES:
+  1. Perfect spelling and grammar in ${language}. No typos (e.g. use "gravedad").
+  2. Fact-check everything. The correct_answer must be objectively true.
+  3. Plausible distractors.
   
   Return a JSON array of objects. Each object MUST have:
   - question_text (string)
@@ -154,7 +212,7 @@ async function generateWithGemini({ topic, count, grade, language, questionType,
   - options (array of strings)
   - correct_answer (string from options or CAPS word for hangman)
   - points (1000)
-  - time_limit (number)
+  - time_limit (number between 15 and 30)
   
   Return ONLY the JSON. No markdown formatting.`;
 
