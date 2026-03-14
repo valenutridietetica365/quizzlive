@@ -153,15 +153,15 @@ const Leaderboard = React.memo(function Leaderboard({
         return (
             <div className="flex flex-col items-center gap-2 animate-in fade-in slide-in-from-top-6 duration-1000">
                 {/* Premium Glass Container */}
-                <div className="flex items-center gap-4 bg-slate-900/40 backdrop-blur-2xl px-6 py-3 rounded-[2rem] border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.3)] ring-1 ring-white/10 group">
-                    <div className="flex items-center gap-2.5 border-r border-white/10 pr-5 mr-1 group-hover:scale-105 transition-transform">
+                <div className="flex items-center gap-4 bg-white/70 dark:bg-slate-900/40 backdrop-blur-2xl px-6 py-3 rounded-[2rem] border border-slate-200 dark:border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.3)] ring-1 ring-white/10 group">
+                    <div className="flex items-center gap-2.5 border-r border-slate-200 dark:border-white/10 pr-5 mr-1 group-hover:scale-105 transition-transform">
                         <div className="relative">
-                            <Trophy className="w-5 h-5 text-amber-400 animate-pulse" />
+                            <Trophy className="w-5 h-5 text-amber-500 animate-pulse" />
                             <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full animate-ping" />
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-[9px] font-black text-amber-500 uppercase tracking-[0.25em] leading-none">Live</span>
-                            <span className="text-[11px] font-black text-white uppercase tracking-wider">Top 3</span>
+                            <span className="text-[9px] font-black text-amber-600 dark:text-amber-500 uppercase tracking-[0.25em] leading-none">Live</span>
+                            <span className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-wider">Top 3</span>
                         </div>
                     </div>
                     
@@ -175,24 +175,24 @@ const Leaderboard = React.memo(function Leaderboard({
                                         <div className="h-5 flex items-center justify-center mb-0.5">
                                             {rankIcon(rank)}
                                         </div>
-                                        <div className={`w-1 h-1 rounded-full ${isMe ? 'bg-blue-400' : 'bg-slate-600'}`} />
+                                        <div className={`w-1 h-1 rounded-full ${isMe ? 'bg-blue-600 dark:bg-blue-400' : 'bg-slate-300 dark:bg-slate-600'}`} />
                                     </div>
                                     
                                     <div className="flex flex-col">
-                                        <span className={`text-[12px] font-black truncate max-w-[100px] leading-tight ${isMe ? 'text-blue-400 drop-shadow-[0_0_8px_rgba(96,165,250,0.5)]' : 'text-white'}`}>
+                                        <span className={`text-[12px] font-black truncate max-w-[100px] leading-tight ${isMe ? 'text-blue-600 dark:text-blue-400 drop-shadow-[0_0_8px_rgba(96,165,250,0.5)]' : 'text-slate-900 dark:text-white'}`}>
                                             {entry.nickname}
                                         </span>
                                         <div className="flex items-center gap-1">
-                                            <span className="text-[10px] font-black text-slate-400 tabular-nums tracking-tight">
+                                            <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 tabular-nums tracking-tight">
                                                 {entry.score.toLocaleString()}
                                             </span>
-                                            <span className="text-[7px] font-bold text-slate-600 uppercase tracking-tighter">pts</span>
+                                            <span className="text-[7px] font-bold text-slate-400 dark:text-slate-600 uppercase tracking-tighter">pts</span>
                                         </div>
                                     </div>
                                     
                                     {isMe && (
                                         <div className="absolute -top-1 -right-2">
-                                            <Sparkles className="w-3 h-3 text-blue-400 animate-spin-slow" />
+                                            <Sparkles className="w-3 h-3 text-blue-500 dark:text-blue-400 animate-spin-slow" />
                                         </div>
                                     )}
                                 </div>

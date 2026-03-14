@@ -50,13 +50,13 @@ export default function ChaosStore({ coins, hasShield, buyPowerup, isSpyActive }
     return (
         <div className="flex flex-col items-center gap-4">
             {/* Coins Display - Premium & Floating */}
-            <div className="bg-slate-900 border-2 border-amber-400 px-3 py-2 rounded-2xl shadow-xl flex items-center gap-2 group transition-all hover:scale-105 animate-in slide-in-from-left-10 duration-500">
+            <div className="bg-slate-900 dark:bg-slate-900 border-2 border-amber-400 px-3 py-2 rounded-2xl shadow-xl flex items-center gap-2 group transition-all hover:scale-105 animate-in slide-in-from-left-10 duration-500">
                 <Coins className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
                 <span className="text-white font-black tabular-nums text-xs leading-none">{coins}</span>
             </div>
 
             {/* Powerups Column */}
-            <div className="flex flex-col items-center gap-3 bg-white/5 backdrop-blur-md p-2 rounded-[3rem] border border-white/10 shadow-xl">
+            <div className="flex flex-col items-center gap-3 bg-white/80 dark:bg-white/5 backdrop-blur-md p-2 rounded-[3rem] border border-slate-200 dark:border-white/10 shadow-xl">
                 {powerups.map((pw) => (
                     <div key={pw.id} className="relative group/item">
                         <button
@@ -68,7 +68,7 @@ export default function ChaosStore({ coins, hasShield, buyPowerup, isSpyActive }
                                     ? 'bg-emerald-600 border-emerald-300 text-white cursor-default scale-95 shadow-inner' 
                                     : coins >= pw.cost 
                                         ? `${pw.colorClass} text-white hover:scale-110 active:scale-95 shadow-lg` 
-                                        : 'bg-slate-200 border-slate-300 text-slate-400 grayscale opacity-60 cursor-not-allowed'}
+                                        : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 grayscale opacity-60 cursor-not-allowed'}
                             `}
                         >
                             {pw.active ? <Check className="w-6 h-6 md:w-8 md:h-8" /> : <pw.icon className="w-5 h-5 md:w-6 md:h-6" />}
