@@ -79,6 +79,8 @@ QuizzLive exige una experiencia de usuario que genere un efecto "WOW".
 3. **RESPETA LAS IMPORTACIONES:** Usa el import alias `@/` que está definido explícitamente en el `tsconfig.json`. No uses rutas relativas interminables (ej. `../../../components/...`).
 4. **MANTÉN LA CONSISTENCIA VISUAL:** Si un componente usa estados de "Carga" tipo Skeleton, sigue el patrón de la aplicación en todo lugar.
 5. **IDIOMA DE RESPUESTA:** A menos que se te indique lo contrario, responde siempre en **Español** para alinearte con el creador del proyecto.
+6. **MECÁNICAS MODO CAOS:** El proyecto utiliza un sistema de "Mario Kart" con economía de monedas (`coins`), escudos (`shield`) y ataques (`freeze`). Mantén esta temática gamificada en componentes relacionados.
+7. **PUNTUACIÓN REALTIME:** Las puntuaciones de las sesiones se centralizan en la tabla `scores` y se actualizan mediante disparadores (triggers) de base de datos (`trigger_update_score`) para garantizar la precisión del ranking en tiempo real.
 
 ---
 _Al leer este archivo, asumes inmediatamente este contexto "Premium", "Tipado" y "Seguro" para todo el desarrollo futuro en QuizzLive._

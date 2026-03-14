@@ -57,7 +57,19 @@ Ubicado en `src/lib/grading.ts`. Implementa la fórmula oficial chilena:
 2.  **Survival:** Los alumnos tienen vidas; el fallo implica eliminación.
 3.  **Teams:** División automática en equipos con balanceo de carga.
 4.  **Hangman:** Lógica de juego de palabras integrada en el flujo de sesión. Incluye renderizado de SVG nativo en React para el dibujo dinámico.
-5.  **Roulette:** Motor de giro basado en `conic-gradient` y rotaciones matemáticas para selección aleatoria de alumnos o preguntas con sincronización `broadcast` en tiempo real.
+5.  **Chaos:** El modo más dinámico e interactivo (estilo Mario Kart).
+    - **Economía:** Los alumnos ganan `coins` por rachas de respuestas correctas (fórmula: `10 + streak * 5`).
+    - **Power-ups:** Compra de Escudos (protegen racha), Congelación (ataca al rival superior, tipo "Caparazón Rojo") y Espía (ver estadísticas de respuestas en tiempo real).
+    - **Tienda:** Interfaz vertical lateral integrada en el `GameView`.
+6.  **Roulette:** Motor de giro basado en `conic-gradient` y rotaciones matemáticas para selección aleatoria de alumnos o preguntas con sincronización `broadcast` en tiempo real.
+
+---
+
+## 📡 6. Sistema de Puntuación & Realtime (SSoT)
+Para garantizar que el ranking y el mini-podio sean precisos al 100% y en tiempo real, el proyecto utiliza:
+- **Tabla `public.scores`:** Actúa como un caché de agregación de puntos por participante y sesión.
+- **Trigger `trigger_update_score`:** Ubicado en la tabla `answers`, este disparador detecta cada inserción de respuesta correcta y actualiza automáticamente los puntos en `scores` mediante un `INSERT ... ON CONFLICT DO UPDATE`.
+- **Canales Realtime:** El componente `Leaderboard` escucha cambios en la tabla `scores` para reflejar actualizaciones instantáneas sin recargar la página.
 
 ---
 
