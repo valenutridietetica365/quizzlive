@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { Trophy, Medal, Crown } from "lucide-react";
+import { Trophy, Medal, Crown, Sparkles } from "lucide-react";
 
 interface LeaderboardEntry {
     id: string;
@@ -151,30 +151,50 @@ const Leaderboard = React.memo(function Leaderboard({
         if (top3.length === 0) return null;
 
         return (
-            <div className="flex flex-col items-center gap-2 animate-in fade-in slide-in-from-top-4 duration-700">
-                <div className="flex items-center gap-3 bg-slate-900/90 backdrop-blur-xl px-5 py-2.5 rounded-2xl border border-white/10 shadow-2xl ring-1 ring-white/5">
-                    <div className="flex items-center gap-2 border-r border-white/10 pr-4 mr-1">
-                        <Trophy className="w-4 h-4 text-amber-400 animate-pulse" />
-                        <span className="text-[10px] font-black text-amber-500/80 uppercase tracking-[0.2em]">Live Top 3</span>
+            <div className="flex flex-col items-center gap-2 animate-in fade-in slide-in-from-top-6 duration-1000">
+                {/* Premium Glass Container */}
+                <div className="flex items-center gap-4 bg-slate-900/40 backdrop-blur-2xl px-6 py-3 rounded-[2rem] border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.3)] ring-1 ring-white/10 group">
+                    <div className="flex items-center gap-2.5 border-r border-white/10 pr-5 mr-1 group-hover:scale-105 transition-transform">
+                        <div className="relative">
+                            <Trophy className="w-5 h-5 text-amber-400 animate-pulse" />
+                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full animate-ping" />
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-[9px] font-black text-amber-500 uppercase tracking-[0.25em] leading-none">Live</span>
+                            <span className="text-[11px] font-black text-white uppercase tracking-wider">Top 3</span>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-6">
+                    
+                    <div className="flex items-center gap-8">
                         {top3.map((entry, i) => {
                             const isMe = entry.id === currentParticipantId;
                             const rank = i + 1;
                             return (
-                                <div key={entry.id} className="flex items-center gap-2.5 group">
-                                    <div className="flex items-center justify-center">
-                                        {rankIcon(rank)}
+                                <div key={entry.id} className={`flex items-center gap-3 relative transition-all duration-500 ${isMe ? 'scale-110' : 'opacity-80 hover:opacity-100 hover:scale-105'}`}>
+                                    <div className="flex flex-col items-center">
+                                        <div className="h-5 flex items-center justify-center mb-0.5">
+                                            {rankIcon(rank)}
+                                        </div>
+                                        <div className={`w-1 h-1 rounded-full ${isMe ? 'bg-blue-400' : 'bg-slate-600'}`} />
                                     </div>
+                                    
                                     <div className="flex flex-col">
-                                        <span className={`text-[11px] font-black truncate max-w-[90px] transition-colors ${isMe ? 'text-blue-400' : 'text-slate-200'}`}>
+                                        <span className={`text-[12px] font-black truncate max-w-[100px] leading-tight ${isMe ? 'text-blue-400 drop-shadow-[0_0_8px_rgba(96,165,250,0.5)]' : 'text-white'}`}>
                                             {entry.nickname}
-                                            {isMe && <span className="ml-1 text-[8px] text-blue-500">★</span>}
                                         </span>
-                                        <span className="text-[9px] font-bold text-slate-500 mt-[-2px] tabular-nums tracking-wider uppercase">
-                                            {entry.score.toLocaleString()} pts
-                                        </span>
+                                        <div className="flex items-center gap-1">
+                                            <span className="text-[10px] font-black text-slate-400 tabular-nums tracking-tight">
+                                                {entry.score.toLocaleString()}
+                                            </span>
+                                            <span className="text-[7px] font-bold text-slate-600 uppercase tracking-tighter">pts</span>
+                                        </div>
                                     </div>
+                                    
+                                    {isMe && (
+                                        <div className="absolute -top-1 -right-2">
+                                            <Sparkles className="w-3 h-3 text-blue-400 animate-spin-slow" />
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })}

@@ -41,7 +41,7 @@ export default function StudentPlay() {
         fillAnswer, setFillAnswer, matchingPairs, setMatchingPairs,
         selectedTerm, setSelectedTerm, shuffledMatches, submitAnswer,
         rouletteItems, rouletteSpinning, rouletteWinnerIndex, rouletteType,
-        myCoins, hasShield, isFrozen, buyPowerup
+        myCoins, hasShield, isFrozen, isSpyActive, answerDistribution, buyPowerup
     } = usePlaySession(id as string);
 
     if (loading || !session) return <StudentPlaySkeleton />;
@@ -142,6 +142,8 @@ export default function StudentPlay() {
                             rouletteWinnerIndex={rouletteWinnerIndex}
                             rouletteType={rouletteType}
                             userNickname={nickname ?? undefined}
+                            isSpyActive={isSpyActive}
+                            answerDistribution={answerDistribution}
                         />
                     ) : (
                         <AnswerWaiting
@@ -170,15 +172,14 @@ export default function StudentPlay() {
                                 </div>
                             )}
                             
-                            {(!timesUp && currentQuestion && !isFrozen) && (
-                                <ChaosStore 
-                                    coins={myCoins} 
-                                    hasShield={hasShield} 
-                                    buyPowerup={buyPowerup} 
-                                    participants={participants}
-                                    currentParticipantId={participantId ?? undefined}
+                            <div className="fixed left-4 top-1/4 z-[60]">
+                                <ChaosStore
+                                    coins={myCoins}
+                                    hasShield={hasShield}
+                                    buyPowerup={buyPowerup}
+                                    isSpyActive={isSpyActive}
                                 />
-                            )}
+                            </div>
                         </>
                     )}
                 </div>

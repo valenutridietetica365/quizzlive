@@ -6,27 +6,17 @@ import { Shield, Snowflake, Eye, Coins, Check } from "lucide-react";
 interface ChaosStoreProps {
     coins: number;
     hasShield: boolean;
-    buyPowerup: (type: "shield" | "freeze" | "spy", targetId?: string) => Promise<boolean>;
-    participants: { id: string; nickname: string; }[];
-    currentParticipantId?: string;
+    buyPowerup: (type: "shield" | "freeze" | "spy") => Promise<boolean>;
+    isSpyActive?: boolean;
 }
 
-export default function ChaosStore({ coins, hasShield, buyPowerup, participants, currentParticipantId }: ChaosStoreProps) {
+export default function ChaosStore({ coins, hasShield, buyPowerup, isSpyActive }: ChaosStoreProps) {
     const [buying, setBuying] = useState<string | null>(null);
 
     const handleBuy = async (type: "shield" | "freeze" | "spy") => {
         if (buying) return;
         setBuying(type);
-        
-        let targetId = undefined;
-        if (type === "freeze") {
-            const rivals = participants.filter(p => p.id !== currentParticipantId);
-            if (rivals.length > 0) {
-                targetId = rivals[Math.floor(Math.random() * rivals.length)].id;
-            }
-        }
-
-        await buyPowerup(type, targetId);
+        await buyPowerup(type);
         setBuying(null);
     };
 
@@ -52,13 +42,13 @@ export default function ChaosStore({ coins, hasShield, buyPowerup, participants,
             icon: Eye, 
             cost: 40, 
             colorClass: 'bg-purple-500 border-purple-200',
-            active: false,
+            active: isSpyActive,
             label: 'Espiar'
         }
     ];
 
     return (
-        <div className="fixed left-4 bottom-1/2 translate-y-[-10%] z-[60] flex flex-col items-center gap-4">
+        <div className="flex flex-col items-center gap-4">
             {/* Coins Display */}
             <div className="bg-slate-900 border-2 border-amber-400 px-3 py-2 rounded-2xl shadow-xl flex items-center gap-2 animate-in slide-in-from-left-10 duration-500">
                 <Coins className="w-4 h-4 text-amber-400 animate-pulse" />

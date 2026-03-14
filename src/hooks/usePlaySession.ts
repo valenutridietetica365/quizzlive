@@ -43,6 +43,8 @@ export function usePlaySession(id: string) {
     const [myCoins, setMyCoins] = useState(0);
     const [hasShield, setHasShield] = useState(false);
     const [isFrozen, setIsFrozen] = useState(false);
+    const [isSpyActive, setIsSpyActive] = useState(false);
+    const [answerDistribution, setAnswerDistribution] = useState<Record<string, number>>({});
 
     const handleNewQuestion = useCallback(async (questionId: string, isHangmanMode?: boolean) => {
         const selectFields = `id, quiz_id, question_text, question_type, options, image_url, time_limit, points, sort_order${isHangmanMode ? ", correct_answer" : ""}`;
@@ -213,12 +215,31 @@ export function usePlaySession(id: string) {
             })
             .subscribe();
 
+        // Spy Mode: Listen to all answers in the session
+        const answersChannel = supabase.channel(`answers_stats_${id}`)
+            .on('postgres_changes', { 
+                event: 'INSERT', 
+                schema: 'public', 
+                table: 'answers', 
+                filter: `session_id=eq.${id}` 
+            }, (payload) => {
+                const newAnswer = payload.new as { question_id: string; answer_text: string };
+                if (newAnswer.question_id === currentQuestion?.id) {
+                    setAnswerDistribution(prev => ({
+                        ...prev,
+                        [newAnswer.answer_text]: (prev[newAnswer.answer_text] || 0) + 1
+                    }));
+                }
+            })
+            .subscribe();
+
         return () => {
             supabase.removeChannel(sessionChannel);
             supabase.removeChannel(rouletteChannel);
             supabase.removeChannel(chaosChannel);
+            supabase.removeChannel(answersChannel);
         };
-    }, [id, nickname, participantId, handleNewQuestion, fetchParticipants, fetchTotalScore]);
+    }, [id, nickname, participantId, handleNewQuestion, fetchParticipants, fetchTotalScore, currentQuestion?.id]);
 
     // Effect 3: Polling fallback for status (Safety for mobile/unstable connections)
     useEffect(() => {
@@ -320,7 +341,23 @@ export function usePlaySession(id: string) {
                         playSFX("correct");
                     }
                 } else if (powerupType === 'spy') {
-                    toast.success("¡Modo Espía! 👀");
+                    // Fetch current distribution when activated
+                    const { data: currentAnswers } = await supabase
+                        .from('answers')
+                        .select('answer_text')
+                        .eq('session_id', id)
+                        .eq('question_id', currentQuestion?.id);
+                    
+                    if (currentAnswers) {
+                        const dist: Record<string, number> = {};
+                        currentAnswers.forEach(a => {
+                            dist[a.answer_text] = (dist[a.answer_text] || 0) + 1;
+                        });
+                        setAnswerDistribution(dist);
+                    }
+
+                    setIsSpyActive(true);
+                    toast.success("¡Modo Espía Activado! Mira lo que responden otros 👀");
                     playSFX("correct");
                 }
                 return true;
@@ -343,6 +380,6 @@ export function usePlaySession(id: string) {
         fillAnswer, setFillAnswer, matchingPairs, setMatchingPairs,
         selectedTerm, setSelectedTerm, shuffledMatches, submitAnswer,
         rouletteItems, rouletteSpinning, rouletteWinnerIndex, rouletteType,
-        myCoins, hasShield, isFrozen, buyPowerup
+        myCoins, hasShield, isFrozen, isSpyActive, answerDistribution, buyPowerup
     };
 }
