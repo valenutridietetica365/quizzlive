@@ -4,7 +4,8 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { generateQuizFromAI } from "@/lib/ai";
 
 export const dynamic = 'force-dynamic';
-export const runtime = 'edge';
+// Usamos runtime estándar para evitar timeouts en generaciones largas
+// export const runtime = 'edge';
 
 export async function POST(req: Request) {
     // Auth check: only authenticated teachers can generate questions

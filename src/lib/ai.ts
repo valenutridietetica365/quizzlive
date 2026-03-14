@@ -25,6 +25,7 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 2, delay = 500): Pro
     return await fn();
   } catch (error) {
     if (retries <= 0) throw error;
+    console.warn(`AI Attempt failed, retrying in ${delay}ms... (${retries} retries left). Error:`, error instanceof Error ? error.message : error);
     await new Promise(resolve => setTimeout(resolve, delay));
     return withRetry(fn, retries - 1, delay * 2);
   }
@@ -37,22 +38,29 @@ export async function generateQuizFromAI(params: AIParams): Promise<GeneratedQue
   try {
     // 1. Try Groq with Retry and Zod Validation
     return await withRetry(async () => {
-      console.log("Attempting Groq Generation...");
+      console.log(`Attempting Groq Generation for ${params.topic || 'PDF Content'}...`);
       const result = await generateWithGroq(params);
-      return z.array(QuestionSchema.omit({ id: true, quiz_id: true, sort_order: true })).parse(result) as GeneratedQuestion[];
+      
+      const schema = z.array(QuestionSchema.omit({ id: true, quiz_id: true, sort_order: true }));
+      const validated = schema.parse(result);
+      return validated as GeneratedQuestion[];
     });
   } catch (error) {
-    console.warn("Groq failed after retries, falling back to Gemini:", error);
+    console.warn("Groq failed, falling back to Gemini:", error);
     try {
       // 2. Try Gemini Fallback
       return await withRetry(async () => {
         console.log("Attempting Gemini Fallback...");
         const result = await generateWithGemini(params);
-        return z.array(QuestionSchema.omit({ id: true, quiz_id: true, sort_order: true })).parse(result) as GeneratedQuestion[];
+        const schema = z.array(QuestionSchema.omit({ id: true, quiz_id: true, sort_order: true }));
+        const validated = schema.parse(result);
+        return validated as GeneratedQuestion[];
       });
     } catch (geminiError) {
       console.error("Critical AI Failure:", geminiError);
-      throw new Error("Lo sentimos, no pudimos generar las preguntas en este momento. Por favor, intenta de nuevo o sube contenido más corto.");
+      // Incluimos detalles del error para depuración si es posible
+      const detail = geminiError instanceof Error ? geminiError.message : String(geminiError);
+      throw new Error(`Lo sentimos, no pudimos generar las preguntas en este momento. Por favor, intenta de nuevo o sube contenido más corto. (Ref: ${detail.substring(0, 50)})`);
     }
   }
 }
@@ -62,8 +70,10 @@ export async function generateQuizFromAI(params: AIParams): Promise<GeneratedQue
  */
 async function generateWithGroq({ topic, count, grade, language, questionType, pdfText }: AIParams): Promise<unknown[]> {
   const isSpanish = language === "es";
-  const trueText = isSpanish ? "Verdadero" : "True";
-  const falseText = isSpanish ? "Falso" : "False";
+  // Mapeo de tipos para el prompt si es 'mixed'
+  const typeInstruction = questionType === 'mixed' 
+    ? "mix of multiple_choice and true_false" 
+    : questionType;
 
   // Few-Shot Examples to guide the model
   const examples = {
@@ -75,38 +85,50 @@ async function generateWithGroq({ topic, count, grade, language, questionType, p
       : `Example: {"question_text": "A domestic animal that meows", "question_type": "hangman", "options": [], "correct_answer": "CAT", "points": 1000, "time_limit": 60}`
   };
 
-  const context = pdfText ? `Document Content: """${pdfText}"""` : `Topic: "${topic}"`;
+  const context = pdfText 
+    ? `Analyze this content and generate questions strictly based on it. Document Content: """${pdfText.substring(0, 50000)}"""` 
+    : `Generate questions based on the topic: "${topic}"`;
   
-  const prompt = `Act as an Expert Pedagogue. 
+  const prompt = `Act as an Expert Pedagogue and Quiz Creator.
   ${context}
-  Target Grade: ${grade}
-  Language: ${isSpanish ? 'Spanish' : 'English'}
-  Question Type: ${questionType}
-  Quantity: ${count}
+  
+  Target Audience Grade: ${grade || 'General'}
+  Output Language: ${isSpanish ? 'Spanish' : 'English'}
+  Question Type: ${typeInstruction}
+  Number of Questions: ${count}
 
-  STRICT INSTRUCTIONS:
-  - Return ONLY a JSON array.
-  - ${questionType === 'hangman' ? 'correct_answer MUST be the secret word in CAPS.' : 'correct_answer MUST exactly match one string from the options array.'}
-  - ${questionType === 'true_false' ? `options MUST be exactly ["${trueText}", "${falseText}"].` : ''}
-  - Time limit should be between 10 and 60 seconds.
+  STRICT JSON FORMAT:
+  Return a JSON object with a "questions" key containing an array of question objects.
   
-  PEEDAGOGICAL QUALITY: Make questions tricky but fair. Avoid obvious distractors.
-  
-  ${questionType === 'multiple_choice' ? examples.multiple_choice : ''}
+  QUESTION STRUCTURE:
+  - "question_text": The text of the question.
+  - "question_type": Must be one of: "multiple_choice", "true_false", "fill_in_the_blank", "matching", "hangman". (Do NOT use "mixed" here).
+  - "options": Array of strings.
+  - "correct_answer": The exact string from "options" that is correct. For hangman, use the word in CAPS.
+  - "time_limit": Number between 10 and 60.
+  - "points": 1000.
+
+  ${questionType === 'multiple_choice' || questionType === 'mixed' ? examples.multiple_choice : ''}
   ${questionType === 'hangman' ? examples.hangman : ''}`;
 
   const completion = await groq.chat.completions.create({
     messages: [
-      { role: "system", content: "You are a professional quiz generator. You respond exclusively with valid JSON arrays." },
+      { role: "system", content: "You are a professional quiz generator. You always return a JSON object with a 'questions' array." },
       { role: "user", content: prompt }
     ],
     model: "llama-3.3-70b-versatile",
     response_format: { type: "json_object" }
   });
 
-  const content = completion.choices[0].message.content || "[]";
-  const parsed = JSON.parse(content);
-  return Array.isArray(parsed) ? parsed : (parsed.questions || parsed.data || []);
+  const content = completion.choices[0].message.content || '{"questions": []}';
+  try {
+    const parsed = JSON.parse(content);
+    const questions = parsed.questions || (Array.isArray(parsed) ? parsed : []);
+    return questions;
+  } catch (err) {
+    console.error("Failed to parse Groq response:", content);
+    throw err;
+  }
 }
 
 /**
@@ -117,22 +139,52 @@ async function generateWithGemini({ topic, count, grade, language, questionType,
   if (!apiKey) throw new Error("GEMINI_API_KEY is missing");
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-  const context = pdfText ? `Based on: ${pdfText}` : `Topic: ${topic}`;
+  const context = pdfText ? `Based on this document: ${pdfText.substring(0, 50000)}` : `Topic: ${topic}`;
   
-  const prompt = `Generate ${count} ${questionType} questions about ${context}. Grade: ${grade}. Lang: ${language}.
-  Return ONLY JSON array of objects following the quiz schema. Avoid markdown.`;
+  const typeInstruction = questionType === 'mixed' ? "multiple choice and true/false" : questionType;
+
+  const prompt = `Act as a Quiz Generator. Generate ${count} ${typeInstruction} questions. 
+  Context: ${context}
+  Target Grade: ${grade}. 
+  Output Language: ${language}.
+  
+  Return a JSON array of objects. Each object MUST have:
+  - question_text (string)
+  - question_type ("multiple_choice", "true_false", "fill_in_the_blank", or "hangman")
+  - options (array of strings)
+  - correct_answer (string from options or CAPS word for hangman)
+  - points (1000)
+  - time_limit (number)
+  
+  Return ONLY the JSON. No markdown formatting.`;
 
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    body: JSON.stringify({ 
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: {
+        response_mime_type: "application/json"
+      }
+    })
   });
 
-  if (!response.ok) throw new Error("Gemini API error");
+  if (!response.ok) {
+    const errData = await response.json();
+    throw new Error(`Gemini API error: ${JSON.stringify(errData)}`);
+  }
+  
   const data = await response.json();
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
   const cleaned = text.replace(/```json/g, "").replace(/```/g, "").trim();
-  return JSON.parse(cleaned);
+  
+  try {
+    const parsed = JSON.parse(cleaned);
+    return Array.isArray(parsed) ? parsed : (parsed.questions || []);
+  } catch (err) {
+    console.error("Gemini JSON parse fail:", cleaned);
+    throw err;
+  }
 }
 
 /**
