@@ -147,24 +147,23 @@ export function usePlaySession(id: string) {
         let lastKnownQuestionId: string | null = null;
         let lastKnownStatus: string | null = null;
 
-        const sessionChannel = supabase.channel(`play_session_${id}`)
+        const roomChannel = supabase.channel(`game_room_${id}`)
+            // 1. Session Updates (Status, Question changes)
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'sessions', filter: `id=eq.${id}` }, (payload) => {
                 try {
                     const newData = SessionSchema.parse(payload.new);
-                    
                     if (newData.current_question_id && newData.current_question_id !== lastKnownQuestionId) {
                         lastKnownQuestionId = newData.current_question_id;
                         handleNewQuestion(newData.current_question_id, newData.game_mode === "hangman");
                     }
-                    
                     if (newData.status === "finished" && lastKnownStatus !== "finished") {
                         lastKnownStatus = newData.status;
                         fetchTotalScore();
                     }
-
                     setSession(newData);
-                } catch (e) { console.error("Error en actualización de tiempo real:", e); }
+                } catch (e) { console.error("Error en socket sessions:", e); }
             })
+            // 2. Participants Updates (Eliminations, Coins, Teams)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'participants', filter: `session_id=eq.${id}` }, (payload) => {
                 const typedNew = payload.new as Participant;
                 if (typedNew && typedNew.id === participantId) {
@@ -173,87 +172,60 @@ export function usePlaySession(id: string) {
                     if (typedNew.coins !== undefined) setMyCoins(typedNew.coins);
                     if (typedNew.has_shield !== undefined) setHasShield(typedNew.has_shield);
                 }
-
                 setParticipants((prev) => {
                     if (payload.eventType === 'INSERT') {
-                        const exists = prev.find(p => p.id === typedNew.id);
-                        if (exists) return prev;
-                        return [...prev, typedNew];
+                        return prev.find(p => p.id === typedNew.id) ? prev : [...prev, typedNew];
                     }
                     if (payload.eventType === 'UPDATE') {
                         return prev.map(p => p.id === typedNew.id ? { ...p, ...typedNew } : p);
                     }
                     if (payload.eventType === 'DELETE') {
-                        const oldId = (payload.old as Participant).id;
-                        return prev.filter(p => p.id !== oldId);
+                        return prev.filter(p => p.id !== (payload.old as Participant).id);
                     }
                     return prev;
                 });
             })
-            .subscribe();
-
-        const rouletteChannel = supabase.channel(`roulette_${id}`)
+            // 3. Roulette Events (Broadcast)
             .on('broadcast', { event: 'spin' }, ({ payload }) => {
                 setRouletteItems(payload.items);
                 setRouletteWinnerIndex(payload.index);
                 setRouletteType(payload.type);
                 setRouletteSpinning(true);
             })
-            .on('broadcast', { event: 'spin_finish' }, () => {
-                setRouletteSpinning(false);
-            })
+            .on('broadcast', { event: 'spin_finish' }, () => setRouletteSpinning(false))
             .on('broadcast', { event: 'reset' }, () => {
                 setRouletteSpinning(false);
                 setRouletteWinnerIndex(null);
                 setRouletteType(null);
             })
-            .subscribe();
-
-        const FREEZE_DURATION = 5; // 5 seconds freeze
-        const chaosChannel = supabase.channel(`chaos_${id}`)
+            // 4. Chaos Mode Events (Freeze Attack)
             .on('broadcast', { event: 'freeze' }, ({ payload }) => {
                 if (payload.target_id === participantId) {
                     setIsFrozen(true);
                     setFrozenBy(payload.attacker_name || '???');
-                    setFreezeTimer(FREEZE_DURATION);
-                    // Countdown timer
-                    let remaining = FREEZE_DURATION;
-                    const interval = setInterval(() => {
-                        remaining--;
-                        setFreezeTimer(remaining);
-                        if (remaining <= 0) {
-                            clearInterval(interval);
-                            setIsFrozen(false);
-                            setFrozenBy(null);
-                        }
+                    setFreezeTimer(5);
+                    let rem = 5;
+                    const itv = setInterval(() => {
+                        rem--;
+                        setFreezeTimer(rem);
+                        if (rem <= 0) { clearInterval(itv); setIsFrozen(false); setFrozenBy(null); }
                     }, 1000);
                 }
             })
-            .subscribe();
-
-        // Spy Mode: Listen to all answers in the session
-        const answersChannel = supabase.channel(`answers_stats_${id}`)
-            .on('postgres_changes', { 
-                event: 'INSERT', 
-                schema: 'public', 
-                table: 'answers', 
-                filter: `session_id=eq.${id}` 
-            }, (payload) => {
-                const newAnswer = payload.new as { question_id: string; answer_text: string };
-                if (newAnswer.question_id === currentQuestion?.id) {
+            // 5. Spy Mode Stats (Insert Answers)
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'answers', filter: `session_id=eq.${id}` }, (payload) => {
+                const newAns = payload.new as { question_id: string; answer_text: string };
+                if (newAns.question_id === currentQuestion?.id) {
                     setAnswerDistribution(prev => ({
                         ...prev,
-                        [newAnswer.answer_text]: (prev[newAnswer.answer_text] || 0) + 1
+                        [newAns.answer_text]: (prev[newAns.answer_text] || 0) + 1
                     }));
                 }
             })
             .subscribe();
 
         return () => {
-            supabase.removeChannel(sessionChannel);
-            supabase.removeChannel(rouletteChannel);
-            supabase.removeChannel(chaosChannel);
-            supabase.removeChannel(answersChannel);
+            supabase.removeChannel(roomChannel);
         };
     }, [id, nickname, participantId, handleNewQuestion, fetchParticipants, fetchTotalScore, currentQuestion?.id]);
 
