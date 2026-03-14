@@ -179,10 +179,48 @@ export const generateExcelReport = (data: ReportData, t: (key: string) => string
         ...questions.map(() => ({ wch: 8 }))
     ]);
 
+    // --- 4. Sheet: Distractors ---
+    const distractorRows: (string | number | boolean | null | undefined)[][] = [
+        [BRANDING_TITLE],
+        ["🎯 ANÁLISIS DE DISTRACTORES (OPCIONES CONFUSAS)"],
+        ["Resumen de cuáles opciones incorrectas fueron el mayor obstáculo"],
+        [],
+        ["Pregunta", "Opción más elegida (Incorrecta)", "Frecuencia", "% de la Clase"]
+    ];
+
+    questions.forEach(q => {
+        const qAnswers = answers.filter(a => a.question_id === q.id && !a.is_correct);
+        if (qAnswers.length === 0) return;
+
+        const counts: Record<string, number> = {};
+        qAnswers.forEach(a => {
+            const val = a.answer_text || "Sin respuesta";
+            counts[val] = (counts[val] || 0) + 1;
+        });
+
+        const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+        const topDistractor = sorted[0];
+
+        distractorRows.push([
+            q.question_text,
+            topDistractor[0],
+            topDistractor[1],
+            `${Math.round((topDistractor[1] / participants.length) * 100)}%`
+        ]);
+    });
+
+    const distractorSheet = createSheet(distractorRows, [
+        { wch: 50 }, // Question
+        { wch: 40 }, // Top Distractor
+        { wch: 15 }, // Frequency
+        { wch: 15 }, // Percentage
+    ]);
+
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, summarySheet, t('session.report_summary'));
     XLSX.utils.book_append_sheet(wb, gradesSheet, t('session.report_grades'));
     XLSX.utils.book_append_sheet(wb, matrixSheet, t('session.report_matrix'));
+    XLSX.utils.book_append_sheet(wb, distractorSheet, "Distractores");
 
     const cleanTitle = session.quiz.title.replace(/[\\/?:*|"<>]/g, '').replace(/\s+/g, '_');
     const fileName = `Reporte_${cleanTitle}_${new Date().toISOString().split('T')[0]}.xlsx`;
@@ -355,6 +393,40 @@ export const generatePDFReport = (data: ReportData, t: (key: string) => string) 
         doc.setFontSize(8);
         doc.setFont("helvetica", "normal");
         doc.text(`P${i + 1}: ${q.question_text}`, 25, yPos);
+    });
+
+    // --- 6. Distractor Highlights ---
+    doc.addPage();
+    doc.setFontSize(13);
+    doc.setFont("helvetica", "bold");
+    doc.text("🎯 HALLAZGOS PEDAGÓGICOS (DISTRACTORES)", 20, 20);
+    
+    const distractorBody = questions.map(q => {
+        const qAnswers = answers.filter(a => a.question_id === q.id && !a.is_correct);
+        if (qAnswers.length === 0) return null;
+
+        const counts: Record<string, number> = {};
+        qAnswers.forEach(a => {
+            const val = a.answer_text || "Sin respuesta";
+            counts[val] = (counts[val] || 0) + 1;
+        });
+
+        const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+        const top = sorted[0];
+
+        return [
+            q.question_text.substring(0, 50) + "...",
+            top[0],
+            `${Math.round((top[1] / participants.length) * 100)}%`
+        ];
+    }).filter(Boolean);
+
+    autoTable(doc, {
+        startY: 30,
+        head: [["Pregunta", "Opción Confusa", "% Alumnos"]],
+        body: distractorBody as (string | number)[][],
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [245, 158, 11] }, // amber-500
     });
 
     // Footer on all pages

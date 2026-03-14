@@ -1,23 +1,15 @@
 import { Ratelimit } from "@upstash/ratelimit";
-import { Redis } from "@upstash/redis";
+import { redis } from "./redis";
 
 /**
  * Advanced Rate Limiter for Serverless Environments (Upstash Redis).
  * Fallbacks to in-memory Map for local development if environment variables are missing.
  */
 
-// 1. Initialize Upstash Redis if env vars exist
+// 1. Initialize Upstash Ratelimit if redis exists
 let ratelimit: Ratelimit | null = null;
 
-const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL;
-const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
-
-if (REDIS_URL && REDIS_TOKEN) {
-    const redis = new Redis({
-        url: REDIS_URL,
-        token: REDIS_TOKEN,
-    });
-
+if (redis) {
     ratelimit = new Ratelimit({
         redis: redis,
         limiter: Ratelimit.slidingWindow(10, "1 m"), // Default: 10 per minute

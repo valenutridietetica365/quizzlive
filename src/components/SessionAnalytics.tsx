@@ -13,6 +13,7 @@ import { generateExcelReport, generatePDFReport, ReportData } from "@/lib/report
 import { calculateChileanGrade } from "@/lib/grading";
 import { useSessionResults } from "@/hooks/useSessionResults";
 import HeatmapTable, { HeatmapRow } from "@/components/analytics/HeatmapTable";
+import DistractorAnalysis from "@/components/analytics/DistractorAnalysis";
 
 interface SessionAnalyticsProps {
     sessionId: string;
@@ -24,6 +25,7 @@ export interface QuestionStat {
     correct: number;
     total: number;
     percentage: number;
+    distractors: Record<string, number>;
 }
 
 // HeatmapRow moved to HeatmapTable.tsx
@@ -75,11 +77,17 @@ const SessionAnalytics = React.memo(function SessionAnalytics({ sessionId }: Ses
                     fullName: qText, 
                     correct: 0, 
                     total: 0, 
-                    percentage: 0 
+                    percentage: 0,
+                    distractors: {} 
                 }; 
             }
             acc[qId].total += 1;
-            if (curr.is_correct) acc[qId].correct += 1;
+            if (curr.is_correct) {
+                acc[qId].correct += 1;
+            } else {
+                const ans = curr.answer_text || "Sin respuesta";
+                acc[qId].distractors[ans] = (acc[qId].distractors[ans] || 0) + 1;
+            }
             return acc;
         }, {});
         return Object.values(stats).map((q) => ({ 
@@ -163,8 +171,15 @@ const SessionAnalytics = React.memo(function SessionAnalytics({ sessionId }: Ses
             </div>
 
             <KPISection avgSuccess={avgSuccess} totalParticipants={totalParticipants} bestQuestionName={bestQuestionName} t={t} />
-            <InsightsPanel data={chartData} t={t} />
-            <QuestionsChart data={chartData} t={t} />
+            <InsightsPanel 
+                data={chartData} 
+                heatmapRows={processedHeatmapRows}
+                t={t} 
+            />
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                <QuestionsChart data={chartData} t={t} />
+                <DistractorAnalysis data={chartData} t={t} />
+            </div>
 
             {/* Heatmap Section */}
             <HeatmapTable 
