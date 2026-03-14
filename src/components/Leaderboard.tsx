@@ -40,49 +40,38 @@ const Leaderboard = React.memo(function Leaderboard({
                 .single();
             if (sessionData) setSessionMode(sessionData.game_mode);
 
-            // Fetch participants joining with scores
-            const { data, error } = await supabase
+            // Fetch participants for THIS session
+            const { data: participantsData, error: pError } = await supabase
                 .from("participants")
-                .select(`
-                    id, 
-                    nickname, 
-                    team, 
-                    is_eliminated,
-                    scores(total_points)
-                `)
+                .select("id, nickname, team, is_eliminated")
                 .eq("session_id", sessionId);
 
-            if (error || !data) {
-                console.error("Leaderboard fetch error:", error);
+            if (pError || !participantsData) {
+                console.error("Leaderboard participants fetch error:", pError);
                 return;
             }
 
-            interface ParticipantRow {
-                id: string;
-                nickname: string;
-                team: string | null;
-                is_eliminated: boolean;
-                scores: { total_points: number }[] | { total_points: number } | null;
+            // Fetch scores for THIS session
+            const { data: scoresData, error: sError } = await supabase
+                .from("scores")
+                .select("participant_id, total_points")
+                .eq("session_id", sessionId);
+
+            if (sError) {
+                console.error("Leaderboard scores fetch error:", sError);
             }
 
-            // Map data to LeaderboardEntry format
-            const participants: LeaderboardEntry[] = (data as ParticipantRow[]).map(p => {
-                // Handle different possible shapes of joined scores
-                let totalScore = 0;
-                if (Array.isArray(p.scores)) {
-                    totalScore = p.scores[0]?.total_points ?? 0;
-                } else if (p.scores) {
-                    totalScore = p.scores.total_points ?? 0;
-                }
+            // Map scores to a lookup object
+            const scoresMap = new Map((scoresData || []).map(s => [s.participant_id, s.total_points]));
 
-                return {
-                    id: p.id,
-                    nickname: p.nickname,
-                    team: p.team,
-                    is_eliminated: p.is_eliminated,
-                    score: totalScore
-                };
-            });
+            // Combine data
+            const participants: LeaderboardEntry[] = participantsData.map(p => ({
+                id: p.id,
+                nickname: p.nickname,
+                team: p.team,
+                is_eliminated: p.is_eliminated,
+                score: scoresMap.get(p.id) || 0
+            }));
 
             // Sort participants by score descending
             participants.sort((a, b) => b.score - a.score);
@@ -106,6 +95,22 @@ const Leaderboard = React.memo(function Leaderboard({
     useEffect(() => {
         fetchLeaderboard();
 
+        // Subscribe to scores changes
+        const scoresChannel = supabase
+            .channel(`scores_realtime_${sessionId}`)
+            .on(
+                "postgres_changes",
+                { event: "*", schema: "public", table: "scores" },
+                (payload: any) => {
+                    // Only refetch if the change belongs to this session
+                    if (payload.new?.session_id === sessionId || payload.old?.session_id === sessionId) {
+                        fetchLeaderboard();
+                    }
+                }
+            )
+            .subscribe();
+
+        // Subscribe to participant status changes (is_eliminated)
         const participantsChannel = supabase
             .channel(`participants_realtime_${sessionId}`)
             .on(
@@ -115,26 +120,17 @@ const Leaderboard = React.memo(function Leaderboard({
             )
             .subscribe();
 
-        const scoresChannel = supabase
-            .channel(`scores_realtime_${sessionId}`)
-            .on(
-                "postgres_changes",
-                { event: "*", schema: "public", table: "scores", filter: `session_id=eq.${sessionId}` },
-                () => fetchLeaderboard()
-            )
-            .subscribe();
-
         return () => {
-            supabase.removeChannel(participantsChannel);
             supabase.removeChannel(scoresChannel);
+            supabase.removeChannel(participantsChannel);
         };
     }, [sessionId, fetchLeaderboard]);
 
     const rankIcon = (rank: number) => {
-        if (rank === 1) return <Crown className="w-4 h-4 text-amber-400" />;
-        if (rank === 2) return <Medal className="w-4 h-4 text-slate-400" />;
-        if (rank === 3) return <Medal className="w-4 h-4 text-amber-600" />;
-        return <span className="text-xs font-black text-slate-600 w-4 text-center">{rank}</span>;
+        if (rank === 1) return "🥇";
+        if (rank === 2) return "🥈";
+        if (rank === 3) return "🥉";
+        return rank;
     };
 
     const rankBg = (rank: number) => {
@@ -151,54 +147,29 @@ const Leaderboard = React.memo(function Leaderboard({
         if (top3.length === 0) return null;
 
         return (
-            <div className="flex flex-col items-center gap-2 animate-in fade-in slide-in-from-top-6 duration-1000">
-                {/* Premium Glass Container */}
-                <div className="flex items-center gap-4 bg-white/70 dark:bg-slate-900/40 backdrop-blur-2xl px-6 py-3 rounded-[2rem] border border-slate-200 dark:border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.3)] ring-1 ring-white/10 group">
-                    <div className="flex items-center gap-2.5 border-r border-slate-200 dark:border-white/10 pr-5 mr-1 group-hover:scale-105 transition-transform">
-                        <div className="relative">
-                            <Trophy className="w-5 h-5 text-amber-500 animate-pulse" />
-                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full animate-ping" />
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-[9px] font-black text-amber-600 dark:text-amber-500 uppercase tracking-[0.25em] leading-none">Live</span>
-                            <span className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-wider">Top 3</span>
-                        </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-8">
-                        {top3.map((entry, i) => {
-                            const isMe = entry.id === currentParticipantId;
-                            const rank = i + 1;
-                            return (
-                                <div key={entry.id} className={`flex items-center gap-3 relative transition-all duration-500 ${isMe ? 'scale-110' : 'opacity-80 hover:opacity-100 hover:scale-105'}`}>
-                                    <div className="flex flex-col items-center">
-                                        <div className="h-5 flex items-center justify-center mb-0.5">
-                                            {rankIcon(rank)}
-                                        </div>
-                                        <div className={`w-1 h-1 rounded-full ${isMe ? 'bg-blue-600 dark:bg-blue-400' : 'bg-slate-300 dark:bg-slate-600'}`} />
-                                    </div>
-                                    
-                                    <div className="flex flex-col">
-                                        <span className={`text-[12px] font-black truncate max-w-[100px] leading-tight ${isMe ? 'text-blue-600 dark:text-blue-400 drop-shadow-[0_0_8px_rgba(96,165,250,0.5)]' : 'text-slate-900 dark:text-white'}`}>
-                                            {entry.nickname}
-                                        </span>
-                                        <div className="flex items-center gap-1">
-                                            <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 tabular-nums tracking-tight">
-                                                {entry.score.toLocaleString()}
-                                            </span>
-                                            <span className="text-[7px] font-bold text-slate-400 dark:text-slate-600 uppercase tracking-tighter">pts</span>
-                                        </div>
-                                    </div>
-                                    
-                                    {isMe && (
-                                        <div className="absolute -top-1 -right-2">
-                                            <Sparkles className="w-3 h-3 text-blue-500 dark:text-blue-400 animate-spin-slow" />
-                                        </div>
-                                    )}
+            <div className="flex flex-col items-center animate-in fade-in slide-in-from-top-4 duration-500">
+                {/* Ultra-Minimalist Pill */}
+                <div className="flex items-center gap-3 bg-white/40 dark:bg-black/40 backdrop-blur-md px-4 py-1.5 rounded-full border border-slate-200/50 dark:border-white/10 shadow-sm">
+                    {top3.map((entry, i) => {
+                        const isMe = entry.id === currentParticipantId;
+                        const rank = i + 1;
+                        return (
+                            <div key={entry.id} className="flex items-center gap-1.5 transition-all">
+                                <span className="text-[10px] grayscale-[0.5]">{rankIcon(rank)}</span>
+                                <div className="flex items-baseline gap-1">
+                                    <span className={`text-[10px] font-bold truncate max-w-[60px] ${isMe ? 'text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-300'}`}>
+                                        {entry.nickname}
+                                    </span>
+                                    <span className={`text-[9px] font-black tabular-nums ${isMe ? 'text-blue-500' : 'text-slate-400 dark:text-slate-500'}`}>
+                                        {entry.score}
+                                    </span>
                                 </div>
-                            );
-                        })}
-                    </div>
+                                {i < top3.length - 1 && (
+                                    <div className="mx-1 w-[1px] h-2.5 bg-slate-300 dark:bg-white/10" />
+                                )}
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
         );
