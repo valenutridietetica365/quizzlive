@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { Trophy, Medal, Crown, Sparkles } from "lucide-react";
+import { Trophy } from "lucide-react";
 
 interface LeaderboardEntry {
     id: string;
@@ -101,7 +101,7 @@ const Leaderboard = React.memo(function Leaderboard({
             .on(
                 "postgres_changes",
                 { event: "*", schema: "public", table: "scores" },
-                (payload: any) => {
+                (payload: { new: { session_id?: string }; old: { session_id?: string } }) => {
                     // Only refetch if the change belongs to this session
                     if (payload.new?.session_id === sessionId || payload.old?.session_id === sessionId) {
                         fetchLeaderboard();

@@ -39,7 +39,7 @@ FOR EACH ROW EXECUTE FUNCTION public.update_participant_score();
 
 -- 5. Backfill scores from existing answers (optional but recommended)
 INSERT INTO public.scores (participant_id, session_id, total_points, updated_at)
-SELECT participant_id, session_id, SUM(points_awarded), MAX(created_at)
+SELECT participant_id, session_id, SUM(points_awarded), MAX(answered_at)
 FROM public.answers
 GROUP BY participant_id, session_id
 ON CONFLICT (participant_id, session_id)

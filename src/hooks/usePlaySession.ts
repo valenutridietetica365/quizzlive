@@ -374,7 +374,7 @@ export function usePlaySession(id: string) {
             toast.error("Error de conexión");
             return false;
         }
-    }, [id, participantId, session, myCoins, nickname]);
+    }, [id, participantId, session, myCoins, nickname, currentQuestion?.id]);
 
     return {
         session, participants, currentQuestion, loading,
