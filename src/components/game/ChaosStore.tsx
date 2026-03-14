@@ -48,22 +48,22 @@ export default function ChaosStore({ coins, hasShield, buyPowerup, isSpyActive }
     ];
 
     return (
-        <div className="flex flex-col items-center gap-4">
-            {/* Coins Display */}
-            <div className="bg-slate-900 border-2 border-amber-400 px-3 py-2 rounded-2xl shadow-xl flex items-center gap-2 animate-in slide-in-from-left-10 duration-500">
-                <Coins className="w-4 h-4 text-amber-400 animate-pulse" />
-                <span className="text-white font-black tabular-nums text-sm">{coins}</span>
+        <div className="flex items-center gap-3">
+            {/* Coins Display - Compact & Elegant */}
+            <div className="bg-slate-900 border-2 border-amber-400 px-3 py-2 rounded-2xl shadow-xl flex items-center gap-2 group transition-transform hover:scale-105">
+                <Coins className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                <span className="text-white font-black tabular-nums text-xs leading-none">{coins}</span>
             </div>
 
-            {/* Powerups Column */}
-            <div className="flex flex-col gap-3 bg-white/10 backdrop-blur-md p-2 rounded-[2.5rem] border border-white/20 shadow-2xl">
+            {/* Powerups Row */}
+            <div className="flex items-center gap-2 bg-white/5 backdrop-blur-md p-1.5 rounded-[2rem] border border-white/10 shadow-xl">
                 {powerups.map((pw) => (
-                    <div key={pw.id} className="relative group">
+                    <div key={pw.id} className="relative group/item">
                         <button
                             disabled={coins < pw.cost || pw.active || buying !== null}
                             onClick={() => handleBuy(pw.id)}
                             className={`
-                                w-14 h-14 md:w-16 md:h-16 rounded-full flex flex-col items-center justify-center transition-all duration-300 border-4 relative
+                                w-11 h-11 md:w-13 md:h-13 rounded-full flex items-center justify-center transition-all duration-300 border-2 relative
                                 ${pw.active 
                                     ? 'bg-emerald-600 border-emerald-300 text-white cursor-default scale-95 shadow-inner' 
                                     : coins >= pw.cost 
@@ -71,17 +71,17 @@ export default function ChaosStore({ coins, hasShield, buyPowerup, isSpyActive }
                                         : 'bg-slate-200 border-slate-300 text-slate-400 grayscale opacity-60 cursor-not-allowed'}
                             `}
                         >
-                            {pw.active ? <Check className="w-6 h-6 md:w-8 md:h-8" /> : <pw.icon className="w-6 h-6 md:w-8 md:h-8" />}
+                            {pw.active ? <Check className="w-5 h-5 md:w-6 md:h-6" /> : <pw.icon className="w-5 h-5 md:w-6 md:h-6" />}
                             
                             {!pw.active && (
-                                <div className="absolute -bottom-1 -right-1 bg-amber-400 text-amber-950 text-[10px] font-black px-1.5 rounded-full border-2 border-white shadow-sm">
+                                <div className="absolute -bottom-1 -right-1 bg-amber-400 text-amber-950 text-[8px] font-black px-1 rounded-full border border-white shadow-sm">
                                     {pw.cost}
                                 </div>
                             )}
                         </button>
 
-                        {/* Tooltip on Hover */}
-                        <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-3 py-1 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-xl border border-white/10">
+                        {/* Tooltip on Hover - Positioned Below */}
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2 py-1 bg-slate-900 text-white text-[8px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover/item:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-xl border border-white/10 z-50">
                             {pw.label}
                         </div>
                     </div>
