@@ -83,6 +83,10 @@ export function usePlaySession(id: string) {
                 setRouletteWinnerIndex(null);
                 setRouletteType(null);
 
+                // Reset Chaos Mode power-ups
+                setIsSpyActive(false);
+                setAnswerDistribution({});
+
                 if (q.question_type === "matching") {
                     const matches = q.options.map(opt => opt.split(":")[1]);
                     setShuffledMatches([...matches].sort(() => Math.random() - 0.5));
